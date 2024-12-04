@@ -1,8 +1,11 @@
+patch version: 2.24.11-11856-802 (2e8b0cba)
+patch date: 2024-11-19 18:45:51 UTC (+00:00)
+---
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 8770a186..02c6c8d5 100644
+index eb09fcd3..44980840 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -524,6 +524,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
+@@ -534,6 +534,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
  # Manage config.h based on command line parameters
  # Manipulate config file based on given parameters and read unset parameters
  
@@ -25,7 +28,7 @@ index 8770a186..02c6c8d5 100644
  execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --show-valid OUTPUT_VARIABLE config_vars_string OUTPUT_STRIP_TRAILING_WHITESPACE)
  string(REGEX MATCHALL "[A-Z0-9_]+" config_vars ${config_vars_string})
  
-@@ -869,6 +885,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
+@@ -879,6 +895,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
  
  #--------------------------------------------------------------------------------
  
@@ -50,7 +53,7 @@ index 8770a186..02c6c8d5 100644
  #----------------------- installation -----------------------------
  
  file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-@@ -981,4 +1015,11 @@ if (HAVE_LIBDVBCSA)
+@@ -991,4 +1025,11 @@ if (HAVE_LIBDVBCSA)
  	endif(STATICLIBDVBCSA AND NOT LIBDVBCSADIR)
  endif (HAVE_LIBDVBCSA)
  
@@ -111,7 +114,7 @@ index 3d333a93..08b173ed 100644
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
 diff --git a/Makefile b/Makefile
-index e9a00959..473b62ab 100644
+index f66a27f2..8f8d98b4 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -32,6 +32,9 @@ ifeq "$(shell ./config.sh --enabled WITH_SSL)" "Y"
@@ -124,7 +127,7 @@ index e9a00959..473b62ab 100644
  ifdef USE_SSL
  	override USE_LIBCRYPTO=1
  endif
-@@ -363,6 +366,32 @@ SRC-$(CONFIG_CS_CACHEEX) += module-cccam-cacheex.c
+@@ -366,6 +369,32 @@ SRC-$(CONFIG_CS_CACHEEX) += module-cccam-cacheex.c
  SRC-$(CONFIG_MODULE_CCCAM) += module-cccam.c
  SRC-$(CONFIG_MODULE_CCCSHARE) += module-cccshare.c
  SRC-$(CONFIG_MODULE_CONSTCW) += module-constcw.c
@@ -158,20 +161,20 @@ index e9a00959..473b62ab 100644
  SRC-$(CONFIG_CW_CYCLE_CHECK) += module-cw-cycle-check.c
  SRC-$(CONFIG_WITH_AZBOX) += module-dvbapi-azbox.c
 diff --git a/README.config b/README.config
-index 685295bf..5a61ee12 100644
+index 03c70f7d..9b99c3c4 100644
 --- a/README.config
 +++ b/README.config
-@@ -54,7 +54,7 @@ Examples:
-   ./config.sh -D card_readers -E CARDREADER_INTERNAL
+@@ -81,7 +81,7 @@ Examples:
+   ./config.sh --create-cert ecdsa prime256v1 ca 'My OSCam Distribution'
  
  Available options:
--       addons: WEBIF WEBIF_LIVELOG WEBIF_JQUERY WITH_COMPRESS_WEBIF WITH_SSL HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON
-+       addons: WEBIF WEBIF_LIVELOG WEBIF_JQUERY WITH_COMPRESS_WEBIF WITH_SSL HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_EMU WITH_SOFTCAM
+-       addons: WEBIF WEBIF_LIVELOG WEBIF_JQUERY WITH_COMPRESS_WEBIF WITH_SSL HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_SIGNING
++       addons: WEBIF WEBIF_LIVELOG WEBIF_JQUERY WITH_COMPRESS_WEBIF WITH_SSL HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_SIGNING WITH_EMU WITH_SOFTCAM
      protocols: MODULE_CAMD33 MODULE_CAMD35 MODULE_CAMD35_TCP MODULE_NEWCAMD MODULE_CCCAM MODULE_CCCSHARE MODULE_GBOX MODULE_RADEGAST MODULE_SCAM MODULE_SERIAL MODULE_CONSTCW MODULE_PANDORA MODULE_GHTTP MODULE_STREAMRELAY
        readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
   card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
 diff --git a/README.md b/README.md
-index 8d1c6e93..c3cacec5 100644
+index 8d1c6e93..13cc08c3 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,14 +1,18 @@
@@ -179,11 +182,11 @@ index 8d1c6e93..c3cacec5 100644
 -============================================
 +OSCam-Emu: Open Source CAM with Emulator
 +========================================
-+[![build](https://github.com/oscam-emu/oscam-patched/actions/workflows/build.yml/badge.svg)](https://github.com/oscam-emu/oscam-patched/actions/workflows/build.yml)
++[![build](https://github.com/oscam-mirror/oscam-emu/actions/workflows/build-oscam.yml/badge.svg)](https://github.com/oscam-mirror/oscam-emu/actions/workflows/build-oscam.yml) [![sync](https://github.com/oscam-mirror/oscam-emu/actions/workflows/sync-gitlab.yml/badge.svg)](https://github.com/oscam-mirror/oscam-emu/actions/workflows/sync-gitlab.yml) [![patch](https://github.com/oscam-mirror/oscam-emu/actions/workflows/create-patch.yml/badge.svg)](https://github.com/oscam-mirror/oscam-emu/actions/workflows/create-patch.yml)
  
 +Wiki
 +====
-+https://github.com/oscam-emu/oscam-patched/wiki
++https://git.streamboard.tv/common/oscam/-/wikis/home
  
  License
  =======
@@ -213,7 +216,7 @@ index 8d1c6e93..c3cacec5 100644
 -OSCam history is accessible through Trac timeline at:
 -   https://git.streamboard.tv/common/oscam/-/commits/master
 +OSCam-Emu history is accessible through GitHub history at:
-+   https://github.com/oscam-emu/oscam-patched/commits/master/
++   https://github.com/oscam-mirror/oscam-emu/commits/master/
  
  
  Repositories
@@ -221,7 +224,7 @@ index 8d1c6e93..c3cacec5 100644
  
  GIT repository:
 -   git clone https://git.streamboard.tv/common/oscam.git oscam
-+   git clone https://github.com/oscam-emu/oscam-patched.git
++   git clone https://github.com/oscam-mirror/oscam-emu.git
  
  
 -Building OSCam from source
@@ -236,7 +239,7 @@ index 8d1c6e93..c3cacec5 100644
 - - Run `make config` to choose the features you want.
 -
 - - Run `make` to compile OSCam.
-+https://github.com/oscam-emu/oscam-patched/wiki/Building-OSCam-Emu
++https://git.streamboard.tv/common/oscam/-/wikis/BuildingOscam
  
  For more information and examples on using the build system, please
  see README.build and README.config files.
@@ -270,22 +273,38 @@ index 8d1c6e93..c3cacec5 100644
    - libcrypto (libssl) - 'make USE_LIBCRYPTO=1'
    - libusb             - 'make USE_LIBUSB=1'
    - PCSC               - 'make USE_PCSC=1'
-@@ -104,12 +101,12 @@ Help and Support
+@@ -89,12 +86,10 @@ OSCam supports building with the following external dependencies:
+   - AZBOX support      - 'make USE_AZBOX=1'
+ 
+ For STAPI support you need to download liboscam_stapi.a library and place
+-it in stapi directory under oscam/ root dir. liboscam_stapi.a can be downloaded
+-from: https://board.streamboard.tv
++it in stapi directory under oscam/ root dir.
+ 
+ For STAPI5 support you need to download liboscam_stapi5.a library and place
+-it in stapi directory under oscam/ root dir. liboscam_stapi5.a can be downloaded
+-from: https://board.streamboard.tv
++it in stapi directory under oscam/ root dir.
+ 
+ For more information and examples on using the build system, run `make help`.
+ 
+@@ -104,12 +99,12 @@ Help and Support
  
  man pages and configuration examples are in Distribution/doc directory.
  
 -You may visit our Trac system for tracking and filling bug reports.
 -   https://git.streamboard.tv/common/oscam/-/issues/new
 +You may visit our GitHub system for tracking and filling bug reports.
-+   https://github.com/oscam-emu/oscam-patched/issues/new
++   https://github.com/oscam-mirror/oscam-emu/issues/new
  
  If you experience any problems with OSCam, feel free to post in our support
  forum under (mainly German and English language) at:
-    https://board.streamboard.tv/forum/
+-   https://board.streamboard.tv/forum/
++   https://github.com/oscam-mirror/oscam-emu/discussions
  
  Configuration wiki:
 -   https://wiki.streamboard.tv/wiki/OSCam
-+   https://github.com/oscam-emu/oscam-patched/wiki/OSCam-Emu-configuration
++   https://wiki.streamboard.tv/wiki/OSCam/de/Config/oscam.conf
 diff --git a/config.h b/config.h
 index f48ca1da..1139180d 100644
 --- a/config.h
@@ -309,7 +328,7 @@ index f48ca1da..1139180d 100644
  //#define WITH_NEUTRINO 1
  #define READ_SDT_CHARSETS 1
 diff --git a/config.sh b/config.sh
-index 3e946317..d22b40fa 100755
+index 70ca71ad..83e3c948 100755
 --- a/config.sh
 +++ b/config.sh
 @@ -1,6 +1,6 @@
@@ -338,7 +357,7 @@ index 3e946317..d22b40fa 100755
  # CONFIG_MODULE_CAMD33=n
  CONFIG_MODULE_CAMD35=y
  CONFIG_MODULE_CAMD35_TCP=y
-@@ -329,14 +331,17 @@ get_opts() {
+@@ -328,14 +330,17 @@ get_opts() {
  
  update_deps() {
  	# Calculate dependencies
@@ -358,7 +377,7 @@ index 3e946317..d22b40fa 100755
  }
  
  list_config() {
-@@ -386,9 +391,9 @@ list_config() {
+@@ -385,9 +390,9 @@ list_config() {
  	not_have_flag USE_LIBCRYPTO && echo "CONFIG_LIB_AES=y" || echo "# CONFIG_LIB_AES=n"
  	enabled MODULE_CCCAM && echo "CONFIG_LIB_RC6=y" || echo "# CONFIG_LIB_RC6=n"
  	not_have_flag USE_LIBCRYPTO && enabled MODULE_CCCAM && echo "CONFIG_LIB_SHA1=y" || echo "# CONFIG_LIB_SHA1=n"
@@ -371,7 +390,7 @@ index 3e946317..d22b40fa 100755
  	enabled READER_NAGRA_MERLIN && echo "CONFIG_LIB_MDC2=y" || echo "# CONFIG_LIB_MDC2=n"
  	enabled READER_NAGRA_MERLIN && echo "CONFIG_LIB_FAST_AES=y" || echo "# CONFIG_LIB_FAST_AES=n"
  	enabled_any READER_NAGRA_MERLIN WITH_SIGNING && echo "CONFIG_LIB_SHA256=y" || echo "# CONFIG_LIB_SHA256=n"
-@@ -516,6 +521,8 @@ menu_addons() {
+@@ -515,6 +520,8 @@ menu_addons() {
  		IPV6SUPPORT			"IPv6 support (experimental)"					$(check_test "IPV6SUPPORT") \
  		WITH_ARM_NEON		"ARM NEON (SIMD/MPE) support"					$(check_test "WITH_ARM_NEON") \
  		WITH_SIGNING		"Binary signing with X.509 certificate"			$(check_test "WITH_SIGNING") \
@@ -380,7 +399,7 @@ index 3e946317..d22b40fa 100755
  		2> ${tempfile}
  
  	opt=${?}
-@@ -894,12 +901,14 @@ do
+@@ -897,11 +904,12 @@ do
  	;;
  	'-v'|'--oscam-version')
  		version=`grep '^#define CS_VERSION' globals.h | cut -d\" -f2`
@@ -389,14 +408,12 @@ index 3e946317..d22b40fa 100755
 +		echo $version-$emuversion
  		break
  	;;
- 	'-r'|'--oscam-revision') #//DEPRECATED, will be removed in later versions
- 		revision=`grep '^#define CS_VERSION' globals.h | awk -F'-|"' '{print $3}'`
--		echo $revision
-+		emuversion=`grep EMU_VERSION module-emulator-osemu.h | awk '{ print $3 }'`
-+		echo $revision-$emuversion
+ 	'-c'|'--oscam-commit')
+-		sha=`git log 2>/dev/null | sed -n 1p | cut -d ' ' -f2 | cut -c1-8`
++		sha=`git log --no-merges 2>/dev/null | sed -n 1p | cut -d ' ' -f2 | cut -c1-8`
+ 		echo $sha
  		break
  	;;
- 	'-c'|'--oscam-commit')
 diff --git a/csctapi/cardreaders.h b/csctapi/cardreaders.h
 index 8b6c309a..35f38c6c 100644
 --- a/csctapi/cardreaders.h
@@ -409,18 +426,21 @@ index 8b6c309a..35f38c6c 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index 9a50a972..1d23c4ff 100644
+index bb421574..aa3b06e9 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,7 +368,7 @@
+@@ -368,9 +368,9 @@
  /* ===========================
   *			constants
   * =========================== */
 -#define SCM_URL					"https://git.streamboard.tv/common/oscam"
-+#define SCM_URL					"https://github.com/oscam-emu/oscam-patched"
++#define SCM_URL					"https://github.com/oscam-mirror/oscam-emu"
  #define WIKI_URL				"https://wiki.streamboard.tv/wiki"
- #define BOARD_URL				"https://board.streamboard.tv"
+-#define BOARD_URL				"https://board.streamboard.tv"
++#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
+ #define CS_VERSION				"2.24.11-11856"
+ #endif
 @@ -406,14 +406,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -463,7 +483,7 @@ index 9a50a972..1d23c4ff 100644
  } S_ENTITLEMENT;
  
  struct s_client;
-@@ -1752,6 +1764,7 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1757,6 +1769,7 @@ struct s_reader										// contains device info, reader info and card info
  	char			cc_build[7];					// cccam build number
  	int8_t			cc_maxhops;						// cccam max distance
  	int8_t			cc_mindown;						// cccam min downhops
@@ -471,7 +491,7 @@ index 9a50a972..1d23c4ff 100644
  	uint32_t		cc_id;
  	int8_t			cc_keepalive;
  	int8_t			cc_hop;							// For non-cccam reader: hop for virtual cards
-@@ -1928,6 +1941,11 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1933,6 +1946,11 @@ struct s_reader										// contains device info, reader info and card info
  #endif
  #ifdef MODULE_GHTTP
  	uint8_t			ghttp_use_ssl;
@@ -483,7 +503,7 @@ index 9a50a972..1d23c4ff 100644
  #endif
  	uint8_t			cnxlastecm;						// == 0 - last ecm has not been paired ecm, > 0 last ecm has been paired ecm
  	LLIST			*emmstat;						// emm stats
-@@ -2453,6 +2471,10 @@ struct s_config
+@@ -2458,6 +2476,10 @@ struct s_config
  #else
  #define DEFAULT_STREAM_SOURCE_PORT 8001 //Enigma2
  #endif
@@ -494,7 +514,7 @@ index 9a50a972..1d23c4ff 100644
  #endif
  
  	int32_t			max_cache_time;					// seconds ecms are stored in ecmcwcache
-@@ -2638,12 +2660,18 @@ bool boxtype_is(const char *boxtype);
+@@ -2643,12 +2665,18 @@ bool boxtype_is(const char *boxtype);
  bool boxname_is(const char *boxname);
  const char *boxtype_get(void);
  const char *boxname_get(void);
@@ -513,7 +533,7 @@ index 9a50a972..1d23c4ff 100644
  static inline bool caid_is_betacrypt(uint16_t caid) { return caid >> 8 == 0x17; }
  static inline bool caid_is_nagra(uint16_t caid) { return caid >> 8 == 0x18; }
  static inline bool caid_is_bulcrypt(uint16_t caid) { return caid == 0x5581 || caid == 0x4AEE; }
-@@ -2651,4 +2679,8 @@ static inline bool caid_is_dre(uint16_t caid) { return caid == 0x4AE0 || caid ==
+@@ -2656,4 +2684,8 @@ static inline bool caid_is_dre(uint16_t caid) { return caid == 0x4AE0 || caid ==
  static inline bool caid_is_tongfang(uint16_t caid) { return caid == 0x4A02; }
  const char *get_cardsystem_desc_by_caid(uint16_t caid);
  
@@ -11751,7 +11771,7 @@ index 29b93646..66ce02a9 100644
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index 1c1dc568..3ccce709 100644
+index 14e2b070..f7c929e1 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -137,8 +137,9 @@ static bool use_srvid2 = false;
@@ -11875,7 +11895,7 @@ index 1c1dc568..3ccce709 100644
  #endif
  					}
  				}
-@@ -7340,6 +7397,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -7361,6 +7418,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -11885,7 +11905,7 @@ index 1c1dc568..3ccce709 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7812,7 +7872,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7833,7 +7893,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -11898,7 +11918,7 @@ index 1c1dc568..3ccce709 100644
  		}
  
  		if(csystem)
-@@ -8981,7 +9045,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+@@ -9002,7 +9066,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
  		memcpy(*result + bufsize, buf2, n);
  		bufsize += n;
  
@@ -12074,7 +12094,7 @@ index cadd2de9..9ded1fbd 100644
  		cs_log_dbg(D_TRACE, "warning: ecm with null odd/even byte from %s", (check_client(er->client) ? er->client->account->usr : "-"));
  		er->rc = E_INVALID;
 diff --git a/oscam-emm.c b/oscam-emm.c
-index 848fa341..65ba29cc 100644
+index 7508a0ff..dc85a35c 100644
 --- a/oscam-emm.c
 +++ b/oscam-emm.c
 @@ -40,6 +40,7 @@ static int8_t cs_emmlen_is_blocked(struct s_reader *rdr, int16_t len)
@@ -12085,7 +12105,7 @@ index 848fa341..65ba29cc 100644
  
  	//copied and enhanced from module-dvbapi.c
  	//dvbapi_start_emm_filter()
-@@ -233,6 +234,24 @@ int32_t emm_reader_match(struct s_reader *reader, uint16_t caid, uint32_t provid
+@@ -237,6 +238,24 @@ int32_t emm_reader_match(struct s_reader *reader, uint16_t caid, uint32_t provid
  		rdr_log_dbg(reader, D_EMM, "reader auprovid = %06X fixup to %06X (ignoring last digit)", reader->auprovid, prid);
  	}
  
@@ -12176,7 +12196,7 @@ index 7b6395db..175595a8 100644
  	cfg.account = init_userdb();
  	init_signal();
 diff --git a/reader-common.c b/reader-common.c
-index 64aed4b1..86503bf4 100644
+index efdd19b3..2c8fc7dd 100644
 --- a/reader-common.c
 +++ b/reader-common.c
 @@ -15,6 +15,7 @@
@@ -12187,7 +12207,7 @@ index 64aed4b1..86503bf4 100644
  
  extern const struct s_cardsystem *cardsystems[];
  extern char *RDR_CD_TXT[];
-@@ -148,6 +149,18 @@ static int32_t reader_get_cardsystem(struct s_reader *reader, ATR *atr)
+@@ -150,6 +151,18 @@ static int32_t reader_get_cardsystem(struct s_reader *reader, ATR *atr)
  {
  	int32_t i;
  
@@ -12270,7 +12290,7 @@ index 00000000..cf718779
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
 diff --git a/webif/pages_index.txt b/webif/pages_index.txt
-index 954112d5..6a0368e0 100644
+index a1f3336d..1ad642f7 100644
 --- a/webif/pages_index.txt
 +++ b/webif/pages_index.txt
 @@ -1,10 +1,10 @@
