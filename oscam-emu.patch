@@ -1,5 +1,6 @@
-patch version: 2.25.10-11901-802 (349ee109)
-patch date: 2025-10-19 18:21:41 UTC (+00:00)
+patch version: 2.25.11-11904-802 (d41bd68a)
+patch date: 2025-11-12 20:13:37 UTC (+00:00)
+patch by speedy005
 ---
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 4b08cfc0..98dccbbf 100644
@@ -426,7 +427,7 @@ index 8b6c309a..35f38c6c 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index ee596651..68f7e970 100644
+index 9c0fabf3..b6f85f97 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -435,11 +436,11 @@ index ee596651..68f7e970 100644
   * =========================== */
 -#define SCM_URL					"https://git.streamboard.tv/common/oscam"
 +#define SCM_URL					"https://github.com/oscam-mirror/oscam-emu"
- #define WIKI_URL				"https://wiki.streamboard.tv/wiki"
+ #define WIKI_URL				"https://git.streamboard.tv/common/oscam/-/wikis"
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.25.10-11901"
+ #define CS_VERSION				"2.25.11-11904"
  #endif
 @@ -406,14 +406,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -483,7 +484,7 @@ index ee596651..68f7e970 100644
  } S_ENTITLEMENT;
  
  struct s_client;
-@@ -1756,6 +1768,7 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1755,6 +1767,7 @@ struct s_reader										// contains device info, reader info and card info
  	char			cc_build[7];					// cccam build number
  	int8_t			cc_maxhops;						// cccam max distance
  	int8_t			cc_mindown;						// cccam min downhops
@@ -491,7 +492,7 @@ index ee596651..68f7e970 100644
  	uint32_t		cc_id;
  	int8_t			cc_keepalive;
  	int8_t			cc_hop;							// For non-cccam reader: hop for virtual cards
-@@ -1936,6 +1949,11 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1935,6 +1948,11 @@ struct s_reader										// contains device info, reader info and card info
  #endif
  #ifdef MODULE_GHTTP
  	uint8_t			ghttp_use_ssl;
@@ -503,7 +504,7 @@ index ee596651..68f7e970 100644
  #endif
  	uint8_t			cnxlastecm;						// == 0 - last ecm has not been paired ecm, > 0 last ecm has been paired ecm
  	LLIST			*emmstat;						// emm stats
-@@ -2469,6 +2487,10 @@ struct s_config
+@@ -2468,6 +2486,10 @@ struct s_config
  #else
  #define DEFAULT_STREAM_SOURCE_PORT 8001 //Enigma2
  #endif
@@ -514,7 +515,7 @@ index ee596651..68f7e970 100644
  #endif
  
  	int32_t			max_cache_time;					// seconds ecms are stored in ecmcwcache
-@@ -2654,12 +2676,18 @@ bool boxtype_is(const char *boxtype);
+@@ -2653,12 +2675,18 @@ bool boxtype_is(const char *boxtype);
  bool boxname_is(const char *boxname);
  const char *boxtype_get(void);
  const char *boxname_get(void);
@@ -533,7 +534,7 @@ index ee596651..68f7e970 100644
  static inline bool caid_is_betacrypt(uint16_t caid) { return caid >> 8 == 0x17; }
  static inline bool caid_is_nagra(uint16_t caid) { return caid >> 8 == 0x18; }
  static inline bool caid_is_bulcrypt(uint16_t caid) { return caid == 0x5581 || caid == 0x4AEE; }
-@@ -2667,4 +2695,8 @@ static inline bool caid_is_dre(uint16_t caid) { return caid == 0x4AE0 || caid ==
+@@ -2666,4 +2694,8 @@ static inline bool caid_is_dre(uint16_t caid) { return caid == 0x4AE0 || caid ==
  static inline bool caid_is_tongfang(uint16_t caid) { return caid == 0x4A02; }
  const char *get_cardsystem_desc_by_caid(uint16_t caid);
  
@@ -595,7 +596,7 @@ index 6878d327..5acc7b9a 100644
  			// bitfield
  			i2b_buf(2, feature, payload + i);
 diff --git a/module-cccam.c b/module-cccam.c
-index c89815c8..febbbad0 100644
+index 59b07b24..3c3c7c7c 100644
 --- a/module-cccam.c
 +++ b/module-cccam.c
 @@ -1009,7 +1009,7 @@ int32_t cc_send_cli_data(struct s_client *cl)
@@ -627,7 +628,7 @@ index c89815c8..febbbad0 100644
  				xcard = ncard; // remember card (D+ / 1810 fix) if request has no provider, but card has
  			}
 diff --git a/module-cw-cycle-check.c b/module-cw-cycle-check.c
-index 5a99d325..5e6dda5f 100644
+index a9cdf25f..652a2ced 100644
 --- a/module-cw-cycle-check.c
 +++ b/module-cw-cycle-check.c
 @@ -123,7 +123,9 @@ static uint8_t checkvalidCW(ECM_REQUEST *er)
@@ -705,7 +706,7 @@ index 2adf4518..76f0a6ff 100644
  			ErrorCode = oscam_sttkd_KeyWrite(tkd_desc_info[demux[demux_id].dev_index].key_hndl, l, cw + (l * 8));
  
 diff --git a/module-dvbapi.c b/module-dvbapi.c
-index 894e414e..c1f6109b 100644
+index 6c762fac..7c85d4fe 100644
 --- a/module-dvbapi.c
 +++ b/module-dvbapi.c
 @@ -1883,7 +1883,14 @@ void dvbapi_start_emm_filter(int32_t demux_id)
@@ -750,7 +751,7 @@ index 894e414e..c1f6109b 100644
  	er->msgid  = msgid;
  
  #ifdef WITH_STAPI5
-@@ -2682,6 +2699,63 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
+@@ -2673,6 +2690,63 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
  			match = 1; // so make it a match to try it!
  		}
  
@@ -814,7 +815,7 @@ index 894e414e..c1f6109b 100644
  		if(match) // if matching reader found check for irdeto cas if local irdeto card check if it received emms in last 60 minutes
  		{
  			if(caid_is_irdeto(er->caid)) // irdeto cas init irdeto_curindex to wait for first index (00)
-@@ -3791,7 +3865,7 @@ static void dvbapi_parse_pmt_ca_descriptor(int32_t demux_id, const uint8_t *buff
+@@ -3782,7 +3856,7 @@ static void dvbapi_parse_pmt_ca_descriptor(int32_t demux_id, const uint8_t *buff
  	ca_system_id = b2i(2, buffer);
  	ca_pid = b2i(2, buffer + 2) & 0x1FFF;
  
@@ -823,7 +824,7 @@ index 894e414e..c1f6109b 100644
  	{
  		return; // This is not a valid CAID or ECM pid
  	}
-@@ -4379,14 +4453,33 @@ static void dvbapi_capmt_notify(struct demux_s *dmx)
+@@ -4370,14 +4444,33 @@ static void dvbapi_capmt_notify(struct demux_s *dmx)
  
  static void dvbapi_prepare_descrambling(int32_t demux_id, uint32_t msgid)
  {
@@ -859,7 +860,7 @@ index 894e414e..c1f6109b 100644
  	{
  		dvbapi_start_pmt_filter(demux_id);
  	}
-@@ -5586,6 +5679,7 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5577,6 +5670,7 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  	if(filtertype == TYPE_ECM)
  	{
  		uint32_t chid = 0x10000;
@@ -867,7 +868,7 @@ index 894e414e..c1f6109b 100644
  		ECM_REQUEST *er;
  
  		if(len != 0) // len = 0 receiver encountered an internal bufferoverflow!
-@@ -5615,8 +5709,25 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5606,8 +5700,25 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  				return;
  			}
  
@@ -894,7 +895,7 @@ index 894e414e..c1f6109b 100644
  			{
  				if(!(er = get_ecmtask()))
  				{
-@@ -5960,6 +6071,35 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5951,6 +6062,35 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  			return; // just skip on internal buffer overflow
  		}
  
@@ -930,7 +931,7 @@ index 894e414e..c1f6109b 100644
  		// fix to handle more than one irdeto emm packet
  		uint8_t *pbuf = buffer;
  		int32_t done = 0;
-@@ -7178,8 +7318,10 @@ void dvbapi_write_cw(int32_t demux_id, int32_t pid, int32_t stream_id, uint8_t *
+@@ -7169,8 +7309,10 @@ void dvbapi_write_cw(int32_t demux_id, int32_t pid, int32_t stream_id, uint8_t *
  	for(n = 0; n < 2; n++)
  	{
  		// Check if cw has changed and if new cw is empty (all zeros)
@@ -942,7 +943,7 @@ index 894e414e..c1f6109b 100644
  		{
  			// prepare ca device
  			uint32_t idx = dvbapi_ca_set_pid(demux_id, pid, stream_id, (algo == CA_ALGO_DES), msgid);
-@@ -7490,7 +7632,9 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
+@@ -7481,7 +7623,9 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
  
  		// 0=matching ecm hash, 2=no filter, 3=table reset, 4=cache-ex response
  		// Check only against last_cw[0] (index 0) - No need to check the rest
@@ -953,7 +954,7 @@ index 894e414e..c1f6109b 100644
  		{
  			// check for matching control word
  			if(memcmp(er->cw, demux[i].last_cw[0][0], 8) == 0 &&
-@@ -8495,7 +8639,9 @@ int32_t dvbapi_check_ecm_delayed_delivery(int32_t demux_id, ECM_REQUEST *er)
+@@ -8486,7 +8630,9 @@ int32_t dvbapi_check_ecm_delayed_delivery(int32_t demux_id, ECM_REQUEST *er)
  	}
  
  	// Check for null cw
@@ -10501,7 +10502,7 @@ index fc3f83cf..7c23924c 100644
  						for(k = 0; k < aureader->nprov; k++)
  						{
 diff --git a/module-stat.c b/module-stat.c
-index ed0e85e4..ee179b79 100644
+index bdb7cabd..8e80e6a1 100644
 --- a/module-stat.c
 +++ b/module-stat.c
 @@ -897,7 +897,7 @@ void check_lb_auto_betatunnel_mode(ECM_REQUEST *er)
@@ -11778,7 +11779,7 @@ index 29b93646..66ce02a9 100644
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index 26e4b7d3..c72e20f9 100644
+index 3a5fb5e6..015fbdfb 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -137,8 +137,9 @@ static bool use_srvid2 = false;
@@ -11813,7 +11814,7 @@ index 26e4b7d3..c72e20f9 100644
  		{
  			if(rdr)
  				{
-@@ -3228,6 +3234,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3217,6 +3223,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_printf(vars, TPLADD, "RESHARE",      "%d", cfg.cc_reshare);
  	tpl_printf(vars, TPLADD, "CCCRECONNECT", "%d", rdr->cc_reconnect);
  
@@ -11822,7 +11823,7 @@ index 26e4b7d3..c72e20f9 100644
  	if(rdr->cc_keepalive)
  		{ tpl_addVar(vars, TPLADD, "KEEPALIVECHECKED", "checked"); }
  #endif
-@@ -3265,6 +3273,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3254,6 +3262,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_addVar(vars, TPLADD, "USERSCRIPT", rdr->userscript);
  #endif
  
@@ -11846,7 +11847,7 @@ index 26e4b7d3..c72e20f9 100644
  	tpl_addVar(vars, TPLADD, "PROTOCOL", reader_get_type_desc(rdr, 0));
  
  	// Show only parameters which needed for the reader
-@@ -3286,6 +3311,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3275,6 +3300,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	case R_CAMD35 :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCAMD35BIT"));
  		break;
@@ -11856,7 +11857,7 @@ index 26e4b7d3..c72e20f9 100644
  	case R_CS378X :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCS378XBIT"));
  		break;
-@@ -5314,9 +5342,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
+@@ -5303,9 +5331,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
  
  					tpl_addVar(vars, TPLAPPEND, "LOGHISTORY", "<BR><BR>New Structure:<BR>");
  					char tbuffer[83];
@@ -11891,7 +11892,7 @@ index 26e4b7d3..c72e20f9 100644
  						localtime_r(&item->start, &start_t);
  						localtime_r(&item->end, &end_t);
  
-@@ -5810,6 +5863,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+@@ -5799,6 +5852,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
  						filtered = (type == cl->typ) || (type == 'x' && (cl->typ == 'p' || cl->typ == 'r') && (cl->reader && cl->reader->cacheex.mode));
  #else
  						filtered = (type == cl->typ);
@@ -11901,7 +11902,7 @@ index 26e4b7d3..c72e20f9 100644
  #endif
  					}
  				}
-@@ -7383,6 +7439,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -7372,6 +7428,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -11911,7 +11912,7 @@ index 26e4b7d3..c72e20f9 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7855,7 +7914,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7844,7 +7903,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -11924,7 +11925,7 @@ index 26e4b7d3..c72e20f9 100644
  		}
  
  		if(csystem)
-@@ -9024,7 +9087,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+@@ -9013,7 +9076,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
  		memcpy(*result + bufsize, buf2, n);
  		bufsize += n;
  
@@ -11992,7 +11993,7 @@ index 508d8e58..a946e2a9 100644
  	DEF_OPT_INT8("stream_reuse_client"           , OFS(stream_reuse_client),          0),
  #ifdef WEBIF
 diff --git a/oscam-config-reader.c b/oscam-config-reader.c
-index 11de688a..74674292 100644
+index 30ba2329..1de2babf 100644
 --- a/oscam-config-reader.c
 +++ b/oscam-config-reader.c
 @@ -114,6 +114,7 @@ static void protocol_fn(const char *token, char *value, void *setting, FILE *f)
@@ -12013,7 +12014,7 @@ index 11de688a..74674292 100644
  #ifdef MODULE_GBOX
  		if(ftab_type & FTAB_CCCGBXRESHARE){ rdr = container_of(setting, struct s_reader, ccc_gbx_reshare_ident); }
  #endif
-@@ -1232,6 +1236,7 @@ static const struct config_list reader_opts[] =
+@@ -1231,6 +1235,7 @@ static const struct config_list reader_opts[] =
  	DEF_OPT_SSTR("cccversion"                     , OFS(cc_version),                      "", SIZEOF(cc_version)),
  	DEF_OPT_INT8("cccmaxhops"                     , OFS(cc_maxhops),                      DEFAULT_CC_MAXHOPS),
  	DEF_OPT_INT8("cccmindown"                     , OFS(cc_mindown),                      0),
@@ -12021,7 +12022,7 @@ index 11de688a..74674292 100644
  	DEF_OPT_INT8("ccckeepalive"                   , OFS(cc_keepalive),                    DEFAULT_CC_KEEPALIVE),
  	DEF_OPT_INT8("cccreshare"                     , OFS(cc_reshare),                      DEFAULT_CC_RESHARE),
  	DEF_OPT_INT32("cccreconnect"                  , OFS(cc_reconnect),                    DEFAULT_CC_RECONNECT),
-@@ -1246,6 +1251,10 @@ static const struct config_list reader_opts[] =
+@@ -1245,6 +1250,10 @@ static const struct config_list reader_opts[] =
  #endif
  #ifdef READER_DRECAS
  	DEF_OPT_STR("stmkeys"                         , OFS(stmkeys),                         NULL),
@@ -12032,7 +12033,7 @@ index 11de688a..74674292 100644
  #endif
  	DEF_OPT_INT8("resetalways"                    , OFS(resetalways),                     0),
  	DEF_OPT_INT8("deprecated"                     , OFS(deprecated),                      0),
-@@ -1342,7 +1351,7 @@ static bool reader_check_setting(const struct config_list *UNUSED(clist), void *
+@@ -1341,7 +1350,7 @@ static bool reader_check_setting(const struct config_list *UNUSED(clist), void *
  	// These are written only when the reader is CCCAM
  	static const char *cccam_settings[] =
  	{
@@ -12054,7 +12055,7 @@ index b0179dd8..e66a1aa1 100644
  };
  
 diff --git a/oscam-ecm.c b/oscam-ecm.c
-index cadd2de9..9ded1fbd 100644
+index 9ba43e3e..953489f7 100644
 --- a/oscam-ecm.c
 +++ b/oscam-ecm.c
 @@ -1817,6 +1817,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
@@ -12158,7 +12159,7 @@ index 576804c9..6e1c7137 100644
  	return "unknown";
  }
 diff --git a/oscam.c b/oscam.c
-index f08eee75..fbea6f1e 100644
+index b3a5689c..20fab318 100644
 --- a/oscam.c
 +++ b/oscam.c
 @@ -41,6 +41,10 @@
