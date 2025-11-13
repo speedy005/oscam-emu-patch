@@ -1,3 +1,4 @@
+oscam 2-25-11-11904-802 patch 
 OSCam-Emu: Open Source Conditional Access Module Emulator
 =========================================================
 
