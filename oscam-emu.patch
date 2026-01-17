@@ -1,12 +1,11 @@
-patch version: oscam-emu-patch 2.26.01-11933-802-(bf023d8c)
-patch date: 2026-01-16 21:46:08 UTC (+0000)
-patch modified by speedy005 (16/01/2026)
+patch version: oscam-emu-patch 2.26.01-11934-(f9a8ee92)
+patch modified by speedy005 (17/01/2026)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 3e8d3b04..a39b15d0 100644
+index c27d1cb1..b1f5b6d0 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -574,6 +574,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
+@@ -546,6 +546,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
  # Manage config.h based on command line parameters
  # Manipulate config file based on given parameters and read unset parameters
  
@@ -29,7 +28,7 @@ index 3e8d3b04..a39b15d0 100644
  execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --show-valid OUTPUT_VARIABLE config_vars_string OUTPUT_STRIP_TRAILING_WHITESPACE)
  string(REGEX MATCHALL "[A-Z0-9_]+" config_vars ${config_vars_string})
  
-@@ -916,6 +932,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
+@@ -888,6 +904,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
  
  #--------------------------------------------------------------------------------
  
@@ -54,7 +53,7 @@ index 3e8d3b04..a39b15d0 100644
  #----------------------- installation -----------------------------
  
  file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-@@ -1028,4 +1062,11 @@ if (HAVE_LIBDVBCSA)
+@@ -1000,4 +1034,11 @@ if (HAVE_LIBDVBCSA)
  	endif(STATICLIBDVBCSA AND NOT LIBDVBCSADIR)
  endif (HAVE_LIBDVBCSA)
  
@@ -115,7 +114,7 @@ index 3d333a93..08b173ed 100644
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
 diff --git a/Makefile b/Makefile
-index 4d1b8127..7a45a3dc 100644
+index e9970a90..21e4a1d6 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -32,6 +32,9 @@ ifeq "$(shell ./config.sh --enabled WITH_SSL)" "Y"
@@ -369,7 +368,7 @@ index 06b18eec..47afd658 100644
  //#define WITH_NEUTRINO 1
  #define READ_SDT_CHARSETS 1
 diff --git a/config.sh b/config.sh
-index 855de3d4..2e15225d 100755
+index 2ed76a79..d0d132c3 100755
 --- a/config.sh
 +++ b/config.sh
 @@ -1,6 +1,6 @@
@@ -441,13 +440,17 @@ index 855de3d4..2e15225d 100755
  		2> ${tempfile}
  
  	opt=${?}
-@@ -904,11 +911,12 @@ do
+@@ -904,7 +911,8 @@ do
  	;;
  	'-v'|'--oscam-version')
  		version=`grep '^#define CS_VERSION' globals.h | cut -d\" -f2`
 -		echo $version
 +		emuversion=`grep EMU_VERSION module-emulator-osemu.h | awk '{ print $3 }'`
 +		echo $version-$emuversion
+ 		break
+ 	;;
+ 	'--submodule')
+@@ -955,7 +963,7 @@ do
  		break
  	;;
  	'-c'|'--oscam-commit')
@@ -468,7 +471,7 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index 17390149..95cdde09 100644
+index 3dab2b2a..ddb23c40 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -481,7 +484,7 @@ index 17390149..95cdde09 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.01-11933"
+ #define CS_VERSION				"2.26.01-11934"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
