@@ -21,10 +21,10 @@ OSCam Configuration wiki:
    https://wiki.streamboard.tv/wiki/OSCam/de/Config/oscam.conf
 
 Bug reports and feature requests:
-   https://github.com/speedy005/oscam-emu-patchissues/new
+   https://github.com/speedy005/oscam-emu-patch
 
 
 Contact
 =======
 
-If you need to contact the developers, feel free to use the Issues or Diskussions pages at https://github.com/oscam-mirror/oscam-emu.
+If you need to contact the developers, feel free to use the Issues or Diskussions pages at https://github.com/speedy005/oscam-emu-patch
