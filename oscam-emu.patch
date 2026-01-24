@@ -1,6 +1,6 @@
 patch version: oscam-emu-patch 2.26.01-11938-(5d740155)
 patch modified by speedy005 (24/01/2026)
-patch date: 2026-01-24 12:34:45 UTC (+00:00)
+patch date: 2026-01-24 13:34:49 UTC (+00:00)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index c27d1cb1..b1f5b6d0 100644
 --- a/CMakeLists.txt
