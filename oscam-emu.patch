@@ -1,6 +1,6 @@
-patch version: oscam-emu-patch 2.26.01-11939-(1f8dd311)
-patch modified by speedy005 (25/01/2026)
-patch date: 2026-01-25 08:23:50 UTC (+00:00)
+patch version: oscam-emu-patch 2.26.01-11940-(c0b080cd)
+patch modified by speedy005 (26/01/2026)
+patch date: 2026-01-26 18:54:14 UTC (+00:00)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index c27d1cb1..b1f5b6d0 100644
 --- a/CMakeLists.txt
@@ -100,10 +100,10 @@ index 4b5db81e..3a94758d 100644
  .RS 3n
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
 diff --git a/Distribution/doc/txt/oscam.server.txt b/Distribution/doc/txt/oscam.server.txt
-index 3d333a93..08b173ed 100644
+index b4c2b21e..837835af 100644
 --- a/Distribution/doc/txt/oscam.server.txt
 +++ b/Distribution/doc/txt/oscam.server.txt
-@@ -478,6 +478,9 @@ DESCRIPTIONS
+@@ -509,6 +509,9 @@ DESCRIPTIONS
  	    0 = resharing for direct peer only
  	    x = resharing for direct peer and share level x
  
@@ -471,7 +471,7 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index b789ea13..4ebda421 100644
+index d34ff1cc..eb3a04a7 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -484,7 +484,7 @@ index b789ea13..4ebda421 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.01-11939"
+ #define CS_VERSION				"2.26.01-11940"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -528,7 +528,7 @@ index b789ea13..4ebda421 100644
  } S_ENTITLEMENT;
  
  struct s_client;
-@@ -1771,6 +1783,7 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1787,6 +1799,7 @@ struct s_reader										// contains device info, reader info and card info
  	char			cc_build[7];					// cccam build number
  	int8_t			cc_maxhops;						// cccam max distance
  	int8_t			cc_mindown;						// cccam min downhops
@@ -536,7 +536,7 @@ index b789ea13..4ebda421 100644
  	uint32_t		cc_id;
  	int8_t			cc_keepalive;
  	int8_t			cc_hop;							// For non-cccam reader: hop for virtual cards
-@@ -1959,6 +1972,11 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1983,6 +1996,11 @@ struct s_reader										// contains device info, reader info and card info
  #ifdef MODULE_GHTTP
  	uint8_t			ghttp_use_ssl;
  #endif
@@ -548,7 +548,7 @@ index b789ea13..4ebda421 100644
  #ifdef READER_CONAX
  	uint8_t			cnxlastecm;						// == 0 - last ecm has not been paired ecm, > 0 last ecm has been paired ecm
  #endif
-@@ -2494,6 +2512,10 @@ struct s_config
+@@ -2518,6 +2536,10 @@ struct s_config
  #else
  #define DEFAULT_STREAM_SOURCE_PORT 8001 //Enigma2
  #endif
@@ -559,7 +559,7 @@ index b789ea13..4ebda421 100644
  #endif
  
  	int32_t			max_cache_time;					// seconds ecms are stored in ecmcwcache
-@@ -2679,12 +2701,18 @@ bool boxtype_is(const char *boxtype);
+@@ -2703,12 +2725,18 @@ bool boxtype_is(const char *boxtype);
  bool boxname_is(const char *boxname);
  const char *boxtype_get(void);
  const char *boxname_get(void);
@@ -578,7 +578,7 @@ index b789ea13..4ebda421 100644
  static inline bool caid_is_betacrypt(uint16_t caid) { return caid >> 8 == 0x17; }
  static inline bool caid_is_nagra(uint16_t caid) { return caid >> 8 == 0x18; }
  static inline bool caid_is_bulcrypt(uint16_t caid) { return caid == 0x5581 || caid == 0x4AEE; }
-@@ -2702,4 +2730,8 @@ static inline uint8_t get_ecm_mode(const ECM_REQUEST *er) {
+@@ -2726,4 +2754,8 @@ static inline uint8_t get_ecm_mode(const ECM_REQUEST *er) {
  #endif
  const char *get_cardsystem_desc_by_caid(uint16_t caid);
  
@@ -11810,7 +11810,7 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index 376fe793..203395c7 100644
+index 339cdfce..b4deb209 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -141,8 +141,9 @@ static bool use_srvid2 = false;
@@ -11845,7 +11845,7 @@ index 376fe793..203395c7 100644
  		{
  			if(rdr)
  				{
-@@ -3243,6 +3249,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3248,6 +3254,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_printf(vars, TPLADD, "RESHARE",      "%d", cfg.cc_reshare);
  	tpl_printf(vars, TPLADD, "CCCRECONNECT", "%d", rdr->cc_reconnect);
  
@@ -11854,7 +11854,7 @@ index 376fe793..203395c7 100644
  	if(rdr->cc_keepalive)
  		{ tpl_addVar(vars, TPLADD, "KEEPALIVECHECKED", "checked"); }
  #endif
-@@ -3280,6 +3288,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3285,6 +3293,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_addVar(vars, TPLADD, "USERSCRIPT", rdr->userscript);
  #endif
  
@@ -11878,7 +11878,7 @@ index 376fe793..203395c7 100644
  	tpl_addVar(vars, TPLADD, "PROTOCOL", reader_get_type_desc(rdr, 0));
  
  	// Show only parameters which needed for the reader
-@@ -3301,6 +3326,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3306,6 +3331,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	case R_CAMD35 :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCAMD35BIT"));
  		break;
@@ -11888,7 +11888,7 @@ index 376fe793..203395c7 100644
  	case R_CS378X :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCS378XBIT"));
  		break;
-@@ -5334,9 +5362,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
+@@ -5339,9 +5367,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
  
  					tpl_addVar(vars, TPLAPPEND, "LOGHISTORY", "<BR><BR>New Structure:<BR>");
  					char tbuffer[83];
@@ -11923,7 +11923,7 @@ index 376fe793..203395c7 100644
  						localtime_r(&item->start, &start_t);
  						localtime_r(&item->end, &end_t);
  
-@@ -5833,6 +5886,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+@@ -5838,6 +5891,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
  						filtered = (type == cl->typ) || (type == 'x' && (cl->typ == 'p' || cl->typ == 'r') && (cl->reader && cl->reader->cacheex.mode));
  #else
  						filtered = (type == cl->typ);
@@ -11933,7 +11933,7 @@ index 376fe793..203395c7 100644
  #endif
  					}
  				}
-@@ -7424,6 +7480,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -7429,6 +7485,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -11943,7 +11943,7 @@ index 376fe793..203395c7 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7896,7 +7955,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7901,7 +7960,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -11956,7 +11956,7 @@ index 376fe793..203395c7 100644
  		}
  
  		if(csystem)
-@@ -9190,7 +9253,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+@@ -9195,7 +9258,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
  		memcpy(*result + bufsize, buf2, n);
  		bufsize += n;
  
@@ -12024,7 +12024,7 @@ index d55517e2..0256d777 100644
  	DEF_OPT_INT8("stream_reuse_client"           , OFS(stream_reuse_client),          0),
  #ifdef WEBIF
 diff --git a/oscam-config-reader.c b/oscam-config-reader.c
-index 222303cb..a4d7e0d5 100644
+index 02880e13..ef8a60b4 100644
 --- a/oscam-config-reader.c
 +++ b/oscam-config-reader.c
 @@ -114,6 +114,7 @@ static void protocol_fn(const char *token, char *value, void *setting, FILE *f)
@@ -12045,7 +12045,7 @@ index 222303cb..a4d7e0d5 100644
  #ifdef MODULE_GBOX
  		if(ftab_type & FTAB_CCCGBXRESHARE){ rdr = container_of(setting, struct s_reader, ccc_gbx_reshare_ident); }
  #endif
-@@ -1259,6 +1263,7 @@ static const struct config_list reader_opts[] =
+@@ -1350,6 +1354,7 @@ static const struct config_list reader_opts[] =
  	DEF_OPT_SSTR("cccversion"                     , OFS(cc_version),                      "", SIZEOF(cc_version)),
  	DEF_OPT_INT8("cccmaxhops"                     , OFS(cc_maxhops),                      DEFAULT_CC_MAXHOPS),
  	DEF_OPT_INT8("cccmindown"                     , OFS(cc_mindown),                      0),
@@ -12053,7 +12053,7 @@ index 222303cb..a4d7e0d5 100644
  	DEF_OPT_INT8("ccckeepalive"                   , OFS(cc_keepalive),                    DEFAULT_CC_KEEPALIVE),
  	DEF_OPT_INT8("cccreshare"                     , OFS(cc_reshare),                      DEFAULT_CC_RESHARE),
  	DEF_OPT_INT32("cccreconnect"                  , OFS(cc_reconnect),                    DEFAULT_CC_RECONNECT),
-@@ -1273,6 +1278,10 @@ static const struct config_list reader_opts[] =
+@@ -1364,6 +1369,10 @@ static const struct config_list reader_opts[] =
  #endif
  #ifdef READER_DRECAS
  	DEF_OPT_STR("stmkeys"                         , OFS(stmkeys),                         NULL),
@@ -12064,7 +12064,7 @@ index 222303cb..a4d7e0d5 100644
  #endif
  	DEF_OPT_INT8("resetalways"                    , OFS(resetalways),                     0),
  #ifdef WITH_CARDREADER
-@@ -1372,7 +1381,7 @@ static bool reader_check_setting(const struct config_list *UNUSED(clist), void *
+@@ -1466,7 +1475,7 @@ static bool reader_check_setting(const struct config_list *UNUSED(clist), void *
  	// These are written only when the reader is CCCAM
  	static const char *cccam_settings[] =
  	{
@@ -12086,10 +12086,10 @@ index b0179dd8..e66a1aa1 100644
  };
  
 diff --git a/oscam-ecm.c b/oscam-ecm.c
-index 4096513d..cb8ec85f 100644
+index 0b41a32a..ecf3c160 100644
 --- a/oscam-ecm.c
 +++ b/oscam-ecm.c
-@@ -1817,6 +1817,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
+@@ -2418,6 +2418,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
  		return 0;
  	}
  
@@ -12100,7 +12100,7 @@ index 4096513d..cb8ec85f 100644
  	// bad/wrong chksum/ecm
  	if(rc == E_NOTFOUND && rcEx == E2_WRONG_CHKSUM)
  	{
-@@ -1836,7 +1840,7 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
+@@ -2437,7 +2441,7 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
  		}
  	}
  
@@ -12109,7 +12109,7 @@ index 4096513d..cb8ec85f 100644
  	{
  		rc = E_NOTFOUND;
  		cs_log_dbg(D_TRACE | D_LB, "WARNING: reader %s send fake cw, set rc=E_NOTFOUND!", reader ? reader->label : "-");
-@@ -2023,7 +2027,9 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
+@@ -2624,7 +2628,9 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
  	if(!ea->is_pending) // not for pending ea - only once for ea
  	{
  		// cache update
@@ -12120,7 +12120,7 @@ index 4096513d..cb8ec85f 100644
  		{
  #ifdef CS_CACHEEX_AIO
  			int32_t ecmtime = ea->ecm_time;
-@@ -2666,7 +2672,9 @@ void get_cw(struct s_client *client, ECM_REQUEST *er)
+@@ -3267,7 +3273,9 @@ void get_cw(struct s_client *client, ECM_REQUEST *er)
  	}
  
  	// Check for odd/even byte
