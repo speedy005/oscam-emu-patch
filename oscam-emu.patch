@@ -1,6 +1,6 @@
 patch version: oscam-emu-patch 2.26.01-11942-(c43582ae)
-patch modified by speedy005 (30/01/2026)
-patch date: 2026-01-30 21:19:21 UTC (+00:00)
+patch modified by speedy005 (31/01/2026)
+patch date: 2026-01-31 18:34:16 UTC (+00:00)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index c27d1cb1..b1f5b6d0 100644
 --- a/CMakeLists.txt
@@ -10556,7 +10556,7 @@ index 324c43bc..284f47e0 100644
  				prv = ea;
  				continue; // proxy can convert or reject
 diff --git a/module-streamrelay.c b/module-streamrelay.c
-index b313a914..f021ff23 100644
+index b313a914..17fb28f2 100644
 --- a/module-streamrelay.c
 +++ b/module-streamrelay.c
 @@ -15,6 +15,12 @@
@@ -10789,7 +10789,7 @@ index b313a914..f021ff23 100644
  				cs_log_dbg(D_READER, "Stream client %i found audio pid: 0x%04X (%i)",
  							cdata->connid, elementary_pid, elementary_pid);
  				break;
-@@ -570,17 +664,89 @@ static void ParsePmtData(stream_client_data *cdata)
+@@ -570,16 +664,88 @@ static void ParsePmtData(stream_client_data *cdata)
  				uint8_t type = STREAM_UNDEFINED;
  				ParseDescriptors(cdata->pmt_data + i + 5, es_info_length, &type);
  				if (type == STREAM_AUDIO)
@@ -10863,9 +10863,9 @@ index b313a914..f021ff23 100644
 +						cdata->connid, cdata->emm_pid, cdata->emm_pid);
 +			break;
 +		}
- 	}
- }
- 
++	}
++}
++
 +static void ParseEmmData(stream_client_data *cdata)
 +{
 +	uint32_t keysAdded = 0;
@@ -10876,13 +10876,12 @@ index b313a914..f021ff23 100644
 +	{
 +		//refresh_entitlements(rdr);
 +		cs_log("Stream client %i found %i keys", cdata->connid, keysAdded);
-+	}
-+}
+ 	}
+ }
 +#endif
-+
+ 
  static void ParseTsPackets(stream_client_data *data, uint8_t *stream_buf, uint32_t bufLength, uint16_t packetSize)
  {
- 	uint8_t payloadStart;
 @@ -621,7 +787,11 @@ static void ParseTsPackets(stream_client_data *data, uint8_t *stream_buf, uint32
  	}
  }
@@ -11541,7 +11540,36 @@ index b313a914..f021ff23 100644
  				if (!streamrelay_client[conndata->connid] || streamrelay_client[conndata->connid]->kill)
  				{
  					clientStatus = -1;
-@@ -1148,12 +1895,20 @@ static void *stream_client_handler(void *arg)
+@@ -1108,9 +1855,26 @@ static void *stream_client_handler(void *arg)
+ 								clientStatus = -1;
+ 								break;
+ 							}
+-							if ((cfg.stream_relay_ctab.ctnum == 0 || chk_ctab_ex(data->caid, &cfg.stream_relay_ctab)) && data->caid != 0xA101 && data->caid != NO_CAID_VALUE)
++							if (cfg.stream_relay_ctab.ctnum == 0 || chk_ctab_ex(data->caid, &cfg.stream_relay_ctab))
+ 							{
+-								DescrambleTsPackets(data, stream_buf + startOffset, packetCount * packetSize, packetSize, tsbbatch);
++#ifdef WITH_EMU
++								if (caid_is_powervu(data->caid))
++								{
++									DescrambleTsPacketsPowervu(data, stream_buf + startOffset, packetCount * packetSize, packetSize, tsbbatch);
++								}
++								else if (data->caid == 0xA101) // Rosscrypt1
++								{
++									DescrambleTsPacketsRosscrypt1(data, stream_buf + startOffset, packetCount * packetSize, packetSize);
++								}
++								else if (data->caid == NO_CAID_VALUE) // Compel
++								{
++									DescrambleTsPacketsCompel(data, stream_buf + startOffset, packetCount * packetSize, packetSize);
++								}
++								else
++#endif // WITH_EMU
++								{
++									DescrambleTsPackets(data, stream_buf + startOffset, packetCount * packetSize, packetSize, tsbbatch);
++								}
+ 								if (!descrambling)
+ 								{
+ 									if (cfg.stream_relay_buffer_time)
+@@ -1148,12 +1912,20 @@ static void *stream_client_handler(void *arg)
  
  	NULLFREE(http_buf);
  	NULLFREE(stream_buf);
@@ -11564,7 +11592,7 @@ index b313a914..f021ff23 100644
  	NULLFREE(tsbbatch);
  	NULLFREE(data);
  
-@@ -1212,6 +1967,9 @@ static void *stream_server(void)
+@@ -1212,6 +1984,9 @@ static void *stream_server(void)
  		for (i = 0; i < STREAM_SERVER_MAX_CONNECTIONS; i++)
  		{
  			stream_cur_srvid[i] = NO_SRVID_VALUE;
@@ -11574,7 +11602,7 @@ index b313a914..f021ff23 100644
  		}
  		SAFE_MUTEX_UNLOCK(&fixed_key_srvid_mutex);
  
-@@ -1330,12 +2088,88 @@ void *streamrelay_handler(struct s_client *UNUSED(cl), uint8_t *UNUSED(mbuf), in
+@@ -1330,12 +2105,88 @@ void *streamrelay_handler(struct s_client *UNUSED(cl), uint8_t *UNUSED(mbuf), in
  			snprintf(authtmp, sizeof(authtmp), "%s:%s", cfg.stream_source_auth_user, cfg.stream_source_auth_password);
  			b64encode(authtmp, cs_strlen(authtmp), &stream_source_auth);
  		}
