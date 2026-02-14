@@ -1,6 +1,6 @@
-patch version: 2.26.01-11942-802 (c43582ae)
-patch date: 2026-02-08 08:05:53 UTC (+00:00)
-patch modified by speedy005 (08/02/2026)
+patch version: 2.26.02-11943-802 (c656fef9)
+patch date: 2026-02-14 13:46:10 UTC (+00:00)
+patch modified by speedy005 (14/02/2026)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index c27d1cb1..b1f5b6d0 100644
 --- a/CMakeLists.txt
@@ -471,10 +471,10 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index 7c5ffb9c..68500c29 100644
+index efa6e780..68500c29 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,9 +368,9 @@
+@@ -368,11 +368,11 @@
  /* ===========================
   *			constants
   * =========================== */
@@ -484,8 +484,11 @@ index 7c5ffb9c..68500c29 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.01-11942"
+-#define CS_VERSION				"2.26.02-11943"
++#define CS_VERSION				"2.26.01-11942"
  #endif
+ #ifndef CS_GIT_COMMIT
+ #define CS_GIT_COMMIT			"a2b4c6d8"
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -724,7 +727,7 @@ index 2adf4518..76f0a6ff 100644
  			ErrorCode = oscam_sttkd_KeyWrite(tkd_desc_info[demux[demux_id].dev_index].key_hndl, l, cw + (l * 8));
  
 diff --git a/module-dvbapi.c b/module-dvbapi.c
-index 420a7ff8..f02f3235 100644
+index 49d71b48..f02f3235 100644
 --- a/module-dvbapi.c
 +++ b/module-dvbapi.c
 @@ -1887,7 +1887,14 @@ void dvbapi_start_emm_filter(int32_t demux_id)
@@ -760,7 +763,15 @@ index 420a7ff8..f02f3235 100644
  					}
  				}
  				else
-@@ -2651,6 +2666,8 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
+@@ -2580,7 +2595,6 @@ void dvbapi_stop_descrambling(int32_t demux_id, uint32_t msgid)
+ 	}
+ 	demux[demux_id].pidindex = -1;
+ 	demux[demux_id].curindex = -1;
+-	demux[demux_id].srvtype = -1;
+ 
+ 	if(!dvbapi_listenport_active && cfg.dvbapi_boxtype != BOXTYPE_PC_NODMX)
+ 	{
+@@ -2652,6 +2666,8 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
  	er->vpid   = demux[demux_id].ECMpids[pid].VPID;
  	er->pmtpid = demux[demux_id].pmtpid;
  	er->onid   = demux[demux_id].onid;
@@ -769,7 +780,7 @@ index 420a7ff8..f02f3235 100644
  	er->msgid  = msgid;
  
  #ifdef WITH_STAPI5
-@@ -2682,6 +2699,63 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
+@@ -2683,6 +2699,63 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
  			match = 1; // so make it a match to try it!
  		}
  
@@ -833,7 +844,7 @@ index 420a7ff8..f02f3235 100644
  		if(match) // if matching reader found check for irdeto cas if local irdeto card check if it received emms in last 60 minutes
  		{
  			if(caid_is_irdeto(er->caid)) // irdeto cas init irdeto_curindex to wait for first index (00)
-@@ -3791,7 +3865,7 @@ static void dvbapi_parse_pmt_ca_descriptor(int32_t demux_id, const uint8_t *buff
+@@ -3792,7 +3865,7 @@ static void dvbapi_parse_pmt_ca_descriptor(int32_t demux_id, const uint8_t *buff
  	ca_system_id = b2i(2, buffer);
  	ca_pid = b2i(2, buffer + 2) & 0x1FFF;
  
@@ -842,7 +853,29 @@ index 420a7ff8..f02f3235 100644
  	{
  		return; // This is not a valid CAID or ECM pid
  	}
-@@ -4379,14 +4453,33 @@ static void dvbapi_capmt_notify(struct demux_s *dmx)
+@@ -4239,7 +4312,6 @@ typedef struct demux_parameters
+ 	uint16_t onid;
+ 	uint16_t tsid;
+ 	uint32_t ens;
+-	int64_t  srvtype;                       // service type mask from descriptor 0x85, or -1 if not present
+ } demux_parameters_t;
+ 
+ static void get_demux_parameters(const uint8_t *buffer, demux_parameters_t *parameters)
+@@ -4330,13 +4402,7 @@ static void get_demux_parameters(const uint8_t *buffer, demux_parameters_t *para
+ 			}
+ 
+ 			case SERVICE_TYPE_MASK:
+-			{
+-				if(descriptor_length == 0x04)
+-				{
+-					parameters->srvtype = b2i(4, buffer + pos + 2);
+-				}
+ 				break;
+-			}
+ 
+ 			case DEMUX_DEVICE:
+ 			{
+@@ -4387,14 +4453,33 @@ static void dvbapi_capmt_notify(struct demux_s *dmx)
  
  static void dvbapi_prepare_descrambling(int32_t demux_id, uint32_t msgid)
  {
@@ -878,7 +911,23 @@ index 420a7ff8..f02f3235 100644
  	{
  		dvbapi_start_pmt_filter(demux_id);
  	}
-@@ -5587,6 +5680,7 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -4480,7 +4565,6 @@ int32_t dvbapi_parse_capmt(const uint8_t *buffer, uint32_t length, int32_t connf
+ 	bool is_update = false;
+ 	demux_parameters_t parameters;
+ 	memset(&parameters, 0, sizeof(parameters));
+-	parameters.srvtype = -1;
+ 
+ #if defined WITH_COOLAPI || defined WITH_COOLAPI2
+ 	ca_pmt_list_management = CA_PMT_LIST_ONLY;
+@@ -4644,7 +4728,6 @@ int32_t dvbapi_parse_capmt(const uint8_t *buffer, uint32_t length, int32_t connf
+ 			demux[demux_id].ens = parameters.ens;
+ 			demux[demux_id].tsid = parameters.tsid;
+ 			demux[demux_id].onid = parameters.onid;
+-			demux[demux_id].srvtype = parameters.srvtype;
+ 			demux[demux_id].stop_descrambling = false;
+ 			demux[demux_id].running = false;
+ 			demux[demux_id].sdt_filter = -1;
+@@ -5597,6 +5680,7 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  	if(filtertype == TYPE_ECM && curpid)
  	{
  		uint32_t chid = 0x10000;
@@ -886,7 +935,7 @@ index 420a7ff8..f02f3235 100644
  		ECM_REQUEST *er;
  
  		if(len != 0) // len = 0 receiver encountered an internal bufferoverflow!
-@@ -5612,8 +5706,25 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5622,8 +5706,25 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  				return;
  			}
  
@@ -913,7 +962,7 @@ index 420a7ff8..f02f3235 100644
  			{
  				if(!(er = get_ecmtask()))
  				{
-@@ -5957,6 +6068,35 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5967,6 +6068,35 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  			return; // just skip on internal buffer overflow
  		}
  
@@ -949,7 +998,7 @@ index 420a7ff8..f02f3235 100644
  		// fix to handle more than one irdeto emm packet
  		uint8_t *pbuf = buffer;
  		int32_t done = 0;
-@@ -7186,8 +7326,10 @@ void dvbapi_write_cw(int32_t demux_id, int32_t pid, int32_t stream_id, uint8_t *
+@@ -7196,8 +7326,10 @@ void dvbapi_write_cw(int32_t demux_id, int32_t pid, int32_t stream_id, uint8_t *
  	for(n = 0; n < 2; n++)
  	{
  		// Check if cw has changed and if new cw is empty (all zeros)
@@ -961,7 +1010,7 @@ index 420a7ff8..f02f3235 100644
  		{
  			// prepare ca device
  			uint32_t idx = dvbapi_ca_set_pid(demux_id, pid, stream_id, (algo == CA_ALGO_DES), msgid);
-@@ -7479,7 +7621,9 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
+@@ -7489,7 +7621,9 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
  
  		// 0=matching ecm hash, 2=no filter, 3=table reset, 4=cache-ex response
  		// Check only against last_cw[0] (index 0) - No need to check the rest
@@ -972,7 +1021,31 @@ index 420a7ff8..f02f3235 100644
  		{
  			// check for matching control word
  			if(memcmp(er->cw, demux[i].last_cw[0][0], 8) == 0 &&
-@@ -8483,7 +8627,9 @@ int32_t dvbapi_check_ecm_delayed_delivery(int32_t demux_id, ECM_REQUEST *er)
+@@ -7761,21 +7895,8 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
+ 		bool set_dvbapi_cw = true;
+ 		if((cfg.stream_relay_ctab.ctnum == 0 || chk_ctab_ex(er->caid, &cfg.stream_relay_ctab)) && cfg.stream_relay_enabled)
+ 		{
+-			bool sr_handled = stream_write_cw(er);
+-
+-			if(demux[i].srvtype >= 0 && !(demux[i].srvtype & 0x180))
+-			{
+-				// E2 sent service type mask without streamrelay bits (type 7/8),
+-				// so this is a live-TV/softcsa service. Always send CW via dvbapi,
+-				// even if a dying streamrelay client still consumed it.
+-				set_dvbapi_cw = true;
+-			}
+-			else
+-			{
+-				// No service type mask (old E2) or streamrelay bits set:
+-				// preserve original behavior - let stream_write_cw() decide.
+-				set_dvbapi_cw = !sr_handled;
+-			}
++			// streamserver set cw
++			set_dvbapi_cw = !stream_write_cw(er);
+ 		}
+ 		if (set_dvbapi_cw)
+ #endif
+@@ -8506,7 +8627,9 @@ int32_t dvbapi_check_ecm_delayed_delivery(int32_t demux_id, ECM_REQUEST *er)
  	}
  
  	// Check for null cw
@@ -984,9 +1057,18 @@ index 420a7ff8..f02f3235 100644
  		return 5;
  	}
 diff --git a/module-dvbapi.h b/module-dvbapi.h
-index 4f49b261..f35daf21 100644
+index df2f20a4..f35daf21 100644
 --- a/module-dvbapi.h
 +++ b/module-dvbapi.h
+@@ -145,7 +145,7 @@
+ #define DEMUX_CA_MASK_ADAPTER			0x82 // deprecated - applications should use descriptors ADAPTER_DEVICE, DEMUX_DEVICE and CA_DEVICE instead
+ #define ADAPTER_DEVICE					0x83
+ #define PMT_PID							0x84
+-#define SERVICE_TYPE_MASK				0x85
++#define SERVICE_TYPE_MASK				0x85 // not used by OSCam
+ #define DEMUX_DEVICE					0x86
+ #define CA_DEVICE						0x87
+ 
 @@ -336,6 +336,9 @@ typedef struct filter_s
  	uint32_t         SlotHandle[10];
  	uint32_t         BufferHandle[10];
@@ -1007,6 +1089,14 @@ index 4f49b261..f35daf21 100644
  } ECMPIDTYPE;
  
  typedef struct s_emmpid
+@@ -446,7 +452,6 @@ typedef struct demux_s
+ 	struct timeb     decstart;
+ 	struct timeb     decend;
+ 	uint32_t         msgid;
+-	int64_t          srvtype;                           // service type mask from CA PMT descriptor 0x85, or -1 if not present
+ } DEMUXTYPE;
+ 
+ typedef struct s_streampid
 diff --git a/module-emulator-biss.c b/module-emulator-biss.c
 new file mode 100644
 index 00000000..a6b0c9e6
