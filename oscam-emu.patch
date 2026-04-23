@@ -1,11 +1,11 @@
-patch version: 2.26.02-11945-802 (6c8324e0)
-patch date: 2026-03-02 13:57:14 UTC (+00:00)
-patch modified by speedy005 (02/03/2026)
+patch version: 2.26.04-11953-802 (f4316e45)
+patch date: 2026-04-23 11:13:28 UTC (+00:00)
+patch modified by speedy005 (23/04/2026)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index c27d1cb1..b1f5b6d0 100644
+index 5c3a2754..c39b602e 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -546,6 +546,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
+@@ -645,6 +645,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
  # Manage config.h based on command line parameters
  # Manipulate config file based on given parameters and read unset parameters
  
@@ -28,7 +28,7 @@ index c27d1cb1..b1f5b6d0 100644
  execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --show-valid OUTPUT_VARIABLE config_vars_string OUTPUT_STRIP_TRAILING_WHITESPACE)
  string(REGEX MATCHALL "[A-Z0-9_]+" config_vars ${config_vars_string})
  
-@@ -888,6 +904,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
+@@ -995,6 +1011,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
  
  #--------------------------------------------------------------------------------
  
@@ -53,8 +53,8 @@ index c27d1cb1..b1f5b6d0 100644
  #----------------------- installation -----------------------------
  
  file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-@@ -1000,4 +1034,11 @@ if (HAVE_LIBDVBCSA)
- 	endif(STATICLIBDVBCSA AND NOT LIBDVBCSADIR)
+@@ -1116,4 +1150,11 @@ if (HAVE_LIBDVBCSA)
+ 	endif (LIBDVBCSADIR)
  endif (HAVE_LIBDVBCSA)
  
 +if (WITH_EMU)
@@ -66,7 +66,7 @@ index c27d1cb1..b1f5b6d0 100644
 +
  message (STATUS "")
 diff --git a/Distribution/doc/html/oscam.server.5.html b/Distribution/doc/html/oscam.server.5.html
-index 3fb60c56..48fc01d2 100644
+index 4a4f7abb..ad00113e 100644
 --- a/Distribution/doc/html/oscam.server.5.html
 +++ b/Distribution/doc/html/oscam.server.5.html
 @@ -840,6 +840,13 @@ set reader's CCcam reshare hop, default:0
@@ -84,7 +84,7 @@ index 3fb60c56..48fc01d2 100644
  <DL COMPACT><DT><DD>
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
 diff --git a/Distribution/doc/man/oscam.server.5 b/Distribution/doc/man/oscam.server.5
-index 4b5db81e..3a94758d 100644
+index 56d1925c..27fff61b 100644
 --- a/Distribution/doc/man/oscam.server.5
 +++ b/Distribution/doc/man/oscam.server.5
 @@ -649,6 +649,11 @@ set reader's CCcam reshare hop, default:0
@@ -100,7 +100,7 @@ index 4b5db81e..3a94758d 100644
  .RS 3n
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
 diff --git a/Distribution/doc/txt/oscam.server.txt b/Distribution/doc/txt/oscam.server.txt
-index b4c2b21e..837835af 100644
+index a43c9db6..4b5d2a76 100644
 --- a/Distribution/doc/txt/oscam.server.txt
 +++ b/Distribution/doc/txt/oscam.server.txt
 @@ -509,6 +509,9 @@ DESCRIPTIONS
@@ -114,7 +114,7 @@ index b4c2b21e..837835af 100644
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
 diff --git a/Makefile b/Makefile
-index e9970a90..21e4a1d6 100644
+index 2a637ded..49780266 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -32,6 +32,9 @@ ifeq "$(shell ./config.sh --enabled WITH_SSL)" "Y"
@@ -127,7 +127,7 @@ index e9970a90..21e4a1d6 100644
  ifdef USE_SSL
  	override USE_LIBCRYPTO=1
  endif
-@@ -371,6 +374,32 @@ SRC-$(CONFIG_CS_CACHEEX) += module-cccam-cacheex.c
+@@ -374,6 +377,32 @@ SRC-$(CONFIG_CS_CACHEEX) += module-cccam-cacheex.c
  SRC-$(CONFIG_MODULE_CCCAM) += module-cccam.c
  SRC-$(CONFIG_MODULE_CCCSHARE) += module-cccshare.c
  SRC-$(CONFIG_MODULE_CONSTCW) += module-constcw.c
@@ -174,10 +174,10 @@ index 03c70f7d..9b99c3c4 100644
        readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
   card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
 diff --git a/README.md b/README.md
-index d47df457..5d514452 100644
+index 32e2e616..5d514452 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,81 +1,110 @@
+@@ -1,79 +1,110 @@
 -# OSCam: Open Source Conditional Access Module
 +OSCam-Emu: Open Source CAM with Emulator
 +========================================
@@ -202,86 +202,82 @@ index d47df457..5d514452 100644
 +OSCam-Emu: Open Source CAM with Emulator
 +Copyright (C) 2009-2026 OSCam-Emu developers
  
+-## Releases
 +OSCam-Emu is based on the Streamboard mp-cardserver 0.9d by dukat and
 +has been extended and worked on by many more since then.
  
--## Releases
+-For the latest changes and release history, see the
+-[OSCam commits](https://git.streamboard.tv/common/oscam/-/commits/master) page.
 +This program is free software: you can redistribute it and/or modify
 +it under the terms of the GNU General Public License as published by
 +the Free Software Foundation, either version 3 of the License, or
 +(at your option) any later version.
  
--For the latest changes and release history, see the
--[OSCam commits](https://git.streamboard.tv/common/oscam/-/commits/master) page.
+-## GitLab repository
 +This program is distributed in the hope that it will be useful,
 +but WITHOUT ANY WARRANTY; without even the implied warranty of
 +MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 +GNU General Public License for more details.
  
--## GitLab repository
+-Project page: [git.streamboard.tv/common/oscam](https://git.streamboard.tv/common/oscam)
 +You should have received a copy of the GNU General Public License
 +along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
--Project page:
--   https://git.streamboard.tv/common/oscam
+-## Building & Dependencies
 +For the full text of the licese, please read COPYING file in OSCam-Emu
 +top directory or visit http://www.gnu.org/licenses/gpl-3.0.html
- 
--## Building & Dependencies
  
 -For detailed information about building OSCam, cross-compilation for
 -different CPUs, required and optional dependencies, SSL support, hardware
 -modules, and platform-specific or distribution-specific notes, please
 -refer to the OSCam wiki:
+ 
+-- [Wiki Home](https://git.streamboard.tv/common/oscam/-/wikis/home)
 +Version history
 +===============
  
--- [Wiki Home](https://git.streamboard.tv/common/oscam/-/wikis/home)
+-## License
 +OSCam-Emu history is accessible through GitHub history at:
 +   https://github.com/oscam-mirror/oscam-emu/commits/master/
  
--## License
- 
 -OSCam: Open Source CAM
+ 
+-Copyright (C) 2009-2026 OSCam developers
 +Repositories
 +============
  
--Copyright (C) 2009-2026 OSCam developers
-+GIT repository:
-+   git clone https://github.com/oscam-mirror/oscam-emu.git
- 
 -OSCam is based on the Streamboard mp-cardserver 0.9d by dukat and has been
 -extended and worked on by many more since then.
++GIT repository:
++   git clone https://github.com/oscam-mirror/oscam-emu.git
  
 -This program is free software: you can redistribute it and/or modify it under
 -the terms of the GNU General Public License as published by the Free Software
 -Foundation, either version 3 of the License, or (at your option) any later
 -version.
-+Building OSCam-Emu from source
-+==========================
  
 -This program is distributed in the hope that it will be useful, but WITHOUT
 -ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 -FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 -details.
-+https://git.streamboard.tv/common/oscam/-/wikis/BuildingOscam
++Building OSCam-Emu from source
++==========================
  
 -You should have received a copy of the GNU General Public License along with
 -this program. If not, see <https://www.gnu.org/licenses/>.
-+For more information and examples on using the build system, please
-+see README.build and README.config files.
++https://git.streamboard.tv/common/oscam/-/wikis/BuildingOscam
  
 -For the full text of the license, please see the
 -[COPYING](https://git.streamboard.tv/common/oscam/-/blob/master/COPYING)
 -file in the OSCam repository.
++For more information and examples on using the build system, please
++see README.build and README.config files.
  
 -## Contributing
-+Building OSCam-Emu for different CPUs (cross-compilation)
-+=====================================================
  
 -Contributions are welcome. If you want to help improve OSCam:
-+First you need to install the target CPU toolchain. Already built toolchains
-+for various architectures can be downloaded from:
++Building OSCam-Emu for different CPUs (cross-compilation)
++=====================================================
  
 -- Browse the existing [issues](https://git.streamboard.tv/common/oscam/-/issues)
 -  and open a new issue if you find a bug or have a feature request.
@@ -289,13 +285,11 @@ index d47df457..5d514452 100644
 -  create a topic branch, and submit a merge request.
 -- Check the [OSCam wiki](https://git.streamboard.tv/common/oscam/-/wikis/home)
 -  for additional project information and guidelines.
-+    https://git.streamboard.tv/common/oscam/-/wikis/CrossCompiling
++First you need to install the target CPU toolchain. Already built toolchains
++for various architectures can be downloaded from:
  
 -## Help and Support
-+In order to cross compile OSCam-Emu you need to set CROSS variable when
-+running make. For example to compile for SH4 architecture you need
-+to run: `make CROSS=sh4-linux-` or if your cross compilers are not
-+in your PATH - `make CROSS=/opt/STM/STLinux-2.3/devkit/sh4/bin/sh4-linux-`.
++    https://git.streamboard.tv/common/oscam/-/wikis/CrossCompiling
  
 -- Man pages and configuration examples are available in the
 -  `Distribution/doc` directory of the source tree.
@@ -305,6 +299,11 @@ index d47df457..5d514452 100644
 -  visit the [support forum](https://board.streamboard.tv/forum/).
 -- For configuration guides, FAQs, and detailed documentation, see the
 -  [OSCam wiki](https://git.streamboard.tv/common/oscam/-/wikis/home).
++In order to cross compile OSCam-Emu you need to set CROSS variable when
++running make. For example to compile for SH4 architecture you need
++to run: `make CROSS=sh4-linux-` or if your cross compilers are not
++in your PATH - `make CROSS=/opt/STM/STLinux-2.3/devkit/sh4/bin/sh4-linux-`.
++
 +
 +Dependencies
 +============
@@ -471,10 +470,10 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index b71dd89b..68500c29 100644
+index f69acb64..a0c3fb3a 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,11 +368,11 @@
+@@ -368,9 +368,9 @@
  /* ===========================
   *			constants
   * =========================== */
@@ -484,11 +483,8 @@ index b71dd89b..68500c29 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
--#define CS_VERSION				"2.26.02-11945"
-+#define CS_VERSION				"2.26.01-11942"
+ #define CS_VERSION				"2.26.04-11953"
  #endif
- #ifndef CS_GIT_COMMIT
- #define CS_GIT_COMMIT			"a2b4c6d8"
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -517,7 +513,7 @@ index b71dd89b..68500c29 100644
  /////// proxy readers after R_CS378X
  #define R_CAMD35				0x20	// Reader cascading camd 3.5x
  #define R_CAMD33				0x21	// Reader cascading camd 3.3x
-@@ -890,6 +895,13 @@ typedef struct s_entitlement						// contains entitlement Info
+@@ -897,6 +902,13 @@ typedef struct s_entitlement						// contains entitlement Info
  	uint32_t		class;							// the class needed for some systems
  	time_t			start;							// startdate
  	time_t			end;							// enddate
@@ -531,7 +527,7 @@ index b71dd89b..68500c29 100644
  } S_ENTITLEMENT;
  
  struct s_client;
-@@ -1787,6 +1799,7 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1794,6 +1806,7 @@ struct s_reader										// contains device info, reader info and card info
  	char			cc_build[7];					// cccam build number
  	int8_t			cc_maxhops;						// cccam max distance
  	int8_t			cc_mindown;						// cccam min downhops
@@ -539,7 +535,7 @@ index b71dd89b..68500c29 100644
  	uint32_t		cc_id;
  	int8_t			cc_keepalive;
  	int8_t			cc_hop;							// For non-cccam reader: hop for virtual cards
-@@ -1983,6 +1996,11 @@ struct s_reader										// contains device info, reader info and card info
+@@ -1990,6 +2003,11 @@ struct s_reader										// contains device info, reader info and card info
  #ifdef MODULE_GHTTP
  	uint8_t			ghttp_use_ssl;
  #endif
@@ -551,7 +547,7 @@ index b71dd89b..68500c29 100644
  #ifdef READER_CONAX
  	uint8_t			cnxlastecm;						// == 0 - last ecm has not been paired ecm, > 0 last ecm has been paired ecm
  #endif
-@@ -2518,6 +2536,10 @@ struct s_config
+@@ -2525,6 +2543,10 @@ struct s_config
  #else
  #define DEFAULT_STREAM_SOURCE_PORT 8001 //Enigma2
  #endif
@@ -562,7 +558,7 @@ index b71dd89b..68500c29 100644
  #endif
  
  	int32_t			max_cache_time;					// seconds ecms are stored in ecmcwcache
-@@ -2703,12 +2725,18 @@ bool boxtype_is(const char *boxtype);
+@@ -2710,12 +2732,18 @@ bool boxtype_is(const char *boxtype);
  bool boxname_is(const char *boxname);
  const char *boxtype_get(void);
  const char *boxname_get(void);
@@ -581,7 +577,7 @@ index b71dd89b..68500c29 100644
  static inline bool caid_is_betacrypt(uint16_t caid) { return caid >> 8 == 0x17; }
  static inline bool caid_is_nagra(uint16_t caid) { return caid >> 8 == 0x18; }
  static inline bool caid_is_bulcrypt(uint16_t caid) { return caid == 0x5581 || caid == 0x4AEE; }
-@@ -2726,4 +2754,8 @@ static inline uint8_t get_ecm_mode(const ECM_REQUEST *er) {
+@@ -2733,4 +2761,8 @@ static inline uint8_t get_ecm_mode(const ECM_REQUEST *er) {
  #endif
  const char *get_cardsystem_desc_by_caid(uint16_t caid);
  
@@ -591,7 +587,7 @@ index b71dd89b..68500c29 100644
 +
  #endif
 diff --git a/module-cacheex.c b/module-cacheex.c
-index 9287aed3..04e27699 100644
+index fe4835e7..5623b727 100644
 --- a/module-cacheex.c
 +++ b/module-cacheex.c
 @@ -921,7 +921,9 @@ static int32_t cacheex_add_to_cache_int(struct s_client *cl, ECM_REQUEST *er, in
@@ -617,7 +613,7 @@ index 9287aed3..04e27699 100644
  		cs_log_dbg(D_CACHEEX, "push received ecm with null odd/even byte from %s", csp ? "csp" : username(cl));
  		cl->cwcacheexerr++;
 diff --git a/module-cccam.c b/module-cccam.c
-index e52ce8ae..0b665096 100644
+index a68360b6..08249f71 100644
 --- a/module-cccam.c
 +++ b/module-cccam.c
 @@ -1009,7 +1009,7 @@ int32_t cc_send_cli_data(struct s_client *cl)
@@ -727,10 +723,10 @@ index 2adf4518..76f0a6ff 100644
  			ErrorCode = oscam_sttkd_KeyWrite(tkd_desc_info[demux[demux_id].dev_index].key_hndl, l, cw + (l * 8));
  
 diff --git a/module-dvbapi.c b/module-dvbapi.c
-index 6ce54038..f02f3235 100644
+index f40f5825..2eed8d86 100644
 --- a/module-dvbapi.c
 +++ b/module-dvbapi.c
-@@ -1887,7 +1887,14 @@ void dvbapi_start_emm_filter(int32_t demux_id)
+@@ -1893,7 +1893,14 @@ void dvbapi_start_emm_filter(int32_t demux_id)
  
  			if(match)
  			{
@@ -746,7 +742,7 @@ index 6ce54038..f02f3235 100644
  				if(csystem)
  				{
  					if(caid != ncaid)
-@@ -1908,7 +1915,15 @@ void dvbapi_start_emm_filter(int32_t demux_id)
+@@ -1914,7 +1921,15 @@ void dvbapi_start_emm_filter(int32_t demux_id)
  					}
  					else if(csystem->get_emm_filter)
  					{
@@ -763,15 +759,7 @@ index 6ce54038..f02f3235 100644
  					}
  				}
  				else
-@@ -2580,7 +2595,6 @@ void dvbapi_stop_descrambling(int32_t demux_id, uint32_t msgid)
- 	}
- 	demux[demux_id].pidindex = -1;
- 	demux[demux_id].curindex = -1;
--	demux[demux_id].srvtype = -1;
- 
- 	if(!dvbapi_listenport_active && cfg.dvbapi_boxtype != BOXTYPE_PC_NODMX)
- 	{
-@@ -2652,6 +2666,8 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
+@@ -2658,6 +2673,8 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
  	er->vpid   = demux[demux_id].ECMpids[pid].VPID;
  	er->pmtpid = demux[demux_id].pmtpid;
  	er->onid   = demux[demux_id].onid;
@@ -780,7 +768,7 @@ index 6ce54038..f02f3235 100644
  	er->msgid  = msgid;
  
  #ifdef WITH_STAPI5
-@@ -2683,6 +2699,63 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
+@@ -2689,6 +2706,63 @@ int32_t dvbapi_start_descrambling(int32_t demux_id, int32_t pid, int8_t checked,
  			match = 1; // so make it a match to try it!
  		}
  
@@ -844,7 +832,7 @@ index 6ce54038..f02f3235 100644
  		if(match) // if matching reader found check for irdeto cas if local irdeto card check if it received emms in last 60 minutes
  		{
  			if(caid_is_irdeto(er->caid)) // irdeto cas init irdeto_curindex to wait for first index (00)
-@@ -3792,7 +3865,7 @@ static void dvbapi_parse_pmt_ca_descriptor(int32_t demux_id, const uint8_t *buff
+@@ -3798,7 +3872,7 @@ static void dvbapi_parse_pmt_ca_descriptor(int32_t demux_id, const uint8_t *buff
  	ca_system_id = b2i(2, buffer);
  	ca_pid = b2i(2, buffer + 2) & 0x1FFF;
  
@@ -853,29 +841,7 @@ index 6ce54038..f02f3235 100644
  	{
  		return; // This is not a valid CAID or ECM pid
  	}
-@@ -4239,7 +4312,6 @@ typedef struct demux_parameters
- 	uint16_t onid;
- 	uint16_t tsid;
- 	uint32_t ens;
--	int64_t  srvtype;                       // service type mask from descriptor 0x85, or -1 if not present
- } demux_parameters_t;
- 
- static void get_demux_parameters(const uint8_t *buffer, demux_parameters_t *parameters)
-@@ -4330,13 +4402,7 @@ static void get_demux_parameters(const uint8_t *buffer, demux_parameters_t *para
- 			}
- 
- 			case SERVICE_TYPE_MASK:
--			{
--				if(descriptor_length == 0x04)
--				{
--					parameters->srvtype = b2i(4, buffer + pos + 2);
--				}
- 				break;
--			}
- 
- 			case DEMUX_DEVICE:
- 			{
-@@ -4387,14 +4453,33 @@ static void dvbapi_capmt_notify(struct demux_s *dmx)
+@@ -4393,14 +4467,33 @@ static void dvbapi_capmt_notify(struct demux_s *dmx)
  
  static void dvbapi_prepare_descrambling(int32_t demux_id, uint32_t msgid)
  {
@@ -911,23 +877,7 @@ index 6ce54038..f02f3235 100644
  	{
  		dvbapi_start_pmt_filter(demux_id);
  	}
-@@ -4480,7 +4565,6 @@ int32_t dvbapi_parse_capmt(const uint8_t *buffer, uint32_t length, int32_t connf
- 	bool is_update = false;
- 	demux_parameters_t parameters;
- 	memset(&parameters, 0, sizeof(parameters));
--	parameters.srvtype = -1;
- 
- #if defined WITH_COOLAPI || defined WITH_COOLAPI2
- 	ca_pmt_list_management = CA_PMT_LIST_ONLY;
-@@ -4644,7 +4728,6 @@ int32_t dvbapi_parse_capmt(const uint8_t *buffer, uint32_t length, int32_t connf
- 			demux[demux_id].ens = parameters.ens;
- 			demux[demux_id].tsid = parameters.tsid;
- 			demux[demux_id].onid = parameters.onid;
--			demux[demux_id].srvtype = parameters.srvtype;
- 			demux[demux_id].stop_descrambling = false;
- 			demux[demux_id].running = false;
- 			demux[demux_id].sdt_filter = -1;
-@@ -5597,6 +5680,7 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5603,6 +5696,7 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  	if(filtertype == TYPE_ECM && curpid)
  	{
  		uint32_t chid = 0x10000;
@@ -935,7 +885,7 @@ index 6ce54038..f02f3235 100644
  		ECM_REQUEST *er;
  
  		if(len != 0) // len = 0 receiver encountered an internal bufferoverflow!
-@@ -5622,8 +5706,25 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5628,8 +5722,25 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  				return;
  			}
  
@@ -962,7 +912,7 @@ index 6ce54038..f02f3235 100644
  			{
  				if(!(er = get_ecmtask()))
  				{
-@@ -5967,6 +6068,35 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
+@@ -5973,6 +6084,35 @@ void dvbapi_process_input(int32_t demux_id, int32_t filter_num, uint8_t *buffer,
  			return; // just skip on internal buffer overflow
  		}
  
@@ -998,63 +948,7 @@ index 6ce54038..f02f3235 100644
  		// fix to handle more than one irdeto emm packet
  		uint8_t *pbuf = buffer;
  		int32_t done = 0;
-@@ -6566,7 +6696,6 @@ static void *dvbapi_main_local(void *cli)
- 	}
- 
- 	int32_t listenfd = -1;
--	int8_t pmt6_waiting = 0;
- 	if(cfg.dvbapi_boxtype != BOXTYPE_IPBOX_PMT &&
- 		cfg.dvbapi_pmtmode != 2 && cfg.dvbapi_pmtmode != 5 && cfg.dvbapi_pmtmode != 6)
- 	{
-@@ -6645,28 +6774,17 @@ static void *dvbapi_main_local(void *cli)
- 		{
- 			if(listenfd < 0)
- 			{
--				if(!pmt6_waiting)
--				{
--					cs_log("PMT mode 6: Connecting to enigma CA PMT listen socket...");
--				}
-+				cs_log("PMT mode 6: Connecting to enigma CA PMT listen socket...");
- 
- 				// socket init
- 				if((listenfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
- 				{
--					if(!pmt6_waiting)
--					{
--						cs_log_dbg(D_DVBAPI, "socket error (errno=%d %s), waiting for CA PMT server...", errno, strerror(errno));
--						pmt6_waiting = 1;
--					}
-+					cs_log("socket error (errno=%d %s)", errno, strerror(errno));
- 					listenfd = -1;
- 				}
- 				else if(connect(listenfd, (struct sockaddr *)&saddr, sizeof(saddr)) < 0)
- 				{
--					if(!pmt6_waiting)
--					{
--						cs_log_dbg(D_DVBAPI, "socket connect error (errno=%d %s), waiting for CA PMT server...", errno, strerror(errno));
--						pmt6_waiting = 1;
--					}
-+					cs_log("socket connect error (errno=%d %s)", errno, strerror(errno));
- 					close(listenfd);
- 					listenfd = -1;
- 				}
-@@ -6676,7 +6794,6 @@ static void *dvbapi_main_local(void *cli)
- 					pfd2[0].events = (POLLIN | POLLPRI);
- 					type[0] = 1;
- 					client_proto_version[0] = 0;
--					pmt6_waiting = 0;
- 					cs_log("PMT mode 6: Successfully connected to CA PMT server (fd %d)", listenfd);
- 				}
- 			}
-@@ -6981,7 +7098,6 @@ static void *dvbapi_main_local(void *cli)
- 					if(pfd2[i].fd == listenfd && cfg.dvbapi_pmtmode == 6)
- 					{
- 						listenfd = -1;
--						pmt6_waiting = 0;
- 					}
- 					cs_log_dbg(D_DVBAPI, "Socket %d reported hard connection close", pfd2[i].fd);
- 				}
-@@ -7210,8 +7326,10 @@ void dvbapi_write_cw(int32_t demux_id, int32_t pid, int32_t stream_id, uint8_t *
+@@ -7216,8 +7356,10 @@ void dvbapi_write_cw(int32_t demux_id, int32_t pid, int32_t stream_id, uint8_t *
  	for(n = 0; n < 2; n++)
  	{
  		// Check if cw has changed and if new cw is empty (all zeros)
@@ -1066,7 +960,7 @@ index 6ce54038..f02f3235 100644
  		{
  			// prepare ca device
  			uint32_t idx = dvbapi_ca_set_pid(demux_id, pid, stream_id, (algo == CA_ALGO_DES), msgid);
-@@ -7503,7 +7621,9 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
+@@ -7509,7 +7651,9 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
  
  		// 0=matching ecm hash, 2=no filter, 3=table reset, 4=cache-ex response
  		// Check only against last_cw[0] (index 0) - No need to check the rest
@@ -1077,31 +971,7 @@ index 6ce54038..f02f3235 100644
  		{
  			// check for matching control word
  			if(memcmp(er->cw, demux[i].last_cw[0][0], 8) == 0 &&
-@@ -7775,21 +7895,8 @@ void dvbapi_send_dcw(struct s_client *client, ECM_REQUEST *er)
- 		bool set_dvbapi_cw = true;
- 		if((cfg.stream_relay_ctab.ctnum == 0 || chk_ctab_ex(er->caid, &cfg.stream_relay_ctab)) && cfg.stream_relay_enabled)
- 		{
--			bool sr_handled = stream_write_cw(er);
--
--			if(demux[i].srvtype >= 0 && !(demux[i].srvtype & 0x180))
--			{
--				// E2 sent service type mask without streamrelay bits (type 7/8),
--				// so this is a live-TV/softcsa service. Always send CW via dvbapi,
--				// even if a dying streamrelay client still consumed it.
--				set_dvbapi_cw = true;
--			}
--			else
--			{
--				// No service type mask (old E2) or streamrelay bits set:
--				// preserve original behavior - let stream_write_cw() decide.
--				set_dvbapi_cw = !sr_handled;
--			}
-+			// streamserver set cw
-+			set_dvbapi_cw = !stream_write_cw(er);
- 		}
- 		if (set_dvbapi_cw)
- #endif
-@@ -8520,7 +8627,9 @@ int32_t dvbapi_check_ecm_delayed_delivery(int32_t demux_id, ECM_REQUEST *er)
+@@ -8526,7 +8670,9 @@ int32_t dvbapi_check_ecm_delayed_delivery(int32_t demux_id, ECM_REQUEST *er)
  	}
  
  	// Check for null cw
@@ -1113,18 +983,9 @@ index 6ce54038..f02f3235 100644
  		return 5;
  	}
 diff --git a/module-dvbapi.h b/module-dvbapi.h
-index df2f20a4..f35daf21 100644
+index df2f20a4..bbcc192f 100644
 --- a/module-dvbapi.h
 +++ b/module-dvbapi.h
-@@ -145,7 +145,7 @@
- #define DEMUX_CA_MASK_ADAPTER			0x82 // deprecated - applications should use descriptors ADAPTER_DEVICE, DEMUX_DEVICE and CA_DEVICE instead
- #define ADAPTER_DEVICE					0x83
- #define PMT_PID							0x84
--#define SERVICE_TYPE_MASK				0x85
-+#define SERVICE_TYPE_MASK				0x85 // not used by OSCam
- #define DEMUX_DEVICE					0x86
- #define CA_DEVICE						0x87
- 
 @@ -336,6 +336,9 @@ typedef struct filter_s
  	uint32_t         SlotHandle[10];
  	uint32_t         BufferHandle[10];
@@ -1145,14 +1006,6 @@ index df2f20a4..f35daf21 100644
  } ECMPIDTYPE;
  
  typedef struct s_emmpid
-@@ -446,7 +452,6 @@ typedef struct demux_s
- 	struct timeb     decstart;
- 	struct timeb     decend;
- 	uint32_t         msgid;
--	int64_t          srvtype;                           // service type mask from CA PMT descriptor 0x85, or -1 if not present
- } DEMUXTYPE;
- 
- typedef struct s_streampid
 diff --git a/module-emulator-biss.c b/module-emulator-biss.c
 new file mode 100644
 index 00000000..a6b0c9e6
@@ -10653,7 +10506,7 @@ index 7b048140..29f96e4e 100644
  int nc_des_encrypt(uint8_t *buffer, int len, uint8_t *deskey);
  int nc_des_decrypt(uint8_t *buffer, int len, uint8_t *deskey);
 diff --git a/module-newcamd.c b/module-newcamd.c
-index 679f25ac..6495a30e 100644
+index 0c3fd9e9..a92471b5 100644
 --- a/module-newcamd.c
 +++ b/module-newcamd.c
 @@ -1118,6 +1118,13 @@ static int8_t newcamd_auth_client(IN_ADDR_T ip, uint8_t *deskey)
@@ -11963,10 +11816,10 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index 2f467cf5..5072e604 100644
+index 82787f37..4e261886 100644
 --- a/module-webif.c
 +++ b/module-webif.c
-@@ -141,8 +141,9 @@ static bool use_srvid2 = false;
+@@ -176,8 +176,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
  #define MNU_GBX_FSTAINF     27
  #define MNU_GBX_FEXPINF     28
  #define MNU_GBX_INFOLOG     29
@@ -11977,7 +11830,7 @@ index 2f467cf5..5072e604 100644
  
  static void set_status_info_var(struct templatevars *vars, char *varname, int no_data, char *fmt, double value)
  {
-@@ -1332,6 +1333,11 @@ static char *send_oscam_config_streamrelay(struct templatevars *vars, struct uri
+@@ -1363,6 +1364,11 @@ static char *send_oscam_config_streamrelay(struct templatevars *vars, struct uri
  
  	tpl_printf(vars, TPLADD, "STREAM_RELAY_BUFFER_TIME", "%d", cfg.stream_relay_buffer_time);
  	tpl_printf(vars, TPLADD, "STREAM_RELAY_RECONNECT_COUNT", "%d", cfg.stream_relay_reconnect_count);
@@ -11989,7 +11842,7 @@ index 2f467cf5..5072e604 100644
  
  	tpl_printf(vars, TPLADD, "TMP", "STREAMCONFIGCLIENTSELECTED%d", cfg.stream_display_client);
  	tpl_addVar(vars, TPLADD, tpl_getVar(vars, "TMP"), "selected");
-@@ -2451,7 +2457,7 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -2485,7 +2491,7 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  		chk_reader("services", servicelabels, rdr);
  		chk_reader("lb_whitelist_services", servicelabelslb, rdr);
  
@@ -11998,7 +11851,7 @@ index 2f467cf5..5072e604 100644
  		{
  			if(rdr)
  				{
-@@ -3248,6 +3254,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3282,6 +3288,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_printf(vars, TPLADD, "RESHARE",      "%d", cfg.cc_reshare);
  	tpl_printf(vars, TPLADD, "CCCRECONNECT", "%d", rdr->cc_reconnect);
  
@@ -12007,7 +11860,7 @@ index 2f467cf5..5072e604 100644
  	if(rdr->cc_keepalive)
  		{ tpl_addVar(vars, TPLADD, "KEEPALIVECHECKED", "checked"); }
  #endif
-@@ -3285,6 +3293,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3319,6 +3327,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_addVar(vars, TPLADD, "USERSCRIPT", rdr->userscript);
  #endif
  
@@ -12031,7 +11884,7 @@ index 2f467cf5..5072e604 100644
  	tpl_addVar(vars, TPLADD, "PROTOCOL", reader_get_type_desc(rdr, 0));
  
  	// Show only parameters which needed for the reader
-@@ -3306,6 +3331,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3340,6 +3365,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	case R_CAMD35 :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCAMD35BIT"));
  		break;
@@ -12041,7 +11894,7 @@ index 2f467cf5..5072e604 100644
  	case R_CS378X :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCS378XBIT"));
  		break;
-@@ -5343,9 +5371,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
+@@ -5379,9 +5407,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
  
  					tpl_addVar(vars, TPLAPPEND, "LOGHISTORY", "<BR><BR>New Structure:<BR>");
  					char tbuffer[83];
@@ -12076,7 +11929,7 @@ index 2f467cf5..5072e604 100644
  						localtime_r(&item->start, &start_t);
  						localtime_r(&item->end, &end_t);
  
-@@ -5842,6 +5895,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+@@ -5878,6 +5931,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
  						filtered = (type == cl->typ) || (type == 'x' && (cl->typ == 'p' || cl->typ == 'r') && (cl->reader && cl->reader->cacheex.mode));
  #else
  						filtered = (type == cl->typ);
@@ -12086,7 +11939,7 @@ index 2f467cf5..5072e604 100644
  #endif
  					}
  				}
-@@ -7433,6 +7489,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -7488,6 +7544,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -12096,7 +11949,7 @@ index 2f467cf5..5072e604 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7905,7 +7964,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7960,7 +8019,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -12109,23 +11962,23 @@ index 2f467cf5..5072e604 100644
  		}
  
  		if(csystem)
-@@ -9199,7 +9262,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
- 		memcpy(*result + bufsize, buf2, n);
- 		bufsize += n;
- 
+@@ -9200,7 +9263,11 @@ static int8_t check_request(char *result, int32_t readen)
+ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePlain)
+ {
+ 	int32_t n, bufsize = 0, errcount = 0;
 +#ifdef WITH_EMU
-+		if(bufsize > 204800) // max request size 200kb
++	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 204800;
 +#else
- 		if(bufsize > 102400) // max request size 100kb
+ 	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 102400;
 +#endif
- 		{
- 			cs_log("error: too much data received from %s", cs_inet_ntoa(in));
- 			NULLFREE(*result);
+ 	char buf2[1024];
+ #ifdef WITH_SSL
+ 	int8_t is_ssl = 0;
 diff --git a/oscam-chk.c b/oscam-chk.c
-index 1f44e3b6..3dd9536a 100644
+index e6ccaab7..10829587 100644
 --- a/oscam-chk.c
 +++ b/oscam-chk.c
-@@ -894,7 +894,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
+@@ -901,7 +901,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  		return 0;
  	}
  
@@ -12134,7 +11987,7 @@ index 1f44e3b6..3dd9536a 100644
  	{
  		if (!rdr->csystem)
  			{ return 0; }
-@@ -932,7 +932,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
+@@ -939,7 +939,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  	}
  
  	// Checking ident:
@@ -12143,7 +11996,7 @@ index 1f44e3b6..3dd9536a 100644
  	{
  		cs_log_dbg(D_TRACE, "r-filter reader %s", rdr->label);
  		return (0);
-@@ -993,7 +993,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
+@@ -1000,7 +1000,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  	}
  
  	// Checking entitlements:
@@ -12152,7 +12005,7 @@ index 1f44e3b6..3dd9536a 100644
  	{
  		LL_ITER itr = ll_iter_create(rdr->ll_entitlements);
  		S_ENTITLEMENT *item;
-@@ -1174,7 +1174,7 @@ int32_t chk_caid(uint16_t caid, CAIDTAB *ctab)
+@@ -1181,7 +1181,7 @@ int32_t chk_caid(uint16_t caid, CAIDTAB *ctab)
  
  int32_t chk_caid_rdr(struct s_reader *rdr, uint16_t caid)
  {
@@ -12161,24 +12014,11 @@ index 1f44e3b6..3dd9536a 100644
  	{
  		return 1; // reader caid is not real caid
  	}
-diff --git a/oscam-config-account.c b/oscam-config-account.c
-index e48b5268..bfdf1c58 100644
---- a/oscam-config-account.c
-+++ b/oscam-config-account.c
-@@ -201,7 +201,7 @@ static void account_allowedtimeframe_fn(const char *token, char *value, void *se
- {
- 	struct s_auth *account = setting;
- 	int32_t i, j, t, startt, endt;
--	const char *dest;
-+	char *dest;
- 	uint8_t day_idx;
- 	int32_t allowed[4];
- 	uint32_t tempo = 0;
 diff --git a/oscam-config-global.c b/oscam-config-global.c
-index d55517e2..0256d777 100644
+index 38e0e464..8e6f6284 100644
 --- a/oscam-config-global.c
 +++ b/oscam-config-global.c
-@@ -940,6 +940,10 @@ static const struct config_list streamrelay_opts[] =
+@@ -941,6 +941,10 @@ static const struct config_list streamrelay_opts[] =
  	DEF_OPT_STR("stream_source_auth_password"    , OFS(stream_source_auth_password),  NULL),
  	DEF_OPT_UINT32("stream_relay_buffer_time"    , OFS(stream_relay_buffer_time),     0),
  	DEF_OPT_UINT8("stream_relay_reconnect_count" , OFS(stream_relay_reconnect_count), 0),
@@ -12252,7 +12092,7 @@ index b0179dd8..e66a1aa1 100644
  };
  
 diff --git a/oscam-ecm.c b/oscam-ecm.c
-index 7c4717f0..ecf3c160 100644
+index 7c4717f0..b930fca4 100644
 --- a/oscam-ecm.c
 +++ b/oscam-ecm.c
 @@ -2418,6 +2418,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
@@ -12286,15 +12126,6 @@ index 7c4717f0..ecf3c160 100644
  		{
  #ifdef CS_CACHEEX_AIO
  			int32_t ecmtime = ea->ecm_time;
-@@ -3125,7 +3131,7 @@ void get_cw(struct s_client *client, ECM_REQUEST *er)
- 		struct tm acttm;
- 		localtime_r(&now, &acttm);
- 		int32_t curday = acttm.tm_wday;
--		const char *dest = strstr(weekdstr,"ALL");
-+		char *dest = strstr(weekdstr,"ALL");
- 		int32_t all_idx = (dest - weekdstr) / 3;
- 		uint8_t allowed = 0;
- 
 @@ -3267,7 +3273,9 @@ void get_cw(struct s_client *client, ECM_REQUEST *er)
  	}
  
@@ -12365,7 +12196,7 @@ index 576804c9..6e1c7137 100644
  	return "unknown";
  }
 diff --git a/oscam.c b/oscam.c
-index 1385bd0d..4397bb88 100644
+index 69193412..96df7f0c 100644
 --- a/oscam.c
 +++ b/oscam.c
 @@ -44,6 +44,10 @@
@@ -12379,7 +12210,7 @@ index 1385bd0d..4397bb88 100644
  #ifdef WITH_SSL
  #include <openssl/crypto.h>
  #include <openssl/ssl.h>
-@@ -457,6 +461,8 @@ static void write_versionfile(bool use_stdout)
+@@ -456,6 +460,8 @@ static void write_versionfile(bool use_stdout)
  #ifdef WITH_SIGNING
  	write_conf(WITH_SIGNING, "Binary signing support");
  #endif
@@ -12388,7 +12219,7 @@ index 1385bd0d..4397bb88 100644
  
  	fprintf(fp, "\n");
  	write_conf(MODULE_CAMD33, "camd 3.3x");
-@@ -1682,6 +1688,9 @@ const struct s_cardreader *cardreaders[] =
+@@ -1684,6 +1690,9 @@ const struct s_cardreader *cardreaders[] =
  #ifdef CARDREADER_STINGER
  	&cardreader_stinger,
  #endif
@@ -12398,7 +12229,7 @@ index 1385bd0d..4397bb88 100644
  
  	NULL
  };
-@@ -1861,6 +1870,9 @@ int32_t main(int32_t argc, char *argv[])
+@@ -1862,6 +1871,9 @@ int32_t main(int32_t argc, char *argv[])
  
  	init_sidtab();
  	init_readerdb();
