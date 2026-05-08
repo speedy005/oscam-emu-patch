@@ -1,6 +1,6 @@
-patch version: 2.26.04-11958-802 (b324f994)
-patch date: 2026-05-02 17:11:33 UTC (+00:00)
-patch modified by speedy005 (02/05/2026)
+patch version: 2.26.05-11959-802 (11a966f7)
+patch date: 2026-05-08 14:05:02 UTC (+00:00)
+patch modified by speedy005 (08/05/2026)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index f31b956b..5285de7c 100644
 --- a/CMakeLists.txt
@@ -470,7 +470,7 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index b4ac38d9..00dceb00 100644
+index 4b000d60..820f9862 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -483,7 +483,7 @@ index b4ac38d9..00dceb00 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.04-11958"
+ #define CS_VERSION				"2.26.05-11959"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -11975,10 +11975,10 @@ index 82787f37..4e261886 100644
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
 diff --git a/oscam-chk.c b/oscam-chk.c
-index e6ccaab7..10829587 100644
+index 78d031ea..0396bf71 100644
 --- a/oscam-chk.c
 +++ b/oscam-chk.c
-@@ -901,7 +901,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
+@@ -898,7 +898,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  		return 0;
  	}
  
@@ -11987,7 +11987,7 @@ index e6ccaab7..10829587 100644
  	{
  		if (!rdr->csystem)
  			{ return 0; }
-@@ -939,7 +939,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
+@@ -936,7 +936,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  	}
  
  	// Checking ident:
@@ -11996,7 +11996,7 @@ index e6ccaab7..10829587 100644
  	{
  		cs_log_dbg(D_TRACE, "r-filter reader %s", rdr->label);
  		return (0);
-@@ -1000,7 +1000,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
+@@ -997,7 +997,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  	}
  
  	// Checking entitlements:
@@ -12005,7 +12005,7 @@ index e6ccaab7..10829587 100644
  	{
  		LL_ITER itr = ll_iter_create(rdr->ll_entitlements);
  		S_ENTITLEMENT *item;
-@@ -1181,7 +1181,7 @@ int32_t chk_caid(uint16_t caid, CAIDTAB *ctab)
+@@ -1178,7 +1178,7 @@ int32_t chk_caid(uint16_t caid, CAIDTAB *ctab)
  
  int32_t chk_caid_rdr(struct s_reader *rdr, uint16_t caid)
  {
