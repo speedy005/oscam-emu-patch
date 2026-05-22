@@ -1,6 +1,6 @@
-patch version: 2.26.05-11959-802 (11a966f7)
-patch date: 2026-05-08 14:05:02 UTC (+00:00)
-patch modified by speedy005 (08/05/2026)
+patch version: 2.26.05-11961-802 (5b6fa7ad)
+patch date: 2026-05-22 07:32:20 UTC (+00:00)
+patch modified by speedy005 (22/05/2026)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index f31b956b..5285de7c 100644
 --- a/CMakeLists.txt
@@ -470,10 +470,10 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index 4b000d60..820f9862 100644
+index ae022c20..820f9862 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,9 +368,9 @@
+@@ -368,11 +368,11 @@
  /* ===========================
   *			constants
   * =========================== */
@@ -483,8 +483,11 @@ index 4b000d60..820f9862 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.05-11959"
+-#define CS_VERSION				"2.26.05-11961"
++#define CS_VERSION				"2.26.05-11959"
  #endif
+ #ifndef CS_GIT_COMMIT
+ #define CS_GIT_COMMIT			"a2b4c6d8"
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -12281,6 +12284,58 @@ index eec350e9..316c2bea 100644
 +extern const struct s_cardsystem reader_emu;
  
  #endif
+diff --git a/webif/config/dvbapi.html b/webif/config/dvbapi.html
+index fafc0dd7..33f0d5b1 100644
+--- a/webif/config/dvbapi.html
++++ b/webif/config/dvbapi.html
+@@ -5,8 +5,8 @@
+ 	<input name="write_sdt_prov" type="hidden" value="0">
+ 	<TABLE CLASS="config">
+ 		<TR><TH COLSPAN="2">Edit DVB Api Config</TH></TR>
+-		<TR><TD><A>Enabled:</A></TD><TD><input name="enabled" type="checkbox" value="1" ##ENABLEDCHECKED##><label></label></TD></TR>
+-		<TR><TD><A>AU:</A></TD><TD><input name="au" type="checkbox" value="1" ##AUCHECKED##><label></label></TD></TR>
++		<TR><TD><A>Enabled:</A></TD><TD><input name="enabled" type="checkbox" value="1" ##ENABLEDCHECKED##><label></label>
++		<TR><TD><A>AU:</A></TD><TD><input name="au" type="checkbox" value="1" ##AUCHECKED##><label></label>
+ 		<TR><TD><A>Boxtype:</A></TD><TD><select name="boxtype">##BOXTYPE##</select></TD></TR>
+ 		<TR><TD><A data-p="user_2">User:</A></TD><TD><input name="user" class="longer" type="text" maxlength="63" value="##USERNAME##"></TD></TR>
+ 		<TR><TD><A>PMT Mode:</A></TD>
+@@ -33,7 +33,7 @@
+ 		<TR><TD><A>Listen port:</A></TD><TD><input name="listen_port" class="short" type="text" maxlength="5" value="##LISTENPORT##"> TCP port to listen instead of camd.socket</TD></TR>
+ 		<TR><TD><A>Server IP:</A></TD><TD><input name="serverip" class="medium" type="text" maxlength="45" value="##SERVERIP##"></TD></TR>
+ 		<TR><TD><A>Delayer:</A></TD><TD><input name="delayer" class="withunit short" type="text" maxlength="4" value="##DELAYER##"> ms</TD></TR>
+-		<TR><TD><A>Enable ecm.info file:</A></TD><TD><input name="ecminfo_file" type="checkbox" value="1" ##ECMINFOFILECHECKED##><label></label></TD></TR>
++		<TR><TD><A>Enable ecm.info file:</A></TD><TD><input name="ecminfo_file" type="checkbox" value="1" ##ECMINFOFILECHECKED##><label></label>
+ 		<TR><TD><A>ecm.info type:</A></TD>
+ 			<TD>
+ 				<select name="ecminfo_type">
+@@ -56,6 +56,6 @@
+ 				</select>
+ 			</TD>
+ 		</TR>
+-		<TR><TD><A>Write detected prov name to srvid:</A></TD><TD><input name="write_sdt_prov" type="checkbox" value="1" ##WRITESDTPROVCHECKED##><label></label></TD></TR>
++		<TR><TD><A>Write detected prov name to srvid:</A></TD><TD><input name="write_sdt_prov" type="checkbox" value="1" ##WRITESDTPROVCHECKED##><label></label>
+ ##TPLEXTENDEDCWAPI##
+ ##TPLDEMUXERFIX##
+diff --git a/webif/config/gbox.html b/webif/config/gbox.html
+index 2c895459..d9f77e7d 100644
+--- a/webif/config/gbox.html
++++ b/webif/config/gbox.html
+@@ -43,7 +43,7 @@
+ 			<TR><TD><A data-p="proxy_card">Proxy cards:</A></TD><TD>Maximum 32 Cards (8 hex chars each), comma-separated<BR><textarea name="proxy_card" rows="4" class="bt" maxlength="287">##GBOXPROXYCARD##</textarea><BR></TD></TR>
+ 		<TR><TH COLSPAN="2">GBox Short Message Service - Send GSMS</TH></TR>
+ 		<TR><TD><A data-p="gbox_save_gsms">Save this GSMS in conf:</A></TD><TD><input name="gbox_save_gsms" value="0" type="hidden"><input name="gbox_save_gsms" value="1" type="checkbox" ##GBOXSAVEGSMS##><label>You need to press save button to really save it!</label></TD></TR>
+-		<TR><TD><A data-p="gbox_msg_type">Message type:</A></TD>
++		<TR><TD><A data-p="gbox_msg_type">Message type:</TD>
+ 			<TD><select name="gbox_msg_type">
+ 				<option value="0" ##GBOXMSGTYPENORMAL##>0 - normal text message</option>
+ 				<option value="1" ##GBOXMSGTYPEOSD##>1 - normal txt message + OSD message</option>
+@@ -68,3 +68,6 @@
+ 			</TR></TABLE></TD>
+ 		</TR>
+ 		<TR CLASS="configfirstrow"><TD></TD><TD></TD></TR>
++		</TR>
++
++
 diff --git a/webif/config/streamrelay.html b/webif/config/streamrelay.html
 index f79d5a1c..3804d00f 100644
 --- a/webif/config/streamrelay.html
@@ -12336,6 +12391,23 @@ index 00000000..cf718779
 +++ b/webif/files/menu_softcamkey.html
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
+diff --git a/webif/pages_gen.c b/webif/pages_gen.c
+index b499e093..e18c77ba 100644
+--- a/webif/pages_gen.c
++++ b/webif/pages_gen.c
+@@ -186,10 +186,10 @@ static void parse_index_file(char *filename)
+ 
+ 		if(deps && strlen(deps) && is_defined){
+ 			if(strstr(deps, ",")){
+-				int def_found=0;
++				int i,def_found=0;
+ 				char *ptr, *saveptr1 = NULL;
+ 				char *deps_sep = strdup(deps);
+-	 			for(ptr = strtok_r(deps_sep, ",", &saveptr1); ptr; ptr = strtok_r(NULL, ",", &saveptr1))
++	 			for(i = 0, ptr = strtok_r(deps_sep, ",", &saveptr1); ptr; ptr = strtok_r(NULL, ",", &saveptr1), i++)
+ 	 			{
+ 					if(strstr((char *)is_defined, ptr))
+ 	 					{ def_found = 1; }
 diff --git a/webif/pages_index.txt b/webif/pages_index.txt
 index fbf1d18b..654fc692 100644
 --- a/webif/pages_index.txt
@@ -12386,6 +12458,26 @@ index fbf1d18b..654fc692 100644
  READERCONFIGCS378XBIT         readerconfig/readerconfig_cs378xbit.html                    MODULE_CAMD35_TCP
  READERCONFIGGBOXBIT           readerconfig/readerconfig_gboxbit.html                      MODULE_GBOX
  READERINFOGBOXREMM            readerconfig/readerinfo_gbox_remm.html                      MODULE_GBOX
+diff --git a/webif/readerconfig/readerconfig.html b/webif/readerconfig/readerconfig.html
+index ca94a61d..ef889f1d 100644
+--- a/webif/readerconfig/readerconfig.html
++++ b/webif/readerconfig/readerconfig.html
+@@ -78,7 +78,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD>Blockemm:</TD>
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+@@ -90,7 +89,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD><A>Block EMM by Len:</A></TD><TD><input name="blockemm-bylen" type="text" maxlength="256" value="##BLOCKEMMBYLEN##"></TD></TR>
+ ##READERCONFIGSIDINS##
+ 			<TR><TH COLSPAN="2">Reader specific settings for protocol ##PROTOCOL##</TH></TR>
 diff --git a/webif/readerconfig/readerconfig_cccambit.html b/webif/readerconfig/readerconfig_cccambit.html
 index 3812bec7..85232402 100644
 --- a/webif/readerconfig/readerconfig_cccambit.html
@@ -12404,4 +12496,24 @@ index 00000000..8c130b7c
 @@ -0,0 +1,2 @@
 +			<TR><TD><A>AU providers:</A></TD><TD><textarea name="emu_auproviders" rows="3" class="bt">##EMUAUPROVIDERS##</textarea></TD></TR>
 +			<TR><TD><A>[BISS] Enable date-coded keys:</A></TD><TD><input name="emu_datecodedenabled" type="hidden" value="0"><input name="emu_datecodedenabled" type="checkbox" value="1" ##EMUDATECODEDENABLED##><label></label></TD></TR>
+diff --git a/webif/readerconfig/readerconfigaio.html b/webif/readerconfig/readerconfigaio.html
+index 09f04e4d..750dd99b 100644
+--- a/webif/readerconfig/readerconfigaio.html
++++ b/webif/readerconfig/readerconfigaio.html
+@@ -78,7 +78,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD>Blockemm:</TD>
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+@@ -90,7 +89,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD><A>Block EMM by Len:</A></TD><TD><input name="blockemm-bylen" type="text" maxlength="256" value="##BLOCKEMMBYLEN##"></TD></TR>
+ ##READERCONFIGSIDINS##
+ 			<TR><TH COLSPAN="2">Reader specific settings for protocol ##PROTOCOL##</TH></TR>
 
