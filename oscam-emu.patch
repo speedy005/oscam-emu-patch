@@ -1,6 +1,6 @@
 patch version: 2.26.06-11965-802 (dd703725)
-patch date: 2026-06-20 09:26:20 UTC (+00:00)
-patch modified by speedy005 (20/06/2026)
+patch date: 2026-06-23 15:37:13 UTC (+00:00)
+patch modified by speedy005 (23/06/2026)
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index f31b956b..5285de7c 100644
 --- a/CMakeLists.txt
@@ -65,6 +65,19 @@ index f31b956b..5285de7c 100644
 +endif (WITH_EMU)
 +
  message (STATUS "")
+diff --git a/Distribution/doc/html/oscam.conf.5.html b/Distribution/doc/html/oscam.conf.5.html
+index 7609ec86..4e840ded 100644
+--- a/Distribution/doc/html/oscam.conf.5.html
++++ b/Distribution/doc/html/oscam.conf.5.html
+@@ -731,7 +731,7 @@ status refresh in seconds, default:none
+ 
+ <B>httpmaxrequestsize</B> = <B>bytes</B>
+ <DL COMPACT><DT><DD>
+-maximum accepted HTTP request size for WebIF, minimum:1024, default:102400
++maximum accepted HTTP request size for WebIF, default:102400
+ </DL>
+ 
+ <P>
 diff --git a/Distribution/doc/html/oscam.server.5.html b/Distribution/doc/html/oscam.server.5.html
 index 4a4f7abb..ad00113e 100644
 --- a/Distribution/doc/html/oscam.server.5.html
@@ -83,6 +96,19 @@ index 4a4f7abb..ad00113e 100644
  <B>ccckeepalive</B> = <B>0</B>|<B>1</B>
  <DL COMPACT><DT><DD>
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
+diff --git a/Distribution/doc/man/oscam.conf.5 b/Distribution/doc/man/oscam.conf.5
+index cf01f313..12660573 100644
+--- a/Distribution/doc/man/oscam.conf.5
++++ b/Distribution/doc/man/oscam.conf.5
+@@ -556,7 +556,7 @@ status refresh in seconds, default:none
+ .PP
+ \fBhttpmaxrequestsize\fP = \fBbytes\fP
+ .RS 3n
+-maximum accepted HTTP request size for WebIF, minimum:1024, default:102400
++maximum accepted HTTP request size for WebIF, default:102400
+ .RE
+ .PP
+ \fBhttphideidleclients\fP = \fB0\fP|\fB1\fP
 diff --git a/Distribution/doc/man/oscam.server.5 b/Distribution/doc/man/oscam.server.5
 index 56d1925c..27fff61b 100644
 --- a/Distribution/doc/man/oscam.server.5
@@ -99,6 +125,19 @@ index 56d1925c..27fff61b 100644
  \fBccckeepalive\fP = \fB0\fP|\fB1\fP
  .RS 3n
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
+diff --git a/Distribution/doc/txt/oscam.conf.txt b/Distribution/doc/txt/oscam.conf.txt
+index b072547f..802754b0 100644
+--- a/Distribution/doc/txt/oscam.conf.txt
++++ b/Distribution/doc/txt/oscam.conf.txt
+@@ -394,7 +394,7 @@ DESCRIPTIONS
+ 	  status refresh in seconds, default:none
+ 
+        httpmaxrequestsize = bytes
+-	  maximum accepted HTTP request size for WebIF, minimum:1024, default:102400
++	  maximum accepted HTTP request size for WebIF, default:102400
+ 
+        httphideidleclients = 0|1
+ 	  1 = enables hiding clients after idle time set in parameter hideclient_to, default:0
 diff --git a/Distribution/doc/txt/oscam.server.txt b/Distribution/doc/txt/oscam.server.txt
 index a43c9db6..4b5d2a76 100644
 --- a/Distribution/doc/txt/oscam.server.txt
@@ -470,10 +509,10 @@ index 4cda2edd..6cd27dae 100644
  
  #endif
 diff --git a/globals.h b/globals.h
-index c77f6178..68ae6e47 100644
+index c77f6178..820f9862 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,9 +368,9 @@
+@@ -368,11 +368,11 @@
  /* ===========================
   *			constants
   * =========================== */
@@ -483,8 +522,11 @@ index c77f6178..68ae6e47 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.06-11965"
+-#define CS_VERSION				"2.26.06-11965"
++#define CS_VERSION				"2.26.05-11959"
  #endif
+ #ifndef CS_GIT_COMMIT
+ #define CS_GIT_COMMIT			"a2b4c6d8"
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -11816,10 +11858,42 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index 9d2e7cbf..a2ee37fc 100644
+index 9d2e7cbf..4e261886 100644
 --- a/module-webif.c
 +++ b/module-webif.c
-@@ -201,8 +201,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
+@@ -68,31 +68,6 @@ static pthread_t httpthread;
+ static int32_t sock;
+ enum refreshtypes { REFR_ACCOUNTS, REFR_READERS, REFR_CLIENTS, REFR_SERVER, REFR_ANTICASC, REFR_SERVICES };
+ 
+-static void setWebifTCPTimeouts(int32_t fd)
+-{
+-	struct timeval tv;
+-	tv.tv_sec = 10;
+-	tv.tv_usec = 0;
+-
+-	if(setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval)) && errno != EBADF)
+-	{
+-		cs_log("WebIf: Setting SO_RCVTIMEO failed, errno=%d, %s", errno, strerror(errno));
+-	}
+-
+-	if(setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval)) && errno != EBADF)
+-	{
+-		cs_log("WebIf: Setting SO_SNDTIMEO failed, errno=%d, %s", errno, strerror(errno));
+-	}
+-
+-#if defined(TCP_USER_TIMEOUT)
+-	int32_t timeout = 10000; // RFC 5482 user timeout in milliseconds
+-	if(setsockopt(fd, SOL_TCP, TCP_USER_TIMEOUT, (char *)&timeout, sizeof(timeout)) && errno != EBADF)
+-	{
+-		cs_log("WebIf: Setting TCP_USER_TIMEOUT failed, errno=%d, %s", errno, strerror(errno));
+-	}
+-#endif
+-}
+-
+ //initialize structs for calculating cpu-usage depending on time between refresh of status_page
+ static struct pstat p_stat_cur;
+ static struct pstat p_stat_old;
+@@ -201,8 +176,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
  #define MNU_GBX_FSTAINF     27
  #define MNU_GBX_FEXPINF     28
  #define MNU_GBX_INFOLOG     29
@@ -11830,7 +11904,7 @@ index 9d2e7cbf..a2ee37fc 100644
  
  static void set_status_info_var(struct templatevars *vars, char *varname, int no_data, char *fmt, double value)
  {
-@@ -1388,6 +1389,11 @@ static char *send_oscam_config_streamrelay(struct templatevars *vars, struct uri
+@@ -1388,6 +1364,11 @@ static char *send_oscam_config_streamrelay(struct templatevars *vars, struct uri
  
  	tpl_printf(vars, TPLADD, "STREAM_RELAY_BUFFER_TIME", "%d", cfg.stream_relay_buffer_time);
  	tpl_printf(vars, TPLADD, "STREAM_RELAY_RECONNECT_COUNT", "%d", cfg.stream_relay_reconnect_count);
@@ -11842,7 +11916,7 @@ index 9d2e7cbf..a2ee37fc 100644
  
  	tpl_printf(vars, TPLADD, "TMP", "STREAMCONFIGCLIENTSELECTED%d", cfg.stream_display_client);
  	tpl_addVar(vars, TPLADD, tpl_getVar(vars, "TMP"), "selected");
-@@ -2510,7 +2516,7 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -2510,7 +2491,7 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  		chk_reader("services", servicelabels, rdr);
  		chk_reader("lb_whitelist_services", servicelabelslb, rdr);
  
@@ -11851,7 +11925,7 @@ index 9d2e7cbf..a2ee37fc 100644
  		{
  			if(rdr)
  				{
-@@ -3307,6 +3313,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3307,6 +3288,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_printf(vars, TPLADD, "RESHARE",      "%d", cfg.cc_reshare);
  	tpl_printf(vars, TPLADD, "CCCRECONNECT", "%d", rdr->cc_reconnect);
  
@@ -11860,7 +11934,7 @@ index 9d2e7cbf..a2ee37fc 100644
  	if(rdr->cc_keepalive)
  		{ tpl_addVar(vars, TPLADD, "KEEPALIVECHECKED", "checked"); }
  #endif
-@@ -3344,6 +3352,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3344,6 +3327,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_addVar(vars, TPLADD, "USERSCRIPT", rdr->userscript);
  #endif
  
@@ -11884,7 +11958,7 @@ index 9d2e7cbf..a2ee37fc 100644
  	tpl_addVar(vars, TPLADD, "PROTOCOL", reader_get_type_desc(rdr, 0));
  
  	// Show only parameters which needed for the reader
-@@ -3365,6 +3390,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3365,6 +3365,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	case R_CAMD35 :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCAMD35BIT"));
  		break;
@@ -11894,7 +11968,7 @@ index 9d2e7cbf..a2ee37fc 100644
  	case R_CS378X :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCS378XBIT"));
  		break;
-@@ -5404,9 +5432,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
+@@ -5404,9 +5407,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
  
  					tpl_addVar(vars, TPLAPPEND, "LOGHISTORY", "<BR><BR>New Structure:<BR>");
  					char tbuffer[83];
@@ -11929,7 +12003,7 @@ index 9d2e7cbf..a2ee37fc 100644
  						localtime_r(&item->start, &start_t);
  						localtime_r(&item->end, &end_t);
  
-@@ -5903,6 +5956,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+@@ -5903,6 +5931,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
  						filtered = (type == cl->typ) || (type == 'x' && (cl->typ == 'p' || cl->typ == 'r') && (cl->reader && cl->reader->cacheex.mode));
  #else
  						filtered = (type == cl->typ);
@@ -11939,7 +12013,7 @@ index 9d2e7cbf..a2ee37fc 100644
  #endif
  					}
  				}
-@@ -7513,6 +7569,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -7513,6 +7544,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -11949,7 +12023,7 @@ index 9d2e7cbf..a2ee37fc 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7985,7 +8044,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7985,7 +8019,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -11962,7 +12036,7 @@ index 9d2e7cbf..a2ee37fc 100644
  		}
  
  		if(csystem)
-@@ -9225,7 +9288,11 @@ static int8_t check_request(char *result, int32_t readen)
+@@ -9225,7 +9263,11 @@ static int8_t check_request(char *result, int32_t readen)
  static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePlain)
  {
  	int32_t n, bufsize = 0, errcount = 0;
@@ -11974,6 +12048,28 @@ index 9d2e7cbf..a2ee37fc 100644
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
+@@ -10133,8 +10175,6 @@ static void *http_server(void *UNUSED(d))
+ 				continue;
+ 			}
+ 			setTCPTimeouts(s);
+-			setWebifTCPTimeouts(s);
+-
+ 			cur_client()->last = time((time_t *)0); //reset last busy time
+ 			conn->cl = cur_client();
+ #ifdef IPV6SUPPORT
+diff --git a/oscam-cache.c b/oscam-cache.c
+index bb1a0b63..aac85c74 100644
+--- a/oscam-cache.c
++++ b/oscam-cache.c
+@@ -450,7 +450,7 @@ static void cacheex_cache_add(ECM_REQUEST *er, ECMHASH *result, CW *cw, bool add
+ 			cs_hexdump(0, er->cw, 16, cw1, sizeof(cw1));
+ 			cs_hexdump(0, cw_first->cw, 16, cw2, sizeof(cw2));
+ 
+-			char ip1[INET6_ADDRSTRLEN] = "", ip2[INET6_ADDRSTRLEN] = "";
++			char ip1[20]="", ip2[20]="";
+ 			if (check_client(er->cacheex_src))
+ 				cs_strncpy(ip1, cs_inet_ntoa(er->cacheex_src->ip), sizeof(ip1));
+ 			if (check_client(cw_first->cacheex_src))
 diff --git a/oscam-chk.c b/oscam-chk.c
 index 78d031ea..0396bf71 100644
 --- a/oscam-chk.c
@@ -12014,11 +12110,95 @@ index 78d031ea..0396bf71 100644
  	{
  		return 1; // reader caid is not real caid
  	}
+diff --git a/oscam-client.c b/oscam-client.c
+index a264f2fd..7a60672c 100644
+--- a/oscam-client.c
++++ b/oscam-client.c
+@@ -144,7 +144,7 @@ static void cs_fake_client(struct s_client *client, char *usr, int32_t uniq, IN_
+ 		if(cl != client && cl->typ == 'c' && !cl->dup && account && streq(account->usr, usr)
+ 			&& uniq < 5 && ((uniq % 2) || !IP_EQUAL(cl->ip, ip)))
+ 		{
+-			char buf[INET6_ADDRSTRLEN];
++			char buf[20];
+ 
+ 			con_count++;
+ 			if(con_count <= account->max_connections)
+@@ -563,7 +563,7 @@ int32_t cs_auth_client(struct s_client *client, struct s_auth *account, const ch
+ 
+ void cs_disconnect_client(struct s_client *client)
+ {
+-	char buf[INET6_ADDRSTRLEN + 6] = { 0 };
++	char buf[32] = { 0 };
+ 
+ 	if(IP_ISSET(client->ip))
+ 	{
+diff --git a/oscam-conf-mk.c b/oscam-conf-mk.c
+index 0d21aada..e2fdac19 100644
+--- a/oscam-conf-mk.c
++++ b/oscam-conf-mk.c
+@@ -741,7 +741,7 @@ char *mk_t_iprange(struct s_ip *range)
+ 	struct s_ip *cip;
+ 	char *value, *dot = "";
+ 	int32_t needed = 1, pos = 0;
+-	for(cip = range; cip; cip = cip->next) { needed += (INET6_ADDRSTRLEN * 2) + 2; }
++	for(cip = range; cip; cip = cip->next) { needed += 64; }
+ 
+ 	char tmp[needed];
+ 
 diff --git a/oscam-config-global.c b/oscam-config-global.c
-index 1d6fd8db..1126e236 100644
+index 1d6fd8db..8e6f6284 100644
 --- a/oscam-config-global.c
 +++ b/oscam-config-global.c
-@@ -967,6 +967,10 @@ static const struct config_list streamrelay_opts[] =
+@@ -18,7 +18,6 @@
+ #define DEFAULT_HTTP_PORT 8888
+ #define DEFAULT_HTTP_ALLOW "127.0.0.1,192.168.0.0-192.168.255.255,10.0.0.0-10.255.255.255,172.16.0.0-172.31.255.255,::1"
+ #define DEFAULT_HTTP_MAX_REQUEST_SIZE 102400
+-#define MIN_HTTP_MAX_REQUEST_SIZE 1024
+ 
+ static void disablelog_fn(const char *token, char *value, void *UNUSED(setting), FILE *f)
+ {
+@@ -50,31 +49,6 @@ static void loghistorylines_fn(const char *token, char *value, void *UNUSED(sett
+ }
+ #endif
+ 
+-#ifdef WEBIF
+-static void httpmaxrequestsize_fn(const char *token, char *value, void *setting, FILE *f)
+-{
+-	int32_t *max_request_size = setting;
+-	if(value)
+-	{
+-		int32_t newsize = strToIntVal(value, DEFAULT_HTTP_MAX_REQUEST_SIZE);
+-		if(newsize <= 0)
+-		{
+-			fprintf(stderr, "WARNING: httpmaxrequestsize is invalid, adjusted to %d\n", DEFAULT_HTTP_MAX_REQUEST_SIZE);
+-			newsize = DEFAULT_HTTP_MAX_REQUEST_SIZE;
+-		}
+-		else if(newsize < MIN_HTTP_MAX_REQUEST_SIZE)
+-		{
+-			fprintf(stderr, "WARNING: httpmaxrequestsize is too small, adjusted to %d\n", MIN_HTTP_MAX_REQUEST_SIZE);
+-			newsize = MIN_HTTP_MAX_REQUEST_SIZE;
+-		}
+-		*max_request_size = newsize;
+-		return;
+-	}
+-	if(*max_request_size != DEFAULT_HTTP_MAX_REQUEST_SIZE || cfg.http_full_cfg)
+-		{ fprintf_conf(f, token, "%d\n", *max_request_size); }
+-}
+-#endif
+-
+ static void serverip_fn(const char *token, char *value, void *setting, FILE *f)
+ {
+ 	IN_ADDR_T srvip = *(IN_ADDR_T *)setting;
+@@ -590,7 +564,7 @@ static const struct config_list webif_opts[] =
+ 	DEF_OPT_STR("httplocale"                , OFS(http_locale)              , NULL),
+ 	DEF_OPT_INT8("http_prepend_embedded_css", OFS(http_prepend_embedded_css), 0),
+ 	DEF_OPT_INT32("httprefresh"             , OFS(http_refresh)             , 0),
+-	DEF_OPT_FUNC("httpmaxrequestsize"       , OFS(http_max_request_size)    , httpmaxrequestsize_fn),
++	DEF_OPT_INT32("httpmaxrequestsize"      , OFS(http_max_request_size)    , DEFAULT_HTTP_MAX_REQUEST_SIZE),
+ 	DEF_OPT_INT32("httppollrefresh"         , OFS(poll_refresh)             , 60),
+ 	DEF_OPT_INT8("httphideidleclients"      , OFS(http_hide_idle_clients)   , 1),
+ 	DEF_OPT_STR("httphidetype"              , OFS(http_hide_type)           , NULL),
+@@ -967,6 +941,10 @@ static const struct config_list streamrelay_opts[] =
  	DEF_OPT_STR("stream_source_auth_password"    , OFS(stream_source_auth_password),  NULL),
  	DEF_OPT_UINT32("stream_relay_buffer_time"    , OFS(stream_relay_buffer_time),     0),
  	DEF_OPT_UINT8("stream_relay_reconnect_count" , OFS(stream_relay_reconnect_count), 0),
@@ -12092,9 +12272,18 @@ index b0179dd8..e66a1aa1 100644
  };
  
 diff --git a/oscam-ecm.c b/oscam-ecm.c
-index 6b9c6c52..d4903348 100644
+index 6b9c6c52..b930fca4 100644
 --- a/oscam-ecm.c
 +++ b/oscam-ecm.c
+@@ -2102,7 +2102,7 @@ void chk_dcw(struct s_ecm_answer *ea)
+ 				cs_hexdump(0, ert->cw, 16, cw2, sizeof(cw2));
+ 			}
+ #endif
+-			char ip1[INET6_ADDRSTRLEN] = "", ip2[INET6_ADDRSTRLEN] = "";
++			char ip1[20] = "", ip2[20] = "";
+ 			if(ea->reader && check_client(ea->reader->client)) { cs_strncpy(ip1, cs_inet_ntoa(ea->reader->client->ip), sizeof(ip1)); }
+ 			if(ert->cacheex_src) { cs_strncpy(ip2, cs_inet_ntoa(ert->cacheex_src->ip), sizeof(ip2)); }
+ 			else if(ert->selected_reader && check_client(ert->selected_reader->client)) { cs_strncpy(ip2, cs_inet_ntoa(ert->selected_reader->client->ip), sizeof(ip2)); }
 @@ -2418,6 +2418,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
  		return 0;
  	}
@@ -12174,6 +12363,128 @@ index 486d62c3..1bf94e52 100644
  	if(prid == provid)
  	{
  		rdr_log_dbg(reader, D_EMM, "reader auprovid = %06X matching with emm provid = %06X -> SEND!", prid, provid);
+diff --git a/oscam-net.c b/oscam-net.c
+index 92f8b9e5..d6c7daf2 100644
+--- a/oscam-net.c
++++ b/oscam-net.c
+@@ -33,101 +33,24 @@ static in_addr_t cs_inet_order(in_addr_t n)
+ }
+ #endif
+ 
+-#define CS_INET_NTOA_SLOT_COUNT 8
+-
+-struct s_inet_ntoa_buffer
+-{
+-	uint8_t slot;
+-	char text[CS_INET_NTOA_SLOT_COUNT][INET6_ADDRSTRLEN];
+-};
+-
+-static pthread_key_t inet_ntoa_key;
+-/* Initialized once during single-threaded startup before worker threads exist.
+- * This flag is only a misuse guard for cs_inet_ntoa() callers, not concurrency
+- * control for lazy initialization.
+- */
+-static int8_t inet_ntoa_key_initialized = 0;
+-
+-static void cs_inet_ntoa_destroy_buffer(void *ptr)
+-{
+-	NULLFREE(ptr);
+-}
+-
+-void cs_inet_ntoa_init(void)
+-{
+-	if(inet_ntoa_key_initialized)
+-		{ return; }
+-
+-	int32_t pter = pthread_key_create(&inet_ntoa_key, cs_inet_ntoa_destroy_buffer);
+-
+-	if(pter)
+-	{
+-		fprintf_stderr("FATAL ERROR: pthread_key_create() failed in %s with error %d %s\n",
+-				__func__, pter, strerror(pter));
+-		exit(1);
+-	}
+-
+-	inet_ntoa_key_initialized = 1;
+-}
+-
+-static char *cs_inet_ntoa_get_buffer(void)
+-{
+-	struct s_inet_ntoa_buffer *buffer = NULL;
+-	int32_t pter;
+-
+-	if(!inet_ntoa_key_initialized)
+-	{
+-		fprintf_stderr("FATAL ERROR: cs_inet_ntoa_init() was not called before %s\n", __func__);
+-		exit(1);
+-	}
+-
+-	buffer = pthread_getspecific(inet_ntoa_key);
+-	if(!buffer)
+-	{
+-		if(!cs_malloc(&buffer, sizeof(*buffer)))
+-		{
+-			fprintf_stderr("FATAL ERROR: cs_malloc() failed in %s\n", __func__);
+-			exit(1);
+-		}
+-
+-		pter = pthread_setspecific(inet_ntoa_key, buffer);
+-		if(pter)
+-		{
+-			fprintf_stderr("FATAL ERROR: pthread_setspecific() failed in %s with error %d %s\n",
+-					__func__, pter, strerror(pter));
+-			NULLFREE(buffer);
+-			exit(1);
+-		}
+-	}
+-
+-	char *text = buffer->text[buffer->slot];
+-	buffer->slot = (buffer->slot + 1) % CS_INET_NTOA_SLOT_COUNT;
+-	return text;
+-}
+-
+ char *cs_inet_ntoa(IN_ADDR_T addr)
+ {
+-	char *buff = cs_inet_ntoa_get_buffer();
+-	buff[0] = '\0';
+-
+ #ifdef IPV6SUPPORT
++	static char buff[INET6_ADDRSTRLEN];
+ 	if(IN6_IS_ADDR_V4MAPPED(&addr) || IN6_IS_ADDR_V4COMPAT(&addr))
+ 	{
+-		snprintf(buff, INET6_ADDRSTRLEN, "%d.%d.%d.%d",
++		snprintf(buff, sizeof(buff), "%d.%d.%d.%d",
+ 				 addr.s6_addr[12], addr.s6_addr[13], addr.s6_addr[14], addr.s6_addr[15]);
+ 	}
+ 	else
+ 	{
+-		if(!inet_ntop(AF_INET6, &(addr.s6_addr), buff, INET6_ADDRSTRLEN))
+-			{ return buff; }
++		inet_ntop(AF_INET6, &(addr.s6_addr), buff, INET6_ADDRSTRLEN);
+ 	}
+ 	return buff;
+ #else
+ 	struct in_addr in;
+ 	in.s_addr = addr;
+-	if(!inet_ntop(AF_INET, &in, buff, INET6_ADDRSTRLEN))
+-		{ return buff; }
+-	return buff;
++	return (char *)inet_ntoa(in);
+ #endif
+ }
+ 
+diff --git a/oscam-net.h b/oscam-net.h
+index 583fe564..2b450b4a 100644
+--- a/oscam-net.h
++++ b/oscam-net.h
+@@ -25,7 +25,6 @@ extern void cs_getIPv6fromHost(const char *hostname, struct in6_addr *addr, stru
+ #define SIN_GET_FAMILY(a) (a.sin_family)
+ #endif
+ 
+-void cs_inet_ntoa_init(void);
+ char *cs_inet_ntoa(IN_ADDR_T addr);
+ void cs_inet_addr(char *txt, IN_ADDR_T *out);
+ void cs_resolve(const char *hostname, IN_ADDR_T *ip, struct SOCKADDR *sock, socklen_t *sa_len);
 diff --git a/oscam-simples.c b/oscam-simples.c
 index 576804c9..6e1c7137 100644
 --- a/oscam-simples.c
@@ -12196,7 +12507,7 @@ index 576804c9..6e1c7137 100644
  	return "unknown";
  }
 diff --git a/oscam.c b/oscam.c
-index 78ec882e..318d2bff 100644
+index 78ec882e..2f757fda 100644
 --- a/oscam.c
 +++ b/oscam.c
 @@ -44,6 +44,10 @@
@@ -12229,7 +12540,15 @@ index 78ec882e..318d2bff 100644
  
  	NULL
  };
-@@ -1862,6 +1871,9 @@ int32_t main(int32_t argc, char *argv[])
+@@ -1732,7 +1741,6 @@ int32_t main(int32_t argc, char *argv[])
+ {
+ 	fix_stacksize();
+ 
+-	cs_inet_ntoa_init();
+ 	run_tests();
+ 	int32_t i, j;
+ 	prog_name = argv[0];
+@@ -1862,6 +1870,9 @@ int32_t main(int32_t argc, char *argv[])
  
  	init_sidtab();
  	init_readerdb();
@@ -12281,6 +12600,89 @@ index eec350e9..316c2bea 100644
 +extern const struct s_cardsystem reader_emu;
  
  #endif
+diff --git a/webif/config/cccreshare.html b/webif/config/cccreshare.html
+index c78070bc..846878bf 100644
+--- a/webif/config/cccreshare.html
++++ b/webif/config/cccreshare.html
+@@ -1,5 +1,5 @@
+ <!--	gbox part. not displayed when cccam not compiled in -->
+-<TR><TD><A>Reshare ccc-cards -&gt; gbox-net</A></TD>
++<TR><TD><A>Reshare ccc-cards -> gbox-net</A></TD>
+ 		<TD>
+ 				<input name="ccc_reshare" type="hidden" value="0"><input name="ccc_reshare" type="checkbox" value="1" ##GBOXCCCRESHARE##><label>enable reshare</label>
+ 		</TD>
+diff --git a/webif/config/dvbapi.html b/webif/config/dvbapi.html
+index fafc0dd7..33f0d5b1 100644
+--- a/webif/config/dvbapi.html
++++ b/webif/config/dvbapi.html
+@@ -5,8 +5,8 @@
+ 	<input name="write_sdt_prov" type="hidden" value="0">
+ 	<TABLE CLASS="config">
+ 		<TR><TH COLSPAN="2">Edit DVB Api Config</TH></TR>
+-		<TR><TD><A>Enabled:</A></TD><TD><input name="enabled" type="checkbox" value="1" ##ENABLEDCHECKED##><label></label></TD></TR>
+-		<TR><TD><A>AU:</A></TD><TD><input name="au" type="checkbox" value="1" ##AUCHECKED##><label></label></TD></TR>
++		<TR><TD><A>Enabled:</A></TD><TD><input name="enabled" type="checkbox" value="1" ##ENABLEDCHECKED##><label></label>
++		<TR><TD><A>AU:</A></TD><TD><input name="au" type="checkbox" value="1" ##AUCHECKED##><label></label>
+ 		<TR><TD><A>Boxtype:</A></TD><TD><select name="boxtype">##BOXTYPE##</select></TD></TR>
+ 		<TR><TD><A data-p="user_2">User:</A></TD><TD><input name="user" class="longer" type="text" maxlength="63" value="##USERNAME##"></TD></TR>
+ 		<TR><TD><A>PMT Mode:</A></TD>
+@@ -33,7 +33,7 @@
+ 		<TR><TD><A>Listen port:</A></TD><TD><input name="listen_port" class="short" type="text" maxlength="5" value="##LISTENPORT##"> TCP port to listen instead of camd.socket</TD></TR>
+ 		<TR><TD><A>Server IP:</A></TD><TD><input name="serverip" class="medium" type="text" maxlength="45" value="##SERVERIP##"></TD></TR>
+ 		<TR><TD><A>Delayer:</A></TD><TD><input name="delayer" class="withunit short" type="text" maxlength="4" value="##DELAYER##"> ms</TD></TR>
+-		<TR><TD><A>Enable ecm.info file:</A></TD><TD><input name="ecminfo_file" type="checkbox" value="1" ##ECMINFOFILECHECKED##><label></label></TD></TR>
++		<TR><TD><A>Enable ecm.info file:</A></TD><TD><input name="ecminfo_file" type="checkbox" value="1" ##ECMINFOFILECHECKED##><label></label>
+ 		<TR><TD><A>ecm.info type:</A></TD>
+ 			<TD>
+ 				<select name="ecminfo_type">
+@@ -56,6 +56,6 @@
+ 				</select>
+ 			</TD>
+ 		</TR>
+-		<TR><TD><A>Write detected prov name to srvid:</A></TD><TD><input name="write_sdt_prov" type="checkbox" value="1" ##WRITESDTPROVCHECKED##><label></label></TD></TR>
++		<TR><TD><A>Write detected prov name to srvid:</A></TD><TD><input name="write_sdt_prov" type="checkbox" value="1" ##WRITESDTPROVCHECKED##><label></label>
+ ##TPLEXTENDEDCWAPI##
+ ##TPLDEMUXERFIX##
+diff --git a/webif/config/gbox.html b/webif/config/gbox.html
+index 9fb9b54b..2c17fe95 100644
+--- a/webif/config/gbox.html
++++ b/webif/config/gbox.html
+@@ -7,7 +7,7 @@
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+ 						<TR>
+-							<TD><input name="my_password" class="medium" type="text" maxlength="8" value="##MYGBOXPASSWORD##">&nbsp;(8 hex chars)</TD>
++							<TD><input name="my_password"class="medium"  type="text" maxlength="8" value="##MYGBOXPASSWORD##">&nbsp;(8 hex chars)</TD>
+ 							<TD><A>My Id: </A><input name="myid" class="short" type="text" maxlength="4" value="##MYGBOXID##">&nbsp;info only, no subject to modify</TD>
+ 						</TR>
+ 					</TABLE>
+@@ -43,7 +43,7 @@
+ 			<TR><TD><A data-p="proxy_card">Proxy cards:</A></TD><TD>Maximum 32 Cards (8 hex chars each), comma-separated<BR><textarea name="proxy_card" rows="4" class="bt" maxlength="287">##GBOXPROXYCARD##</textarea><BR></TD></TR>
+ 		<TR><TH COLSPAN="2">GBox Short Message Service - Send GSMS</TH></TR>
+ 		<TR><TD><A data-p="gbox_save_gsms">Save this GSMS in conf:</A></TD><TD><input name="gbox_save_gsms" value="0" type="hidden"><input name="gbox_save_gsms" value="1" type="checkbox" ##GBOXSAVEGSMS##><label>You need to press save button to really save it!</label></TD></TR>
+-		<TR><TD><A data-p="gbox_msg_type">Message type:</A></TD>
++		<TR><TD><A data-p="gbox_msg_type">Message type:</TD>
+ 			<TD><select name="gbox_msg_type">
+ 				<option value="0" ##GBOXMSGTYPENORMAL##>0 - normal text message</option>
+ 				<option value="1" ##GBOXMSGTYPEOSD##>1 - normal txt message + OSD message</option>
+@@ -68,3 +68,4 @@
+ 			</TR></TABLE></TD>
+ 		</TR>
+ 		<TR CLASS="configfirstrow"><TD></TD><TD></TD></TR>
++		</TR>
+diff --git a/webif/config/loadbalancer.html b/webif/config/loadbalancer.html
+index a5f7b801..5807a8a4 100644
+--- a/webif/config/loadbalancer.html
++++ b/webif/config/loadbalancer.html
+@@ -28,7 +28,7 @@
+ 			<TR><TD><A>Force always reopen:</A></TD><TD><input name="lb_force_reopen_always" value="0" type="hidden"><input name="lb_force_reopen_always" value="1" type="checkbox" ##LBFORCEALWAYS##><label></label></TD></TR>
+ 			<TR><TD><A>Ignore provider for:</A></TD><TD><input name="lb_noproviderforcaid" type="text" maxlength="160" value="##LBNOPROVIDERFORCAID##"></TD></TR>
+ 			<TR><TD><A>Auto Betatunnel:</A></TD><TD><input name="lb_auto_betatunnel" value="0" type="hidden"><input name="lb_auto_betatunnel" value="1" type="checkbox" ##LBAUTOBETATUNNEL##><label></label></TD></TR>
+-			<TR><TD><A>Auto Betatunnel Mode:</A></TD><TD><select name="lb_auto_betatunnel_mode"><option value="0">0 - 18XX-&gt;17X2 (only)</option><option value="1" ##LBAUTOBETATUNNELMODE1##>1 - 18XX-&gt;17X2 &amp; 17X2-&gt;18XX (1833/1801)</option><option value="2" ##LBAUTOBETATUNNELMODE2##>2 - 18XX-&gt;17X2 &amp; 17X2-&gt;18XX (1833/1834)</option><option value="3" ##LBAUTOBETATUNNELMODE3##>3 - 18XX-&gt;17X2 &amp; 17X2-&gt;18XX (1833/1835)</option><option value="4" ##LBAUTOBETATUNNELMODE4##>4 - 17X2-&gt;18XX (1833/1801 only)</option><option value="5" ##LBAUTOBETATUNNELMODE5##>5 - 17X2-&gt;18XX (1833/1834 only)</option><option value="6" ##LBAUTOBETATUNNELMODE6##>6 - 17X2-&gt;18XX (1833/1835 only)</option></select></TD></TR>
++			<TR><TD><A>Auto Betatunnel Mode:</A></TD><TD><select name="lb_auto_betatunnel_mode"><option value="0">0 - 18XX->17X2 (only)</option><option value="1" ##LBAUTOBETATUNNELMODE1##>1 - 18XX->17X2 &amp; 17X2->18XX (1833/1801)</option><option value="2" ##LBAUTOBETATUNNELMODE2##>2 - 18XX->17X2 &amp; 17X2->18XX (1833/1834)</option><option value="3" ##LBAUTOBETATUNNELMODE3##>3 - 18XX->17X2 &amp; 17X2->18XX (1833/1835)</option><option value="4" ##LBAUTOBETATUNNELMODE4##>4 - 17X2->18XX (1833/1801 only)</option><option value="5" ##LBAUTOBETATUNNELMODE5##>5 - 17X2->18XX (1833/1834 only)</option><option value="6" ##LBAUTOBETATUNNELMODE6##>6 - 17X2->18XX (1833/1835 only)</option></select></TD></TR>
+ 			<TR><TD><A>Prefer Beta over Nagra:</A></TD><TD><input name="lb_auto_betatunnel_prefer_beta" class="withunit short" type="text" maxlength="5" value="##LBPREFERBETA##"> %</TD></TR>
+ 			<TR><TD><A>Auto timeout:</A></TD><TD><input name="lb_auto_timeout" value="0" type="hidden"><input name="lb_auto_timeout" value="1" type="checkbox" ##LBAUTOTIMEOUT##><label></label></TD></TR>
+ 			<TR><TD><A>Auto timeout percent:</A></TD><TD><input name="lb_auto_timeout_p" class="withunit short" type="text" maxlength="5" value="##LBAUTOTIMEOUTP##"> %</TD></TR>
 diff --git a/webif/config/streamrelay.html b/webif/config/streamrelay.html
 index f79d5a1c..3804d00f 100644
 --- a/webif/config/streamrelay.html
@@ -12308,6 +12710,46 @@ index 00000000..dcb0618b
 +				</TD>
 +			</TR>
 +			<TR><TD><A>ECM fix delay (emu):</A></TD><TD><input name="stream_ecm_delay" class="short" type="text" maxlength="5" value="##STREAM_ECM_DELAY##"><label> ms (delay for PowerVU processing)</label></TD></TR>
+diff --git a/webif/config/webif.html b/webif/config/webif.html
+index 80c07f9f..c18fd4d2 100644
+--- a/webif/config/webif.html
++++ b/webif/config/webif.html
+@@ -13,7 +13,7 @@
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+ 						<TR>
+-							<TD><A data-p="httprefresh">Http:</A>&nbsp;<input name="httprefresh" class="withunit short" type="text" maxlength="5" value="##HTTPREFRESH##"> s</TD>
++							<TD><A data-p="httprefresh">Http:</A>&nbsp;<input name="httprefresh" class="withunit short" type="text" maxlength="5" value="##HTTPREFRESH##"> s
+ 							<TD><A data-p="httpmaxrequestsize">Max request size:</A>&nbsp;<input name="httpmaxrequestsize" class="withunit short" type="text" maxlength="8" value="##HTTPMAXREQUESTSIZE##"> bytes</TD>
+ 							<TD><A data-p="httppollrefresh">Poll (initial refresh):</A>&nbsp;<input name="httppollrefresh" class="withunit short" type="text" maxlength="2" value="##HTTPPOLLREFRESH##"> s</TD>
+ 						</TR>
+@@ -89,13 +89,13 @@
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+ 						<TR>
+-							<TD><A data-p="http_status_log"></A><label>Log:</label></TD><TD><input name="http_status_log" type="hidden" value="0"><input name="http_status_log" type="checkbox" value="1" ##SHOWLOGCHECKED##></TD>
+-							<TD><A data-p="httpshowreaderinfo"></A><label>Readers info:</label></TD><TD><input name="httpshowreaderinfo" type="hidden" value="0"><input name="httpshowreaderinfo" type="checkbox" value="1" ##SHOWREADERINFOCHECKED##></TD>
+-							<TD><A data-p="httpshowecminfo"></A><label>ECM info:</label></TD><TD><input name="httpshowecminfo" type="hidden" value="0"><input name="httpshowecminfo" type="checkbox" value="1" ##SHOWECMINFOCHECKED##></TD>
+-							<TD><A data-p="httpshowuserinfo"></A><label>Users info:</label></TD><TD><input name="httpshowuserinfo" type="hidden" value="0"><input name="httpshowuserinfo" type="checkbox" value="1" ##SHOWUSERINFOCHECKED##></TD>
++							<TD><A data-p="http_status_log"</A><label>Log:</label></TD><TD><input name="http_status_log" type="hidden" value="0"><input name="http_status_log" type="checkbox" value="1" ##SHOWLOGCHECKED##></TD>
++							<TD><A data-p="httpshowreaderinfo"</A><label>Readers info:</label></TD><TD><input name="httpshowreaderinfo" type="hidden" value="0"><input name="httpshowreaderinfo" type="checkbox" value="1" ##SHOWREADERINFOCHECKED##></TD>
++							<TD><A data-p="httpshowecminfo"</A><label>ECM info:</label></TD><TD><input name="httpshowecminfo" type="hidden" value="0"><input name="httpshowecminfo" type="checkbox" value="1" ##SHOWECMINFOCHECKED##></TD>
++							<TD><A data-p="httpshowuserinfo"</A><label>Users info:</label></TD><TD><input name="httpshowuserinfo" type="hidden" value="0"><input name="httpshowuserinfo" type="checkbox" value="1" ##SHOWUSERINFOCHECKED##></TD>
+ ##TPLSHOWCACHEEXINFO##
+-							<TD><A data-p="httpshowmeminfo"></A><label>Memory info:</label></TD><TD><input name="httpshowmeminfo" type="hidden" value="0"><input name="httpshowmeminfo" type="checkbox" value="1" ##SHOWMEMINFOCHECKED##></TD>
+-							<TD><A data-p="httpshowloadinfo"></A><label>Load info:</label></TD><TD><input name="httpshowloadinfo" type="hidden" value="0"><input name="httpshowloadinfo" type="checkbox" value="1" ##SHOWLOADINFOCHECKED##></TD>
++							<TD><A data-p="httpshowmeminfo"</A><label>Memory info:</label></TD><TD><input name="httpshowmeminfo" type="hidden" value="0"><input name="httpshowmeminfo" type="checkbox" value="1" ##SHOWMEMINFOCHECKED##></TD>
++							<TD><A data-p="httpshowloadinfo"</A><label>Load info:</label></TD><TD><input name="httpshowloadinfo" type="hidden" value="0"><input name="httpshowloadinfo" type="checkbox" value="1" ##SHOWLOADINFOCHECKED##></TD>
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+diff --git a/webif/config/webif_showcacheexinfo.html b/webif/config/webif_showcacheexinfo.html
+index 0d29b215..7ae90364 100644
+--- a/webif/config/webif_showcacheexinfo.html
++++ b/webif/config/webif_showcacheexinfo.html
+@@ -1 +1 @@
+-<TD><A data-p="httpshowcacheexinfo"></A><label>CACHEEX info:</label></TD><TD><input name="httpshowcacheexinfo" type="hidden" value="0"><input name="httpshowcacheexinfo" type="checkbox" value="1" ##SHOWCACHEEXINFOCHECKED##></TD>
++<TD><A data-p="httpshowcacheexinfo"</A><label>CACHEEX info:</label></TD><TD><input name="httpshowcacheexinfo" type="hidden" value="0"><input name="httpshowcacheexinfo" type="checkbox" value="1" ##SHOWCACHEEXINFOCHECKED##></TD>
 diff --git a/webif/files/menu.html b/webif/files/menu.html
 index 4dc6f02e..2e4e6b62 100644
 --- a/webif/files/menu.html
@@ -12329,6 +12771,15 @@ index 4dc6f02e..2e4e6b62 100644
  			</UL>
  		</LI>
  	</UL>
+diff --git a/webif/files/menu_gbox.html b/webif/files/menu_gbox.html
+index e86e8d7f..f67d6aa4 100644
+--- a/webif/files/menu_gbox.html
++++ b/webif/files/menu_gbox.html
+@@ -12,4 +12,3 @@
+ 				<LI CLASS="##CMENUACTIVE28##"><A HREF="files.html?file=expired.info">expired.info</A></LI>
+ 				<LI CLASS="##CMENUACTIVE29##"><A HREF="files.html?file=info.log">info.log</A></LI>
+ 			</UL>
+-		</LI>
 diff --git a/webif/files/menu_softcamkey.html b/webif/files/menu_softcamkey.html
 new file mode 100644
 index 00000000..cf718779
@@ -12336,6 +12787,23 @@ index 00000000..cf718779
 +++ b/webif/files/menu_softcamkey.html
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
+diff --git a/webif/pages_gen.c b/webif/pages_gen.c
+index b499e093..8d24d912 100644
+--- a/webif/pages_gen.c
++++ b/webif/pages_gen.c
+@@ -186,10 +186,10 @@ static void parse_index_file(char *filename)
+ 
+ 		if(deps && strlen(deps) && is_defined){
+ 			if(strstr(deps, ",")){
+-				int def_found=0;
++				int i,def_found=0;
+ 				char *ptr, *saveptr1 = NULL;
+ 				char *deps_sep = strdup(deps);
+-	 			for(ptr = strtok_r(deps_sep, ",", &saveptr1); ptr; ptr = strtok_r(NULL, ",", &saveptr1))
++				for(i = 0, ptr = strtok_r(deps_sep, ",", &saveptr1); ptr; ptr = strtok_r(NULL, ",", &saveptr1), i++)
+ 	 			{
+ 					if(strstr((char *)is_defined, ptr))
+ 	 					{ def_found = 1; }
 diff --git a/webif/pages_index.txt b/webif/pages_index.txt
 index fbf1d18b..654fc692 100644
 --- a/webif/pages_index.txt
@@ -12386,11 +12854,57 @@ index fbf1d18b..654fc692 100644
  READERCONFIGCS378XBIT         readerconfig/readerconfig_cs378xbit.html                    MODULE_CAMD35_TCP
  READERCONFIGGBOXBIT           readerconfig/readerconfig_gboxbit.html                      MODULE_GBOX
  READERINFOGBOXREMM            readerconfig/readerinfo_gbox_remm.html                      MODULE_GBOX
+diff --git a/webif/readerconfig/readerconfig.html b/webif/readerconfig/readerconfig.html
+index ca94a61d..ef889f1d 100644
+--- a/webif/readerconfig/readerconfig.html
++++ b/webif/readerconfig/readerconfig.html
+@@ -78,7 +78,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD>Blockemm:</TD>
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+@@ -90,7 +89,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD><A>Block EMM by Len:</A></TD><TD><input name="blockemm-bylen" type="text" maxlength="256" value="##BLOCKEMMBYLEN##"></TD></TR>
+ ##READERCONFIGSIDINS##
+ 			<TR><TH COLSPAN="2">Reader specific settings for protocol ##PROTOCOL##</TH></TR>
 diff --git a/webif/readerconfig/readerconfig_cccambit.html b/webif/readerconfig/readerconfig_cccambit.html
-index 9b4678aa..63d9e7bd 100644
+index 9b4678aa..85232402 100644
 --- a/webif/readerconfig/readerconfig_cccambit.html
 +++ b/webif/readerconfig/readerconfig_cccambit.html
-@@ -22,4 +22,5 @@
+@@ -6,20 +6,21 @@
+ 			<TR><TD><A>Version:</A></TD>
+ 				<TD>
+ 					<select name="cccversion">
+-						<option value="2.0.11" ##CCCVERSIONSELECTED0##>2.0.11</option>
+-						<option value="2.1.1" ##CCCVERSIONSELECTED1##>2.1.1</option>
+-						<option value="2.1.2" ##CCCVERSIONSELECTED2##>2.1.2</option>
+-						<option value="2.1.3" ##CCCVERSIONSELECTED3##>2.1.3</option>
+-						<option value="2.1.4" ##CCCVERSIONSELECTED4##>2.1.4</option>
+-						<option value="2.2.0" ##CCCVERSIONSELECTED5##>2.2.0</option>
+-						<option value="2.2.1" ##CCCVERSIONSELECTED6##>2.2.1</option>
+-						<option value="2.3.0" ##CCCVERSIONSELECTED7##>2.3.0</option>
+-						<option value="2.3.1" ##CCCVERSIONSELECTED8##>2.3.1</option>
+-						<option value="2.3.2" ##CCCVERSIONSELECTED9##>2.3.2</option>
++						<option value="2.0.11"##CCCVERSIONSELECTED0##>2.0.11</option>
++						<option value="2.1.1"##CCCVERSIONSELECTED1##>2.1.1</option>
++						<option value="2.1.2"##CCCVERSIONSELECTED2##>2.1.2</option>
++						<option value="2.1.3"##CCCVERSIONSELECTED3##>2.1.3</option>
++						<option value="2.1.4"##CCCVERSIONSELECTED4##>2.1.4</option>
++						<option value="2.2.0"##CCCVERSIONSELECTED5##>2.2.0</option>
++						<option value="2.2.1"##CCCVERSIONSELECTED6##>2.2.1</option>
++						<option value="2.3.0"##CCCVERSIONSELECTED7##>2.3.0</option>
++						<option value="2.3.1"##CCCVERSIONSELECTED8##>2.3.1</option>
++						<option value="2.3.2"##CCCVERSIONSELECTED9##>2.3.2</option>
+ 					</select>
+ 				</TD>
+ 			</TR>
  			<TR><TD><A>Maxhop:</A></TD><TD><input name="cccmaxhops" class="short" type="text" maxlength="2" value="##CCCMAXHOPS##"></TD></TR>
  			<TR><TD><A>Mindown:</A></TD><TD><input name="cccmindown" class="short" type="text" maxlength="2" value="##CCCMINDOWN##"></TD></TR>
  			<TR><TD><A>Reshare:</A></TD><TD><input name="cccreshare" class="short" type="text" maxlength="2" value="##CCCRESHARE##">				&nbsp;Global CCCam Reshare:<SPAN CLASS="global_conf" TITLE="This value is used if Reshare = -1"><A HREF="config.html?part=cccam">##RESHARE##</A></SPAN></TD></TR>
@@ -12404,4 +12918,60 @@ index 00000000..8c130b7c
 @@ -0,0 +1,2 @@
 +			<TR><TD><A>AU providers:</A></TD><TD><textarea name="emu_auproviders" rows="3" class="bt">##EMUAUPROVIDERS##</textarea></TD></TR>
 +			<TR><TD><A>[BISS] Enable date-coded keys:</A></TD><TD><input name="emu_datecodedenabled" type="hidden" value="0"><input name="emu_datecodedenabled" type="checkbox" value="1" ##EMUDATECODEDENABLED##><label></label></TD></TR>
+diff --git a/webif/readerconfig/readerconfig_gboxbit.html b/webif/readerconfig/readerconfig_gboxbit.html
+index 2f81b57f..3f6c465e 100644
+--- a/webif/readerconfig/readerconfig_gboxbit.html
++++ b/webif/readerconfig/readerconfig_gboxbit.html
+@@ -3,7 +3,7 @@
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+ 						<TR>
+-							<TD><input name="password" class="medium" type="text" maxlength="8" value="##PASSWORD##">&nbsp;8 hex chars</TD>
++							<TD><input name="password"class="medium"  type="text" maxlength="8" value="##PASSWORD##">&nbsp;8 hex chars</TD>
+ 							<TD><A>Info-Peer ID: </A><input name="peerid" class="short" type="text" maxlength="4" value="##PEERGBOXID##"></TD>
+ 							<TD><A>is online: </A><input name="peeronl" type="hidden" value="0"><input name="peeronl" type="checkbox" value="1" ##PEERONLSTAT##></TD>
+ 						</TR>
+diff --git a/webif/readerconfig/readerconfig_gboxcccresharebit.html b/webif/readerconfig/readerconfig_gboxcccresharebit.html
+index 444cd146..a9399cc4 100644
+--- a/webif/readerconfig/readerconfig_gboxcccresharebit.html
++++ b/webif/readerconfig/readerconfig_gboxcccresharebit.html
+@@ -1,3 +1,3 @@
+ <!-- gbox part. below not shown when ccc not compiled in oscam -->
+-<TR><TD><A>CCcam -&gt; gbox reshare level:</A></TD><TD><input name="cccam_reshare" class="short" type="text" maxlength="2" value="##GBOXCCCAMRESHARE##"> set: -1 to disable resharing &nbsp;&nbsp; Upper Limit is value of 'Locals reshare'</TD></TR>
+-<TR><TD><A data-p="ccc_gbx_reshare_ident">CCcam -&gt; Gbox reshare filter:</A></TD><TD>Set Ident of ccc cards you want to share. If no entry, all available ccc crds are shared<BR><textarea name="ccc_gbx_reshare_ident" rows="3" class="bt">##CCCGBXRESHAREIDENT##</textarea><BR></TD></TR>
++<TR><TD><A>CCcam -> gbox reshare level:</A></TD><TD><input name="cccam_reshare" class="short" type="text" maxlength="2" value="##GBOXCCCAMRESHARE##"> set: -1 to disable resharing &nbsp;&nbsp; Upper Limit is value of 'Locals reshare'</TD></TR>
++<TR><TD><A data-p="ccc_gbx_reshare_ident">CCcam -> Gbox reshare filter:</A></TD><TD>Set Ident of ccc cards you want to share. If no entry, all available ccc crds are shared<BR><textarea name="ccc_gbx_reshare_ident" rows="3" class="bt">##CCCGBXRESHAREIDENT##</textarea><BR></TD></TR>
+diff --git a/webif/readerconfig/readerconfigaio.html b/webif/readerconfig/readerconfigaio.html
+index 09f04e4d..750dd99b 100644
+--- a/webif/readerconfig/readerconfigaio.html
++++ b/webif/readerconfig/readerconfigaio.html
+@@ -78,7 +78,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD>Blockemm:</TD>
+ 				<TD CLASS="invisible">
+ 					<TABLE>
+@@ -90,7 +89,6 @@
+ 						</TR>
+ 					</TABLE>
+ 				</TD>
+-			</TR>
+ 			<TR><TD><A>Block EMM by Len:</A></TD><TD><input name="blockemm-bylen" type="text" maxlength="256" value="##BLOCKEMMBYLEN##"></TD></TR>
+ ##READERCONFIGSIDINS##
+ 			<TR><TH COLSPAN="2">Reader specific settings for protocol ##PROTOCOL##</TH></TR>
+diff --git a/webif/user_edit/user_edit_cccam.html b/webif/user_edit/user_edit_cccam.html
+index 60241101..e289be52 100644
+--- a/webif/user_edit/user_edit_cccam.html
++++ b/webif/user_edit/user_edit_cccam.html
+@@ -13,7 +13,7 @@
+ 				<TR><TD><A>CCC stealth:</A></TD><TD>
+ 					<select name="cccstealth">
+ 						<option value="-1" ##CCCSTEALTHSELECTED-1##>GLOBAL: Use Global CCcam Stealth value</option>
+-						<option value="0"  ##CCCSTEALTHSELECTED0## >DISABLE: Use extended OSCam&lt;-&gt;CCcam Protocol</option>
++						<option value="0"  ##CCCSTEALTHSELECTED0## >DISABLE: Use extended OSCam<->CCcam Protocol</option>
+ 						<option value="1"  ##CCCSTEALTHSELECTED1## >ENABLE: Behaviour like the original CCcam Protocol</option>
+ 					</select>
+ 				&nbsp;Global CCcam Stealth value:<SPAN CLASS="global_conf"><A HREF="config.html?part=cccam">##STEALTH##</A></SPAN>
 
