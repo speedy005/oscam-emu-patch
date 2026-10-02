@@ -1,3 +1,7 @@
+patch version: 2.26.09-11968-802 (ad7588c6)
+patch date: 2026-07-26 13:14:04 UTC (+00:00)
+patch modified by speedy005 (02/10/2026)
+
 diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
 new file mode 100644
 index 0000000000000000000000000000000000000000..fef78e2d4812a9e4d599938efbf7c97b9634fa88
