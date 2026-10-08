@@ -1,19 +1,19 @@
 patch version: 2.26.09-11968-802 (39e78a46)
 patch date: 2026-09-29 03:57:30 UTC (+00:00)
-patch modified by speedy005 (07/10/2026)
+patch modified by speedy005 (08/10/2026)
 ---
 patch base commit: 39e78a4688b30abaab62b5c9e13672b4e34bfca0
-patch target commit: 7360ad383a3b4f3aa68f1e4bb7ed7ac2ed429caa
+patch target commit: b7109fe9f5390acdbb81330a57057d39cd9ef0e2
 patch streamboard url: https://git.streamboard.tv/common/oscam.git
 patch emu repository url: https://github.com/speedy005/Oscam-emu
 patch emu branch: master
 
 diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
 new file mode 100644
-index 0000000000000000000000000000000000000000..fef78e2d4812a9e4d599938efbf7c97b9634fa88
+index 0000000000000000000000000000000000000000..31b59e9a6233cd411846418d05fd70a56386c8ba
 --- /dev/null
 +++ b/.github/workflows/build-oscam.yml
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,53 @@
 +name: build oscam-emu
 +
 +on:
@@ -22,40 +22,57 @@ index 0000000000000000000000000000000000000000..fef78e2d4812a9e4d599938efbf7c97b
 +      - master
 +    paths-ignore:
 +      - '.github/**'
++
 +  pull_request:
 +    branches:
 +      - master
 +    paths-ignore:
 +      - '.github/**'
++
 +  workflow_dispatch:
++
++permissions:
++  contents: read
 +
 +jobs:
 +  build:
 +    runs-on: ubuntu-latest
 +
 +    steps:
-+    - name: checkout master
-+      uses: actions/checkout@v4
++      - name: Checkout master
++        uses: actions/checkout@v4
++        with:
++          ref: master
++          fetch-depth: 1
++          token: ${{ github.token }}
 +
-+    - name: build libdvbcsa
-+      run: |
-+        git clone https://github.com/oe-mirrors/libdvbcsa.git
-+        cd libdvbcsa
-+        ./bootstrap
-+        ./configure --enable-avx2
-+        make
-+        sudo make install
++      - name: Build libdvbcsa
++        run: |
++          set -e
 +
-+    - name: build oscam-emu
-+      run: |
-+        ./config.sh --enable all --disable WITH_SOFTCAM
-+        make
++          git clone https://github.com/oe-mirrors/libdvbcsa.git
++          cd libdvbcsa
++
++          ./bootstrap
++          ./configure --enable-avx2
++          make -j"$(nproc)"
++          sudo make install
++
++      - name: Build oscam-emu
++        run: |
++          set -e
++
++          ./config.sh \
++            --enable all \
++            --disable WITH_SOFTCAM
++
++          make -j"$(nproc)"
 diff --git a/.github/workflows/create-patch.yml b/.github/workflows/create-patch.yml
 new file mode 100644
-index 0000000000000000000000000000000000000000..7e57425c202ca7cfc06c45d2f77a3e6c8ec23e91
+index 0000000000000000000000000000000000000000..888001813e4638822471381b257b41770268f0c9
 --- /dev/null
 +++ b/.github/workflows/create-patch.yml
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,79 @@
 +name: create patch
 +
 +on:
@@ -64,68 +81,114 @@ index 0000000000000000000000000000000000000000..7e57425c202ca7cfc06c45d2f77a3e6c
 +      - master
 +    paths-ignore:
 +      - '.github/**'
++
 +  workflow_dispatch:
++
++permissions:
++  contents: read
 +
 +jobs:
 +  create-patch:
 +    runs-on: ubuntu-latest
 +
 +    steps:
-+    - name: checkout master
-+      uses: actions/checkout@v4
-+      with:
-+        fetch-depth: 0
++      # ==========================================================
++      # Aktuelles Repository
++      # ==========================================================
++      - name: Checkout master
++        uses: actions/checkout@v4
++        with:
++          ref: master
++          fetch-depth: 0
++          token: ${{ github.token }}
 +
-+    - name: checkout oscam-emu-patch
-+      uses: actions/checkout@v4
-+      with:
-+        repository: oscam-mirror/oscam-emu-patch
-+        token: ${{ secrets.ACTIONS_TOKEN }}
-+        path: emu
++      # ==========================================================
++      # Separates Repository:
++      # oscam-mirror/oscam-emu-patch
++      #
++      # Hier NICHT github.token verwenden.
++      # ACTIONS_TOKEN wird benötigt, wenn dieses Repository
++      # nicht über den normalen Workflow-Token erreichbar ist
++      # bzw. dort geschrieben werden soll.
++      # ==========================================================
++      - name: Checkout oscam-emu-patch
++        uses: actions/checkout@v4
++        with:
++          repository: oscam-mirror/oscam-emu-patch
++          token: ${{ secrets.ACTIONS_TOKEN }}
++          path: emu
++          fetch-depth: 0
 +
-+    - name: create patch
-+      run: |
-+        git diff origin/oscam-gitlab -- > emu/oscam-emu.patch :^.github :^.gitlab
-+        sed -i "1s/^/patch version: $(./config.sh --oscam-version) ($(./config.sh --oscam-commit))\npatch date: $(date "+%Y-%m-%d %H:%M:%S %Z (%:z)")\n---\n/" emu/oscam-emu.patch
++      # ==========================================================
++      # Patch erstellen
++      # ==========================================================
++      - name: Create patch
++        run: |
++          set -e
 +
-+    - name: commit oscam-emu.patch
-+      run: |
-+        cd emu
-+        git config --global user.name "oscam-emu-bot"
-+        git config --global user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+        if ! git diff --quiet HEAD; then
-+          git commit -am "Sync patch with $(../config.sh --oscam-version)"
-+          git push
-+        fi
++          git diff origin/oscam-gitlab -- \
++            ':^.github' \
++            ':^.gitlab' \
++            > emu/oscam-emu.patch
++
++          sed -i "1s/^/patch version: $(./config.sh --oscam-version) ($(./config.sh --oscam-commit))\npatch date: $(date '+%Y-%m-%d %H:%M:%S %Z (%:z)')\n---\n/" emu/oscam-emu.patch
++
++      # ==========================================================
++      # Patch committen und pushen
++      # ==========================================================
++      - name: Commit oscam-emu.patch
++        run: |
++          set -e
++
++          cd emu
++
++          git config user.name "oscam-emu-bot"
++          git config user.email "187860193+oscam-emu-bot@users.noreply.github.com"
++
++          if ! git diff --quiet HEAD; then
++            git add oscam-emu.patch
++            git commit -m "Sync patch with $(../config.sh --oscam-version)"
++            git push origin HEAD:master
++          else
++            echo "No changes to commit."
++          fi
 diff --git a/.github/workflows/lockdown-repo.yml b/.github/workflows/lockdown-repo.yml
 new file mode 100644
-index 0000000000000000000000000000000000000000..366de7e9f2be5b42c1f0feb2ad12b37b6d4668a6
+index 0000000000000000000000000000000000000000..4c5c669df9ffb55a260f7b3bf6ff2a056eaf5620
 --- /dev/null
 +++ b/.github/workflows/lockdown-repo.yml
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,36 @@
 +name: 'lockdown repo'
 +
 +on:
 +  issues:
-+    types: opened
++    types:
++      - opened
++
 +  pull_request_target:
-+    types: opened
++    types:
++      - opened
++
 +  workflow_dispatch:
 +
 +permissions:
++  contents: read
 +  issues: write
 +  pull-requests: write
 +
 +jobs:
 +  lockdown:
 +    runs-on: ubuntu-latest
++
 +    steps:
-+      - uses: dessant/repo-lockdown@v4
++      - name: Lock down issues and pull requests
++        uses: dessant/repo-lockdown@v4
 +        with:
 +          close-issue: true
 +          issue-comment: >
 +            This repository does not accept bug reports.
 +          skip-closed-issue-comment: true
++
 +          close-pr: true
 +          pr-comment: >
 +            This repository does not accept pull requests
@@ -133,88 +196,120 @@ index 0000000000000000000000000000000000000000..366de7e9f2be5b42c1f0feb2ad12b37b
 +          skip-closed-pr-comment: true
 diff --git a/.github/workflows/merge-gitlab.yml b/.github/workflows/merge-gitlab.yml
 new file mode 100644
-index 0000000000000000000000000000000000000000..dabb8fe76723920c7337f223b4a279cec9b92c1c
+index 0000000000000000000000000000000000000000..2d0ed07805854c4e3be55cf0e403fbeb3749a7b3
 --- /dev/null
 +++ b/.github/workflows/merge-gitlab.yml
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,43 @@
 +name: merge gitlab
 +
 +on:
 +  workflow_call:
 +  workflow_dispatch:
 +
++permissions:
++  contents: write
++
 +jobs:
 +  merge:
 +    runs-on: ubuntu-latest
 +
 +    steps:
-+    - uses: actions/checkout@v4
-+      with:
-+        fetch-depth: 0
-+        token: ${{ secrets.ACTIONS_TOKEN }}
++      - name: Checkout repository
++        uses: actions/checkout@v4
++        with:
++          ref: master
++          fetch-depth: 0
++          token: ${{ github.token }}
 +
-+    - name: git config
-+      run: |
-+        git config --global user.name "oscam-emu-bot"
-+        git config --global user.email "187860193+oscam-emu-bot@users.noreply.github.com"
++      - name: Git config
++        run: |
++          git config user.name "oscam-emu-bot"
++          git config user.email "187860193+oscam-emu-bot@users.noreply.github.com"
 +
-+    - name: merge oscam-gitlab into master
-+      run: |
-+        if git merge --no-ff origin/oscam-gitlab -m "Auto-Merge branch 'oscam-gitlab'"; then
-+            git push --follow-tags origin
-+        else
-+            printf "\nfiles with merge conficts:\n"
++      - name: Merge oscam-gitlab into master
++        run: |
++          set -e
++
++          git fetch origin master oscam-gitlab
++
++          if git merge --no-ff origin/oscam-gitlab \
++              -m "Auto-Merge branch 'oscam-gitlab'"; then
++
++            git push --follow-tags origin master
++
++          else
++            echo
++            echo "Files with merge conflicts:"
 +            git diff --check
-+        fi
++            exit 1
++          fi
 diff --git a/.github/workflows/sync-gitlab.yml b/.github/workflows/sync-gitlab.yml
 new file mode 100644
-index 0000000000000000000000000000000000000000..5bfa93bde6aab3f3bbb50a310a9b2394e115457f
+index 0000000000000000000000000000000000000000..33a913e1c8dfa6a3fdbb6b2b9fc78ba0e70da137
 --- /dev/null
 +++ b/.github/workflows/sync-gitlab.yml
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,61 @@
 +name: sync gitlab
 +
 +on:
 +  workflow_call:
++
 +  workflow_dispatch:
++
 +  repository_dispatch:
-+    types: invoke-sync-gitlab
++    types:
++      - invoke-sync-gitlab
++
++permissions:
++  contents: write
 +
 +jobs:
 +  sync:
 +    runs-on: ubuntu-latest
 +
 +    steps:
-+    - name: checkout oscam-gitlab
-+      uses: actions/checkout@v4
-+      with:
-+        ref: oscam-gitlab
-+        fetch-depth: 0
-+        token: ${{ secrets.ACTIONS_TOKEN }}
++      - name: Checkout oscam-gitlab
++        uses: actions/checkout@v4
++        with:
++          ref: oscam-gitlab
++          fetch-depth: 0
++          token: ${{ github.token }}
 +
-+    - name: git config
-+      run: |
-+        git config --global user.name "oscam-emu-bot"
-+        git config --global user.email "187860193+oscam-emu-bot@users.noreply.github.com"
++      - name: Git config
++        run: |
++          git config user.name "oscam-emu-bot"
++          git config user.email "187860193+oscam-emu-bot@users.noreply.github.com"
 +
-+    - name: sync oscam-gitlab with upstream
-+      run: |
-+        git remote add --track master mirror https://github.com/oscam-mirror/oscam.git
-+        git fetch mirror
-+        ahead=$(git rev-list mirror/master..HEAD --count)
-+        if [ $ahead -gt 0 ]; then
++      - name: Sync oscam-gitlab with upstream
++        run: |
++          set -e
++
++          git remote add --track master mirror https://github.com/oscam-mirror/oscam.git
++          git fetch mirror
++
++          ahead=$(git rev-list mirror/master..HEAD --count)
++
++          if [ "$ahead" -gt 0 ]; then
 +            force='--force'
-+            printf "\n$ahead commit(s) ahead upstream -> reset branch and force push changes\n"
-+            git reset --hard HEAD~$ahead
-+        fi
-+        git merge mirror/master
-+        git push --follow-tags origin $force
++
++            printf '\n%s commit(s) ahead upstream -> reset branch and force push changes\n' "$ahead"
++
++            git reset --hard "HEAD~$ahead"
++          fi
++
++          git merge mirror/master
++
++          if [ -n "${force:-}" ]; then
++            git push --follow-tags origin --force oscam-gitlab
++          else
++            git push --follow-tags origin oscam-gitlab
++          fi
 +
 +  reuse:
-+    uses: ./.github/workflows/merge-gitlab.yml
-+    secrets: inherit
 +    needs:
 +      - sync
++
++    uses: ./.github/workflows/merge-gitlab.yml
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 3a67048477699fff71c4252286f2277ec18bb386..ccc8556933c88e3274a96c3588badaa707c00b86 100644
 --- a/CMakeLists.txt
