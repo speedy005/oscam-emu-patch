@@ -1,7 +1,7 @@
-patch version: 2.26.09-11968-802 (39e78a46)
-patch date: 2026-09-29
-patch modified by speedy005 (29/10/2026)
-patch base commit: 39e78a4688b30abaab62b5c9e13672b4e34bfca0
+patch version: 2.26.11-11973-802 (37bd7469)
+patch date: 2026-11-10
+patch modified by speedy005 (10/11/2026)
+patch base commit: 37bd7469ce346764e013301f0eb7d7d36b08a40b
 patch target commit: b3cf170e4147b3cac422a12c3f15e5ca7434aebd
 patch streamboard url: https://github.com/speedy005/oscam-git
 patch emu repository url: https://github.com/speedy005/Oscam-emu
@@ -310,7 +310,7 @@ index 0000000000000000000000000000000000000000..82feb1c786bb440fc75f8a68961d739e
 +
 +    uses: ./.github/workflows/merge-gitlab.yml
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 3a67048477699fff71c4252286f2277ec18bb386..ccc8556933c88e3274a96c3588badaa707c00b86 100644
+index 8f3148abfb3d93848c25d7bc475b17b8af2e648c..ccc8556933c88e3274a96c3588badaa707c00b86 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
@@ -336,7 +336,27 @@ index 3a67048477699fff71c4252286f2277ec18bb386..ccc8556933c88e3274a96c3588badaa7
  execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --show-valid OUTPUT_VARIABLE config_vars_string OUTPUT_STRIP_TRAILING_WHITESPACE)
  string(REGEX MATCHALL "[A-Z0-9_]+" config_vars ${config_vars_string})
  
-@@ -1006,6 +1022,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
+@@ -750,19 +766,6 @@ if (OSCamOperatingSystem MATCHES "Mac OS X")
+ else (OSCamOperatingSystem MATCHES "Mac OS X")
+ 	target_link_libraries (${exe_name} -Wl,--start-group ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt -Wl,--end-group minilzo)
+ endif (OSCamOperatingSystem MATCHES "Mac OS X")
+-execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --enabled WEBIF OUTPUT_VARIABLE CONFIG_WEBIF OUTPUT_STRIP_TRAILING_WHITESPACE)
+-if (CONFIG_WEBIF MATCHES "Y")
+-	# Older libc versions provide clock_gettime in librt.
+-	include (CheckFunctionExists)
+-	check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
+-	if (NOT HAVE_CLOCK_GETTIME)
+-		include (CheckLibraryExists)
+-		check_library_exists (rt clock_gettime "" HAVE_CLOCK_GETTIME_IN_RT)
+-		if (HAVE_CLOCK_GETTIME_IN_RT)
+-			target_link_libraries (${exe_name} rt)
+-		endif ()
+-	endif ()
+-endif (CONFIG_WEBIF MATCHES "Y")
+ if (BUILD_TESTS)
+ 	# Test binary stays plain: no sign/upx — see Makefile rationale.
+ 	add_custom_target (run-tests COMMAND ${CMAKE_COMMAND} -E echo "Running ${exe_name}..." COMMAND ./${exe_name} DEPENDS ${exe_name} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+@@ -1019,6 +1022,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
  
  #--------------------------------------------------------------------------------
  
@@ -361,7 +381,7 @@ index 3a67048477699fff71c4252286f2277ec18bb386..ccc8556933c88e3274a96c3588badaa7
  #----------------------- installation -----------------------------
  
  file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-@@ -1124,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
+@@ -1137,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
  	endif (LIBDVBCSADIR)
  endif (HAVE_LIBDVBCSA)
  
@@ -404,7 +424,7 @@ index a43c9db6087784a29993192a4b4978489012d45b..4b5d2a76fb56c6c616c6647692f767fb
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
 diff --git a/Makefile b/Makefile
-index 07c7237b78a51a38a205cd6ebdf7d6b079b48b6e..9709d5e6623caddcdb32118f914ca59f4d1c282e 100644
+index 279b4794a5aaf490b21c6e38a4808fb77205037a..9709d5e6623caddcdb32118f914ca59f4d1c282e 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -28,6 +28,9 @@ ifeq ($(uname_S),Darwin)
@@ -450,6 +470,23 @@ index 07c7237b78a51a38a205cd6ebdf7d6b079b48b6e..9709d5e6623caddcdb32118f914ca59f
  SRC-$(CONFIG_CS_CACHEEX) += module-csp.c
  SRC-$(CONFIG_CW_CYCLE_CHECK) += module-cw-cycle-check.c
  SRC-$(CONFIG_WITH_AZBOX) += module-dvbapi-azbox.c
+@@ -405,16 +434,6 @@ SRC-$(CONFIG_WEBIF) += module-webif-tpl.c
+ SRC-$(CONFIG_WEBIF) += module-webif.c
+ SRC-$(CONFIG_WEBIF) += webif/pages.c
+ SRC-$(CONFIG_WEBIF_WIKI) += webif/pages_wiki.c
+-
+-ifeq ($(CONFIG_WEBIF),y)
+-	# Older libc versions provide clock_gettime in librt.
+-	CLOCK_TEST = printf '%s\n' \
+-		'int main(void) { struct timespec ts; return clock_gettime(CLOCK_MONOTONIC, &ts); }' | \
+-		$(CC) $(CFLAGS) -D_GNU_SOURCE -include time.h -x c -o /dev/null -
+-	CLOCK_LIB := $(shell $(CLOCK_TEST) >/dev/null 2>&1 || \
+-		{ $(CLOCK_TEST) -lrt >/dev/null 2>&1 && echo -lrt; })
+-	override LIBS += $(CLOCK_LIB)
+-endif
+ SRC-$(CONFIG_WITH_CARDREADER) += reader-common.c
+ SRC-$(CONFIG_READER_BULCRYPT) += reader-bulcrypt.c
+ SRC-$(CONFIG_READER_CONAX) += reader-conax.c
 diff --git a/README.config b/README.config
 index 03c70f7dd3702ecd3879be0f30725ad48707a219..9b99c3c4e8ed0b0348edeeb5bbb93ba7026e6982 100644
 --- a/README.config
@@ -944,10 +981,10 @@ index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecae
  
  #endif
 diff --git a/globals.h b/globals.h
-index eefb5fdaddec4b172a85116b2aede323a799aa8a..e6000878cca16ba4edc7b1a54512a04c32926198 100644
+index 4d2b044c727488ccad820635ea4ab9d988221555..e6000878cca16ba4edc7b1a54512a04c32926198 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,9 +368,9 @@
+@@ -368,11 +368,11 @@
  /* ===========================
   *			constants
   * =========================== */
@@ -957,8 +994,11 @@ index eefb5fdaddec4b172a85116b2aede323a799aa8a..e6000878cca16ba4edc7b1a54512a04c
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.09-11968"
+-#define CS_VERSION				"2.26.11-11973"
++#define CS_VERSION				"2.26.09-11968"
  #endif
+ #ifndef CS_GIT_COMMIT
+ #define CS_GIT_COMMIT			"a2b4c6d8"
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -12277,6 +12317,34 @@ index f43ff5579f3bfd2fc00506f6e1cf42af5d1c8bf7..2f0e1b164291502d04732bb8d5666421
  #endif // MODULE_STREAMRELAY
  
  #endif // MODULE_STREAMRELAY_H_
+diff --git a/module-webif-lib.c b/module-webif-lib.c
+index 6bb4f3dd681075ff84dd1845811cea37a3b7f3fc..253adba0d4544bb659cf80253e7c579e9cbcab0b 100644
+--- a/module-webif-lib.c
++++ b/module-webif-lib.c
+@@ -691,17 +691,15 @@ int8_t get_stats_linux(const pid_t pid, struct pstat* result)
+ 
+ 	// read processes from /proc
+ 	uint info_procs = 0;
+-	struct dirent **entries = NULL;
++	struct dirent **entries;
+ 	int n = scandir("/proc", &entries, NULL, NULL);
+-	if(n >= 0)
++	n = MAX(n, 0);
++	while(n--)
+ 	{
+-		while(n--)
+-		{
+-			if (entries[n]->d_name[0] > '0' && entries[n]->d_name[0] <= '9') { info_procs++; }
+-			free(entries[n]);
+-		}
+-		free(entries);
++		if (entries[n]->d_name[0] > '0' && entries[n]->d_name[0] <= '9') { info_procs++; }
++		free(entries[n]);
+ 	}
++	free(entries);
+ 
+ 	// read cpu/meminfo from sysinfo()
+ 	struct sysinfo info;
 diff --git a/module-webif-tpl.c b/module-webif-tpl.c
 index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d5d50de81 100644
 --- a/module-webif-tpl.c
@@ -12290,7 +12358,7 @@ index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index 9d2e7cbfdea4440d114545c04ea034e462407c38..a2ee37fca4b633fb22612469d13d11c573da551c 100644
+index 8ee8e727d36fd1318cbee3bbd877252414927a5a..a2ee37fca4b633fb22612469d13d11c573da551c 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -201,8 +201,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
@@ -12436,10 +12504,75 @@ index 9d2e7cbfdea4440d114545c04ea034e462407c38..a2ee37fca4b633fb22612469d13d11c5
  		}
  
  		if(csystem)
-@@ -9225,7 +9288,11 @@ static int8_t check_request(char *result, int32_t readen)
+@@ -9222,92 +9285,23 @@ static int8_t check_request(char *result, int32_t readen)
+ 	return 0;
+ }
+ 
+-/* Keep retries and partial reads within one monotonic deadline. */
+-static int32_t webif_remaining_ms(const struct timespec *deadline)
+-{
+-	struct timespec now;
+-	if(clock_gettime(CLOCK_MONOTONIC, &now) != 0) { return -1; }
+-	int64_t remaining = (int64_t)(deadline->tv_sec - now.tv_sec) * 1000
+-		+ (deadline->tv_nsec - now.tv_nsec) / 1000000;
+-	return remaining > 0 ? remaining : 0;
+-}
+-
+-static int32_t webif_wait(int32_t fd, short events, const struct timespec *deadline)
+-{
+-	struct pollfd pfd = { .fd = fd, .events = events };
+-	for(;;)
+-	{
+-		int32_t remaining = webif_remaining_ms(deadline);
+-		if(remaining <= 0) { return -1; }
+-		int32_t rc = poll(&pfd, 1, remaining);
+-		if(rc < 0 && (errno == EINTR || errno == EAGAIN)) { continue; }
+-		return rc > 0 ? 0 : -1;
+-	}
+-}
+-
+-#ifdef WITH_SSL
+-/* Return 0 only for a TLS error eligible for the existing plain-HTTP fallback. */
+-static int32_t webif_ssl_accept(SSL *ssl, int32_t fd)
+-{
+-	struct timespec deadline;
+-	int32_t flags = fcntl(fd, F_GETFL, 0), ok = -1;
+-	if(flags < 0 || clock_gettime(CLOCK_MONOTONIC, &deadline) != 0
+-		|| fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) { return -1; }
+-	deadline.tv_sec += 10;
+-
+-	while(webif_remaining_ms(&deadline) > 0)
+-	{
+-		ERR_clear_error();
+-		errno = 0;
+-		int32_t rc = SSL_accept(ssl);
+-		if(rc == 1)
+-		{
+-			ok = webif_remaining_ms(&deadline) > 0 ? 1 : -1;
+-			break;
+-		}
+-		int32_t err = SSL_get_error(ssl, rc);
+-		if(err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE)
+-		{
+-			if(err == SSL_ERROR_SYSCALL && errno == EINTR) { continue; }
+-			ok = 0;
+-			break;
+-		}
+-		if(webif_wait(fd, err == SSL_ERROR_WANT_WRITE ? POLLOUT : POLLIN, &deadline) < 0)
+-			{ break; }
+-	}
+-	if(fcntl(fd, F_SETFL, flags) < 0) { return -1; }
+-	return ok;
+-}
+-#endif
+-
  static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePlain)
  {
- 	int32_t n, bufsize = 0, errcount = 0;
+-	int32_t n, bufsize = 0, ret = -1;
+-	int32_t fd;
+-	int8_t allocation_failed = 0;
+-	struct timespec deadline;
++	int32_t n, bufsize = 0, errcount = 0;
 +#ifdef WITH_EMU
 +	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 204800;
 +#else
@@ -12448,6 +12581,556 @@ index 9d2e7cbfdea4440d114545c04ea034e462407c38..a2ee37fca4b633fb22612469d13d11c5
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
+ 	if(ssl_active && !forcePlain)
+ 		{ is_ssl = 1; }
+-	fd = is_ssl ? SSL_get_fd((SSL *)f) : fileno(f);
+-#else
+-	fd = fileno(f);
+ #endif
+-	int32_t flags = fcntl(fd, F_GETFL, 0);
+-	if(flags < 0 || clock_gettime(CLOCK_MONOTONIC, &deadline) != 0
+-		|| fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) { return -1; }
+-	/* Each call, including subsequent keepalive requests, gets a fresh budget. */
+-	deadline.tv_sec += 10;
+ 
+ 	do
+ 	{
+-		if(webif_remaining_ms(&deadline) <= 0) { goto out; }
+-#ifdef WITH_SSL
+-		if(is_ssl) { ERR_clear_error(); }
+-#endif
+ 		errno = 0;
+ 		if(forcePlain)
+ 			{ n = read(fileno(f), buf2, sizeof(buf2)); }
+@@ -9315,42 +9309,38 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+ 			{ n = webif_read(buf2, sizeof(buf2), f); }
+ 		if(n <= 0)
+ 		{
+-#ifdef WITH_SSL
+-			if(is_ssl)
++			if((errno == 0 || errno == EINTR))
+ 			{
+-				int32_t err = SSL_get_error((SSL *)f, n);
+-				if(err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
++				if(errcount++ < 10)
+ 				{
+-					if(webif_wait(fd, err == SSL_ERROR_WANT_WRITE ? POLLOUT : POLLIN, &deadline) < 0)
+-						{ goto out; }
++					cs_sleepms(5);
+ 					continue;
+ 				}
+-				if(err == SSL_ERROR_SYSCALL && errno == EINTR) { continue; }
++				return -1;
++			}
++#ifdef WITH_SSL
++			if(is_ssl)
++			{
+ 				if(errno != ECONNRESET)
+ 				{
+ 					int32_t errcode = ERR_peek_error();
+ 					char errstring[128];
+ 					ERR_error_string_n(errcode, errstring, sizeof(errstring) - 1);
+-					cs_log_dbg(D_TRACE, "WebIf: read error ret=%d (%d%s%s)", n, err, errcode ? " " : "", errcode ? errstring : "");
++					cs_log_dbg(D_TRACE, "WebIf: read error ret=%d (%d%s%s)", n, SSL_get_error(cur_ssl(), n), errcode ? " " : "", errcode ? errstring : "");
+ 				}
+-				goto out;
+-			}
+-#endif
+-			if(n < 0 && errno == EINTR) { continue; }
+-			if(n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+-			{
+-				if(webif_wait(fd, POLLIN, &deadline) < 0) { goto out; }
+-				continue;
++				return -1;
+ 			}
++#else
+ 			if(errno != ECONNRESET)
+ 				{ cs_log_dbg(D_TRACE, "WebIf: read error ret=%d (errno=%d %s)", n, errno, strerror(errno)); }
+-			goto out;
++#endif
++			return -1;
+ 		}
+-		if(webif_remaining_ms(&deadline) <= 0) { goto out; }
+ 		if(!cs_realloc(result, bufsize + n + 1))
+ 		{
+-			allocation_failed = 1;
+-			goto out;
++			send_error500(f);
++			NULLFREE(*result);
++			return -1;
+ 		}
+ 
+ 		memcpy(*result + bufsize, buf2, n);
+@@ -9359,7 +9349,9 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+ 		if(bufsize > max_request_size)
+ 		{
+ 			cs_log("error: too much data received from %s (%d > %d)", cs_inet_ntoa(in), bufsize, max_request_size);
+-			goto out;
++			NULLFREE(*result);
++			*result = NULL;
++			return -1;
+ 		}
+ 
+ #ifdef WITH_SSL
+@@ -9373,60 +9365,8 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+ 		}
+ #endif
+ 	} while (!check_request(*result, bufsize));
+-	ret = bufsize;
+-out:
+-	/* Response writes retain the existing blocking socket timeout profile. */
+-	if(fcntl(fd, F_SETFL, flags) < 0) { ret = -1; }
+-	if(ret < 0) { NULLFREE(*result); }
+-	if(allocation_failed) { send_error500(f); }
+-	return ret;
+-}
+-enum webif_page
+-{
+-	WEBIF_PAGE_UNKNOWN = -1,
+-	WEBIF_PAGE_CONFIG,
+-	WEBIF_PAGE_READERS,
+-	WEBIF_PAGE_ENTITLEMENTS,
+-	WEBIF_PAGE_STATUS,
+-	WEBIF_PAGE_USERCONFIG,
+-	WEBIF_PAGE_READERCONFIG,
+-	WEBIF_PAGE_SERVICES,
+-	WEBIF_PAGE_USER_EDIT,
+-	WEBIF_PAGE_CSS,
+-	WEBIF_PAGE_SERVICES_EDIT,
+-	WEBIF_PAGE_SAVETEMPLATES,
+-	WEBIF_PAGE_SHUTDOWN,
+-	WEBIF_PAGE_SCRIPT,
+-	WEBIF_PAGE_SCANUSB,
+-	WEBIF_PAGE_FILES,
+-	WEBIF_PAGE_READERSTATS,
+-	WEBIF_PAGE_FAILBAN,
+-	WEBIF_PAGE_JS,
+-	WEBIF_PAGE_API_HTML,
+-	WEBIF_PAGE_IMAGE,
+-	WEBIF_PAGE_FAVICON,
+-	WEBIF_PAGE_GRAPH,
+-	WEBIF_PAGE_API_XML,
+-	WEBIF_PAGE_CACHEEX,
+-	WEBIF_PAGE_API_JSON,
+-	WEBIF_PAGE_EMM,
+-	WEBIF_PAGE_EMM_RUNNING,
+-	WEBIF_PAGE_ROBOTS,
+-	WEBIF_PAGE_GHTTP,
+-	WEBIF_PAGE_LOGPOLL,
+-	WEBIF_PAGE_JQUERY,
+-#ifdef WEBIF_WIKI
+-	WEBIF_PAGE_WIKI,
+-	WEBIF_PAGE_WIKI_STATUS,
+-#endif
+-	WEBIF_PAGE_COUNT
+-};
+-
+-static bool is_api_page(enum webif_page page)
+-{
+-	return page == WEBIF_PAGE_API_HTML || page == WEBIF_PAGE_API_XML || page == WEBIF_PAGE_API_JSON;
++	return bufsize;
+ }
+-
+ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ {
+ 	int32_t ok = 0;
+@@ -9459,47 +9399,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 		char *method, *path, *protocol, *str1, *saveptr1 = NULL, *authheader = NULL, *extraheader = NULL, *filebuf = NULL;
+ 		char *pch, *tmp, *buf, *nameInUrl, subdir[32];
+ 		/* List of possible pages */
+-		static const char *const pages[WEBIF_PAGE_COUNT] =
+-		{
+-			[WEBIF_PAGE_CONFIG] = "/config.html",
+-			[WEBIF_PAGE_READERS] = "/readers.html",
+-			[WEBIF_PAGE_ENTITLEMENTS] = "/entitlements.html",
+-			[WEBIF_PAGE_STATUS] = "/status.html",
+-			[WEBIF_PAGE_USERCONFIG] = "/userconfig.html",
+-			[WEBIF_PAGE_READERCONFIG] = "/readerconfig.html",
+-			[WEBIF_PAGE_SERVICES] = "/services.html",
+-			[WEBIF_PAGE_USER_EDIT] = "/user_edit.html",
+-			[WEBIF_PAGE_CSS] = "/site.css",
+-			[WEBIF_PAGE_SERVICES_EDIT] = "/services_edit.html",
+-			[WEBIF_PAGE_SAVETEMPLATES] = "/savetemplates.html",
+-			[WEBIF_PAGE_SHUTDOWN] = "/shutdown.html",
+-			[WEBIF_PAGE_SCRIPT] = "/script.html",
+-			[WEBIF_PAGE_SCANUSB] = "/scanusb.html",
+-			[WEBIF_PAGE_FILES] = "/files.html",
+-			[WEBIF_PAGE_READERSTATS] = "/readerstats.html",
+-			[WEBIF_PAGE_FAILBAN] = "/failban.html",
+-			[WEBIF_PAGE_JS] = "/oscam.js",
+-			[WEBIF_PAGE_API_HTML] = "/oscamapi.html",
+-			[WEBIF_PAGE_IMAGE] = "/image",
+-			[WEBIF_PAGE_FAVICON] = "/favicon.ico",
+-			[WEBIF_PAGE_GRAPH] = "/graph.svg",
+-			[WEBIF_PAGE_API_XML] = "/oscamapi.xml",
+-			[WEBIF_PAGE_CACHEEX] = "/cacheex.html",
+-			[WEBIF_PAGE_API_JSON] = "/oscamapi.json",
+-			[WEBIF_PAGE_EMM] = "/emm.html",
+-			[WEBIF_PAGE_EMM_RUNNING] = "/emm_running.html",
+-			[WEBIF_PAGE_ROBOTS] = "/robots.txt",
+-			[WEBIF_PAGE_GHTTP] = "/ghttp.html",
+-			[WEBIF_PAGE_LOGPOLL] = "/logpoll.html",
+-			[WEBIF_PAGE_JQUERY] = "/jquery.js",
++		char *pages[] =
++		{
++			"/config.html",
++			"/readers.html",
++			"/entitlements.html",
++			"/status.html",
++			"/userconfig.html",
++			"/readerconfig.html",
++			"/services.html",
++			"/user_edit.html",
++			"/site.css",
++			"/services_edit.html",
++			"/savetemplates.html",
++			"/shutdown.html",
++			"/script.html",
++			"/scanusb.html",
++			"/files.html",
++			"/readerstats.html",
++			"/failban.html",
++			"/oscam.js",
++			"/oscamapi.html",
++			"/image",
++			"/favicon.ico",
++			"/graph.svg",
++			"/oscamapi.xml",
++			"/cacheex.html",
++			"/oscamapi.json",
++			"/emm.html",
++			"/emm_running.html",
++			"/robots.txt",
++			"/ghttp.html",
++			"/logpoll.html",
++			"/jquery.js",
+ #ifdef WEBIF_WIKI
+-			[WEBIF_PAGE_WIKI] = "/wiki.json",
+-			[WEBIF_PAGE_WIKI_STATUS] = "/wiki_status.json",
++			"/wiki.json",
++			"/wiki_status.json",
+ #endif
+ 		};
+ 
+-		int32_t i, bufsize, len;
+-		enum webif_page pgidx = WEBIF_PAGE_UNKNOWN;
++		int32_t pagescnt = sizeof(pages) / sizeof(char *); // Calculate the amount of items in array
++		int32_t i, bufsize, len, pgidx = -1;
+ 		uint32_t etagheader = 0;
+ 		struct uriparams params;
+ 		params.paramcount = 0;
+@@ -9583,9 +9523,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 		}
+ 
+ 		/* Map page to our static page definitions */
+-		for(i = 0; i < WEBIF_PAGE_COUNT; i++)
++		for(i = 0; i < pagescnt; i++)
+ 		{
+-			if(!strcmp(nameInUrl, pages[i])) { pgidx = (enum webif_page)i; }
++			if(!strcmp(nameInUrl, pages[i])) { pgidx = i; }
+ 		}
+ 
+ 		parseParams(&params, pch);
+@@ -9692,15 +9632,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 		}
+ 
+ 		/*build page*/
+-		if(pgidx == WEBIF_PAGE_CSS)
++		if(pgidx == 8)
+ 		{
+ 			send_file(f, "CSS", subdir, modifiedheader, etagheader, extraheader);
+ 		}
+-		else if(pgidx == WEBIF_PAGE_JS)
++		else if(pgidx == 17)
+ 		{
+ 			send_file(f, "JS", subdir, modifiedheader, etagheader, extraheader);
+ 		}
+-		else if(pgidx == WEBIF_PAGE_JQUERY)
++		else if(pgidx == 30)
+ 		{
+ 			send_file(f, "JQ", subdir, modifiedheader, etagheader, extraheader);
+ 		}
+@@ -9759,12 +9699,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 				tpl_printf(vars, TPLADD, "POLLREFRESHTIME", "%d", cfg.poll_refresh);
+ 			}
+ 			if	(	cfg.http_refresh > 0 &&
+-				(((	pgidx == WEBIF_PAGE_READERS || pgidx == WEBIF_PAGE_USERCONFIG ) && !cfg.poll_refresh ) ||
+-				(	pgidx == WEBIF_PAGE_STATUS && ( cfg.http_status_log || !cfg.poll_refresh )) ||
+-					pgidx == WEBIF_PAGE_READERSTATS || pgidx == WEBIF_PAGE_CACHEEX || pgidx == WEBIF_PAGE_UNKNOWN ))
++				(((	pgidx == 1 || pgidx == 4 ) && !cfg.poll_refresh ) ||
++				(	pgidx == 3 && ( cfg.http_status_log || !cfg.poll_refresh )) ||
++					pgidx == 15 || pgidx == 23 || pgidx == -1 )) // wenn polling bei cachex.html eingeführt wird muss die 23 => 2 zeilen höher
+ 			{
+ 				tpl_printf(vars, TPLADD, "REFRESHTIME", "%d", cfg.http_refresh);
+-				tpl_addVar(vars, TPLADD, "WITHQUERY", pgidx == WEBIF_PAGE_READERSTATS ? "1" : "0");
++				tpl_addVar(vars, TPLADD, "WITHQUERY", pgidx == 15 ? "1" : "0");
+ 				tpl_addVar(vars, TPLADD, "REFRESH", tpl_getTpl(vars, "REFRESH"));
+ 			}
+ #ifdef WEBIF_JQUERY
+@@ -9791,8 +9731,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 			tpl_addVar(vars, TPLADD, "RUNAS", urlencode(vars, username(first_client)));
+ 
+ 			time_t now = time((time_t *)0);
+-			// API response metadata
+-			if(is_api_page(pgidx))
++			// XMLAPI
++			if(pgidx == 18 || pgidx == 22 || pgidx == 24)
+ 			{
+ 				char tbuffer [30];
+ 				strftime(tbuffer, 30, "%Y-%m-%dT%H:%M:%S%z", &st);
+@@ -9829,105 +9769,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 			char *result = NULL;
+ 
+ 			// WebIf allows modifying many things. Thus, all pages except images/css/static are expected to be non-threadsafe!
+-			if(pgidx != WEBIF_PAGE_IMAGE && pgidx != WEBIF_PAGE_FAVICON && pgidx != WEBIF_PAGE_GRAPH && pgidx != WEBIF_PAGE_ROBOTS) { cs_writelock(__func__, &http_lock); }
++			if(pgidx != 19 && pgidx != 20 && pgidx != 21 && pgidx != 27) { cs_writelock(__func__, &http_lock); }
+ 			switch(pgidx)
+ 			{
+-			case WEBIF_PAGE_CONFIG:
++			case 0:
+ 				tpl_addVar(vars, TPLADD, "CONFIG_CONTENT", send_oscam_config(vars, &params));
+ 				result = tpl_getTpl(vars, "CONFIGCONTENT");
+ 				break;
+-			case WEBIF_PAGE_READERS:
++			case 1:
+ 				result = send_oscam_reader(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_ENTITLEMENTS:
++			case 2:
+ 				result = send_oscam_entitlement(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_STATUS:
++			case 3:
+ 				result = send_oscam_status(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_USERCONFIG:
++			case 4:
+ 				result = send_oscam_user_config(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_READERCONFIG:
++			case 5:
+ 				result = send_oscam_reader_config(vars, &params);
+ 				break;
+-			case WEBIF_PAGE_SERVICES:
++			case 6:
+ 				result = send_oscam_services(vars, &params);
+ 				break;
+-			case WEBIF_PAGE_USER_EDIT:
++			case 7:
+ 				result = send_oscam_user_config_edit(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_SERVICES_EDIT:
++				//case  8: css file
++			case 9:
+ 				result = send_oscam_services_edit(vars, &params);
+ 				break;
+-			case WEBIF_PAGE_SAVETEMPLATES:
++			case 10:
+ 				result = send_oscam_savetpls(vars);
+ 				break;
+-			case WEBIF_PAGE_SHUTDOWN:
++			case 11:
+ 				result = send_oscam_shutdown(vars, f, &params, 0, keepalive, extraheader);
+ 				break;
+-			case WEBIF_PAGE_SCRIPT:
++			case 12:
+ 				result = send_oscam_script(vars, &params);
+ 				break;
+-			case WEBIF_PAGE_SCANUSB:
++			case 13:
+ 				result = send_oscam_scanusb(vars);
+ 				break;
+-			case WEBIF_PAGE_FILES:
++			case 14:
+ 				result = send_oscam_files(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_READERSTATS:
++			case 15:
+ 				result = send_oscam_reader_stats(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_FAILBAN:
++			case 16:
+ 				result = send_oscam_failban(vars, &params, 0);
+ 				break;
+-			case WEBIF_PAGE_API_HTML:
++				//case  17: js file
++			case 18:
+ 				result = send_oscam_api(vars, f, &params, keepalive, 1, extraheader);
+ 				break; //oscamapi.html
+-			case WEBIF_PAGE_IMAGE:
++			case 19:
+ 				result = send_oscam_image(vars, f, &params, NULL, modifiedheader, etagheader, extraheader);
+ 				break;
+-			case WEBIF_PAGE_FAVICON:
++			case 20:
+ 				result = send_oscam_image(vars, f, &params, "ICMAI", modifiedheader, etagheader, extraheader);
+ 				break;
+-			case WEBIF_PAGE_GRAPH:
++			case 21:
+ 				result = send_oscam_graph(vars);
+ 				break;
+-			case WEBIF_PAGE_API_XML:
++			case 22:
+ 				result = send_oscam_api(vars, f, &params, keepalive, 1, extraheader);
+ 				break; //oscamapi.xml
+ #ifdef CS_CACHEEX
+-			case WEBIF_PAGE_CACHEEX:
++			case 23:
+ 				result = send_oscam_cacheex(vars, &params, 0);
+ 				break;
+ #endif
+-			case WEBIF_PAGE_API_JSON:
++			case 24:
+ 				result = send_oscam_api(vars, f, &params, keepalive, 2, extraheader);
+ 				break; //oscamapi.json
+-			case WEBIF_PAGE_EMM:
++			case 25:
+ 				result = send_oscam_EMM(vars, &params);
+ 				break; //emm.html
+-			case WEBIF_PAGE_EMM_RUNNING:
++			case 26:
+ 				result = send_oscam_EMM_running(vars, &params);
+ 				break; //emm_running.html
+-			case WEBIF_PAGE_ROBOTS:
++			case 27:
+ 				result = send_oscam_robots_txt(f);
+ 				break; //robots.txt
+ #ifdef MODULE_GHTTP
+-			case WEBIF_PAGE_GHTTP:
++			case 28:
+ 				result = send_oscam_ghttp(vars, &params, 0);
+ 				break;
+ #endif
+ #ifdef WEBIF_LIVELOG
+-			case WEBIF_PAGE_LOGPOLL:
++			case 29:
+ 				result = send_oscam_logpoll(vars, &params);
+ 				break;
++			//case 30: jquery.js
+ #endif
+ #ifdef WEBIF_WIKI
+-			case WEBIF_PAGE_WIKI:
++			case 31:
+ 				result = send_oscam_wiki(vars, &params);
+ 				break;
+-			case WEBIF_PAGE_WIKI_STATUS:
++			case 32:
+ 				result = send_oscam_wiki_status(vars, &params);
+ 				break;
+ #endif
+@@ -9935,20 +9878,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ 				result = send_oscam_status(vars, &params, 0);
+ 				break;
+ 			}
+-			if(pgidx != WEBIF_PAGE_IMAGE && pgidx != WEBIF_PAGE_FAVICON && pgidx != WEBIF_PAGE_GRAPH && pgidx != WEBIF_PAGE_ROBOTS) { cs_writeunlock(__func__, &http_lock); }
++			if(pgidx != 19 && pgidx != 20 && pgidx != 21 && pgidx != 27) { cs_writeunlock(__func__, &http_lock); }
+ 
+ 			if(result == NULL || !strcmp(result, "0") || cs_strlen(result) == 0) { send_error500(f); }
+ 			else if(strcmp(result, "1"))
+ 			{
+ 				//it doesn't make sense to check for modified etagheader here as standard template has timestamp in output and so site changes on every request
+-				if(pgidx == WEBIF_PAGE_API_HTML)
++				if(pgidx == 18)
+ 					{ send_headers(f, 200, "OK", extraheader, "text/xml", 0, cs_strlen(result), NULL, 0); }
+-				else if(pgidx == WEBIF_PAGE_GRAPH)
++				else if(pgidx == 21)
+ 					{ send_headers(f, 200, "OK", extraheader, "image/svg+xml", 0, cs_strlen(result), NULL, 0); }
+-				else if(pgidx == WEBIF_PAGE_API_JSON)
++				else if(pgidx == 24)
+ 					{ send_headers(f, 200, "OK", extraheader, "text/javascript", 0, cs_strlen(result), NULL, 0); }
+ #ifdef WEBIF_WIKI
+-				else if(pgidx == WEBIF_PAGE_WIKI)
++				else if(pgidx == 31)
+ 					{ send_headers(f, 200, "OK", extraheader, "application/json", 0, cs_strlen(result), NULL, 0); }
+ #endif
+ 				else
+@@ -9988,17 +9931,40 @@ static void *serve_process(void *conn)
+ #ifdef WITH_SSL
+ 	if(ssl_active)
+ 	{
+-		FILE *f = NULL;
+-		int32_t request_ok = -1;
+ 		if(SSL_set_fd(ssl, s))
+ 		{
+-			int32_t ok = webif_ssl_accept(ssl, s);
+-			if(ok == 1)
++			int32_t ok = (SSL_accept(ssl) != -1);
++			if(!ok)
+ 			{
+-				request_ok = process_request((FILE *)ssl, in);
++				int8_t tries = 100;
++				while(!ok && tries--)
++				{
++					int32_t err = SSL_get_error(ssl, -1);
++					if(err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE)
++						{ break; }
++					else
++					{
++						struct pollfd pfd;
++						pfd.fd = s;
++						pfd.events = POLLIN | POLLPRI;
++						int32_t rc = poll(&pfd, 1, -1);
++						if(rc < 0)
++						{
++							if(errno == EINTR || errno == EAGAIN) { continue; }
++							break;
++						}
++						if(rc == 1)
++							{ ok = (SSL_accept(ssl) != -1); }
++					}
++				}
+ 			}
+-			else if(ok == 0)
++			if(ok)
++			{
++				process_request((FILE *)ssl, in);
++			}
++			else
+ 			{
++				FILE *f;
+ 				f = fdopen(s, "r+");
+ 				if(f != NULL)
+ 				{
+@@ -10025,6 +9991,7 @@ static void *serve_process(void *conn)
+ 					else
+ 						{ send_error(f, 200, "Bad Request", NULL, "This web server is running in SSL mode.", 1); }
+ 					fflush(f);
++					fclose(f);
+ 					NULLFREE(filebuf);
+ 				}
+ 				else
+@@ -10034,11 +10001,9 @@ static void *serve_process(void *conn)
+ 			}
+ 		}
+ 		else { cs_log("WebIf: Error calling SSL_set_fd()."); }
+-		if(request_ok >= 0) { SSL_shutdown(ssl); }
++		SSL_shutdown(ssl);
++		close(s);
+ 		SSL_free(ssl);
+-		/* A fallback stream owns the socket; release TLS before its descriptor. */
+-		if(f != NULL) { fclose(f); }
+-		else { close(s); }
+ 	}
+ 	else
+ #endif
+@@ -10049,15 +10014,14 @@ static void *serve_process(void *conn)
+ 		{
+ 			process_request(f, in);
+ 			fflush(f);
+-			shutdown(s, SHUT_WR);
+ 			fclose(f);
+ 		}
+ 		else
+ 		{
+ 			cs_log_dbg(D_TRACE, "WebIf: fdopen(%d) failed. (errno=%d %s)", s, errno, strerror(errno));
+-			shutdown(s, SHUT_WR);
+-			close(s);
+ 		}
++		shutdown(s, SHUT_WR);
++		close(s);
+ 	}
+ 
+ 	return NULL;
 diff --git a/oscam-chk.c b/oscam-chk.c
 index 78d031ea3c409e6ef6076a69ec091617d80ef20c..0396bf71b43f2582d805bff050d3310f59c185bb 100644
 --- a/oscam-chk.c
@@ -12811,7 +13494,7 @@ index 0000000000000000000000000000000000000000..cf718779f520b28570ce587e5bf091f3
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
 diff --git a/webif/pages_index.txt b/webif/pages_index.txt
-index fbf1d18b9b88c75552db12d1f753dbd02f602165..654fc69262e7f0afe087bced81b489012e00a888 100644
+index 46434100caf38ddd6c9df9ed2ca4eb7106d86f25..654fc69262e7f0afe087bced81b489012e00a888 100644
 --- a/webif/pages_index.txt
 +++ b/webif/pages_index.txt
 @@ -1,10 +1,10 @@
@@ -12827,7 +13510,12 @@ index fbf1d18b9b88c75552db12d1f753dbd02f602165..654fc69262e7f0afe087bced81b48901
  
  JSONCACHEEX                   api.json/cacheex.json                                       CS_CACHEEX
  JSONCACHEEXBIT                api.json/cacheexbit.json                                    CS_CACHEEX
-@@ -62,7 +62,7 @@ CONFIGCCCAM                   config/cccam.html
+@@ -58,11 +58,11 @@ CONFIGCWCYCLE                 config/cache_cwcycle.html
+ CONFIGCAMD33                  config/camd33.html                                          MODULE_CAMD33
+ CONFIGCAMD35                  config/camd35.html                                          MODULE_CAMD35
+ CONFIGCAMD35TCP               config/camd35tcp.html                                       MODULE_CAMD35_TCP
+-CONFIGCCCAM                   config/cccam.html                                           MODULE_CCCAM
++CONFIGCCCAM                   config/cccam.html                                           MODULE_CCCSHARE
  CONFIGCCCAMCTRL               config/cccam_control.html                                   MODULE_CCCSHARE
  CONFIGCONTENT                 config/config.html
  CONFIGDVBAPI                  config/dvbapi.html                                          HAVE_DVBAPI
@@ -12836,6 +13524,15 @@ index fbf1d18b9b88c75552db12d1f753dbd02f602165..654fc69262e7f0afe087bced81b48901
  DEMUXERFIX                    config/dvbapi_demuxerfix.html                               MODULE_STREAMRELAY
  CCCAMRESHAREBIT               config/cccreshare.html                                      MODULE_GBOX
  CONFIGGBOX                    config/gbox.html                                            MODULE_GBOX
+@@ -81,7 +81,7 @@ CONFIGMENUANTICASC            config/menu_anticasc.html
+ CONFIGMENUCAMD33              config/menu_camd33.html                                     MODULE_CAMD33
+ CONFIGMENUCAMD35              config/menu_camd35.html                                     MODULE_CAMD35
+ CONFIGMENUCAMD35TCP           config/menu_camd35tcp.html                                  MODULE_CAMD35_TCP
+-CONFIGMENUCCCAM               config/menu_cccam.html                                      MODULE_CCCAM
++CONFIGMENUCCCAM               config/menu_cccam.html                                      MODULE_CCCSHARE
+ CMCAPTIONCWC                  config/menu_cmcaptioncwc.html                               CW_CYCLE_CHECK
+ CONFIGMENUDVBAPI              config/menu_dvbapi.html                                     HAVE_DVBAPI
+ CONFIGMENUGBOX                config/menu_gbox.html                                       MODULE_GBOX
 @@ -92,6 +92,7 @@ CONFIGMENUNEWCAMD             config/menu_newcamd.html
  CONFIGMENURADEGAST            config/menu_radegast.html                                   MODULE_RADEGAST
  CONFIGMENUSCAM                config/menu_scam.html                                       MODULE_SCAM
