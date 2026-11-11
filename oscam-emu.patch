@@ -2,9 +2,9 @@ patch version: 2.26.11-11975-802 (7476c327)
 patch date: 2026-11-11
 patch modified by speedy005 (11/11/2026)
 patch base commit: 7476c3278853149e9beb6bba08f115763830ea0c
-patch target commit: 1f10850b3137ac9533473f303bcc4e0969e84130
-patch streamboard url: https://github.com/speedy005/oscam-git
-patch emu repository url: https://github.com/speedy005/Oscam-emu.git
+patch target commit: 4f0a51d6b3ef3660d08f459fece4fd152c2d2b8b
+patch streamboard url: https://github.com/speedy005/oscam-git.git
+patch emu repository url: https://github.com/speedy005/Oscam-emu
 patch emu branch: master
 
 diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
