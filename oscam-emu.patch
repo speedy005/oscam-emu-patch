@@ -1,5 +1,5 @@
-patch version: 2.26.11-11975-802 (8a1ce134)
-patch date: 2026-11-11 16:58:37 UTC (+00:00)
+patch version: 2.26.11-11975-802 (aec284d2)
+patch date: 2026-11-11 18:50:15 UTC (+00:00)
 ---
 diff --git a/../oscam-base/CMakeLists.txt b/./CMakeLists.txt
 index 8f3148ab..ccc85569 100644
@@ -776,11 +776,11 @@ index 4cda2edd..6cd27dae 100644
  #endif
 diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
 new file mode 100644
-index 00000000..931689aa
+index 00000000..ddcd349b
 --- /dev/null
 +++ b/./emu/.git/FETCH_HEAD
 @@ -0,0 +1 @@
-+d8a55b72469f5e139507c1a307eba55f4f09752f		branch 'master' of https://github.com/speedy005/oscam-emu-patch
++0d11479fe3f892693142d1701cd51dedc0fa4f7e		branch 'master' of https://github.com/speedy005/oscam-emu-patch
 diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
 new file mode 100644
 index 00000000..cb089cd8
@@ -1825,7 +1825,7 @@ index 00000000..c4d426bc
 +exit 0
 diff --git a/./emu/.git/index b/./emu/.git/index
 new file mode 100644
-index 00000000..3ae81d4d
+index 00000000..a3725354
 Binary files /dev/null and b/./emu/.git/index differ
 diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
 new file mode 100755
@@ -1841,55 +1841,55 @@ index 00000000..a5196d1b
 +# *~
 diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
 new file mode 100644
-index 00000000..d8eb9622
+index 00000000..128bfd4d
 --- /dev/null
 +++ b/./emu/.git/logs/HEAD
 @@ -0,0 +1,2 @@
-+0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
-+d8a55b72469f5e139507c1a307eba55f4f09752f d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	checkout: moving from master to master
++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
++0d11479fe3f892693142d1701cd51dedc0fa4f7e 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	checkout: moving from master to master
 diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
 new file mode 100644
-index 00000000..6f01de4f
+index 00000000..db6c3050
 --- /dev/null
 +++ b/./emu/.git/logs/refs/heads/master
 @@ -0,0 +1 @@
-+0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
 diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
 new file mode 100644
-index 00000000..e80f3db5
+index 00000000..e1108572
 --- /dev/null
 +++ b/./emu/.git/logs/refs/remotes/origin/master
 @@ -0,0 +1 @@
-+0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
-diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx
++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
+diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx
 new file mode 100644
-index 00000000..ef72e09e
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx differ
-diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack
+index 00000000..0450f350
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx differ
+diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack
 new file mode 100644
-index 00000000..1a0d9436
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack differ
-diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev
+index 00000000..396899a0
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack differ
+diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev
 new file mode 100644
-index 00000000..4cfd652f
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev differ
+index 00000000..35493d1b
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev differ
 diff --git a/./emu/.git/refs/heads/master b/./emu/.git/refs/heads/master
 new file mode 100644
-index 00000000..1436418b
+index 00000000..7c9b2f94
 --- /dev/null
 +++ b/./emu/.git/refs/heads/master
 @@ -0,0 +1 @@
-+d8a55b72469f5e139507c1a307eba55f4f09752f
++0d11479fe3f892693142d1701cd51dedc0fa4f7e
 diff --git a/./emu/.git/refs/remotes/origin/master b/./emu/.git/refs/remotes/origin/master
 new file mode 100644
-index 00000000..1436418b
+index 00000000..7c9b2f94
 --- /dev/null
 +++ b/./emu/.git/refs/remotes/origin/master
 @@ -0,0 +1 @@
-+d8a55b72469f5e139507c1a307eba55f4f09752f
++0d11479fe3f892693142d1701cd51dedc0fa4f7e
 diff --git a/./emu/oscam-emu.patch b/./emu/oscam-emu.patch
 new file mode 100644
-index 00000000..413256ee
+index 00000000..830d5853
 --- /dev/null
 +++ b/./emu/oscam-emu.patch
 @@ -0,0 +1,1872 @@
@@ -2668,11 +2668,11 @@ index 00000000..413256ee
 + #endif
 +diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
 +new file mode 100644
-+index 00000000..931689aa
++index 00000000..ddcd349b
 +--- /dev/null
 ++++ b/./emu/.git/FETCH_HEAD
 +@@ -0,0 +1 @@
-++d8a55b72469f5e139507c1a307eba55f4f09752f		branch 'master' of https://github.com/speedy005/oscam-emu-patch
+++0d11479fe3f892693142d1701cd51dedc0fa4f7e		branch 'master' of https://github.com/speedy005/oscam-emu-patch
 +diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
 +new file mode 100644
 +index 00000000..cb089cd8
@@ -3717,7 +3717,7 @@ index 00000000..413256ee
 ++exit 0
 +diff --git a/./emu/.git/index b/./emu/.git/index
 +new file mode 100644
-+index 00000000..3ae81d4d
++index 00000000..a3725354
 +Binary files /dev/null and b/./emu/.git/index differ
 +diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
 +new file mode 100755
@@ -3733,38 +3733,38 @@ index 00000000..413256ee
 ++# *~
 +diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
 +new file mode 100644
-+index 00000000..d8eb9622
++index 00000000..128bfd4d
 +--- /dev/null
 ++++ b/./emu/.git/logs/HEAD
 +@@ -0,0 +1,2 @@
-++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
-++d8a55b72469f5e139507c1a307eba55f4f09752f d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	checkout: moving from master to master
+++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
+++0d11479fe3f892693142d1701cd51dedc0fa4f7e 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	checkout: moving from master to master
 +diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
 +new file mode 100644
-+index 00000000..6f01de4f
++index 00000000..db6c3050
 +--- /dev/null
 ++++ b/./emu/.git/logs/refs/heads/master
 +@@ -0,0 +1 @@
-++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
+++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
 +diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
 +new file mode 100644
-+index 00000000..e80f3db5
++index 00000000..e1108572
 +--- /dev/null
 ++++ b/./emu/.git/logs/refs/remotes/origin/master
 +@@ -0,0 +1 @@
-++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
-+diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx
+++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
++diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx
 +new file mode 100644
-+index 00000000..ef72e09e
-+Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx differ
-+diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack
++index 00000000..0450f350
++Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx differ
++diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack
 +new file mode 100644
-+index 00000000..1a0d9436
-+Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack differ
-+diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev
++index 00000000..396899a0
++Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack differ
++diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev
 +new file mode 100644
-+index 00000000..4cfd652f
-+Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev diff
++index 00000000..35493d1b
++Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev diff
 \ No newline at end of file
 diff --git a/../oscam-base/globals.h b/./globals.h
 index 5a1c6315..d12fe5d7 100644
@@ -15141,7 +15141,7 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/../oscam-base/module-webif.c b/./module-webif.c
-index 8ee8e727..a2ee37fc 100644
+index 8ee8e727..f98b56ff 100644
 --- a/../oscam-base/module-webif.c
 +++ b/./module-webif.c
 @@ -201,8 +201,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
@@ -15287,237 +15287,27 @@ index 8ee8e727..a2ee37fc 100644
  		}
  
  		if(csystem)
-@@ -9222,92 +9285,23 @@ static int8_t check_request(char *result, int32_t readen)
+@@ -9222,7 +9285,6 @@ static int8_t check_request(char *result, int32_t readen)
  	return 0;
  }
  
 -/* Keep retries and partial reads within one monotonic deadline. */
--static int32_t webif_remaining_ms(const struct timespec *deadline)
--{
--	struct timespec now;
--	if(clock_gettime(CLOCK_MONOTONIC, &now) != 0) { return -1; }
--	int64_t remaining = (int64_t)(deadline->tv_sec - now.tv_sec) * 1000
--		+ (deadline->tv_nsec - now.tv_nsec) / 1000000;
--	return remaining > 0 ? remaining : 0;
--}
--
--static int32_t webif_wait(int32_t fd, short events, const struct timespec *deadline)
--{
--	struct pollfd pfd = { .fd = fd, .events = events };
--	for(;;)
--	{
--		int32_t remaining = webif_remaining_ms(deadline);
--		if(remaining <= 0) { return -1; }
--		int32_t rc = poll(&pfd, 1, remaining);
--		if(rc < 0 && (errno == EINTR || errno == EAGAIN)) { continue; }
--		return rc > 0 ? 0 : -1;
--	}
--}
--
--#ifdef WITH_SSL
--/* Return 0 only for a TLS error eligible for the existing plain-HTTP fallback. */
--static int32_t webif_ssl_accept(SSL *ssl, int32_t fd)
--{
--	struct timespec deadline;
--	int32_t flags = fcntl(fd, F_GETFL, 0), ok = -1;
--	if(flags < 0 || clock_gettime(CLOCK_MONOTONIC, &deadline) != 0
--		|| fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) { return -1; }
--	deadline.tv_sec += 10;
--
--	while(webif_remaining_ms(&deadline) > 0)
--	{
--		ERR_clear_error();
--		errno = 0;
--		int32_t rc = SSL_accept(ssl);
--		if(rc == 1)
--		{
--			ok = webif_remaining_ms(&deadline) > 0 ? 1 : -1;
--			break;
--		}
--		int32_t err = SSL_get_error(ssl, rc);
--		if(err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE)
--		{
--			if(err == SSL_ERROR_SYSCALL && errno == EINTR) { continue; }
--			ok = 0;
--			break;
--		}
--		if(webif_wait(fd, err == SSL_ERROR_WANT_WRITE ? POLLOUT : POLLIN, &deadline) < 0)
--			{ break; }
--	}
--	if(fcntl(fd, F_SETFL, flags) < 0) { return -1; }
--	return ok;
--}
--#endif
--
- static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePlain)
+ static int32_t webif_remaining_ms(const struct timespec *deadline)
  {
--	int32_t n, bufsize = 0, ret = -1;
--	int32_t fd;
--	int8_t allocation_failed = 0;
--	struct timespec deadline;
-+	int32_t n, bufsize = 0, errcount = 0;
-+#ifdef WITH_EMU
+ 	struct timespec now;
+@@ -9286,7 +9348,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+ 	int32_t fd;
+ 	int8_t allocation_failed = 0;
+ 	struct timespec deadline;
++	#ifdef WITH_EMU
 +	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 204800;
-+#else
++	#else
  	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 102400;
-+#endif
++	#endif
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
- 	if(ssl_active && !forcePlain)
- 		{ is_ssl = 1; }
--	fd = is_ssl ? SSL_get_fd((SSL *)f) : fileno(f);
--#else
--	fd = fileno(f);
- #endif
--	int32_t flags = fcntl(fd, F_GETFL, 0);
--	if(flags < 0 || clock_gettime(CLOCK_MONOTONIC, &deadline) != 0
--		|| fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) { return -1; }
--	/* Each call, including subsequent keepalive requests, gets a fresh budget. */
--	deadline.tv_sec += 10;
- 
- 	do
- 	{
--		if(webif_remaining_ms(&deadline) <= 0) { goto out; }
--#ifdef WITH_SSL
--		if(is_ssl) { ERR_clear_error(); }
--#endif
- 		errno = 0;
- 		if(forcePlain)
- 			{ n = read(fileno(f), buf2, sizeof(buf2)); }
-@@ -9315,42 +9309,38 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
- 			{ n = webif_read(buf2, sizeof(buf2), f); }
- 		if(n <= 0)
- 		{
--#ifdef WITH_SSL
--			if(is_ssl)
-+			if((errno == 0 || errno == EINTR))
- 			{
--				int32_t err = SSL_get_error((SSL *)f, n);
--				if(err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-+				if(errcount++ < 10)
- 				{
--					if(webif_wait(fd, err == SSL_ERROR_WANT_WRITE ? POLLOUT : POLLIN, &deadline) < 0)
--						{ goto out; }
-+					cs_sleepms(5);
- 					continue;
- 				}
--				if(err == SSL_ERROR_SYSCALL && errno == EINTR) { continue; }
-+				return -1;
-+			}
-+#ifdef WITH_SSL
-+			if(is_ssl)
-+			{
- 				if(errno != ECONNRESET)
- 				{
- 					int32_t errcode = ERR_peek_error();
- 					char errstring[128];
- 					ERR_error_string_n(errcode, errstring, sizeof(errstring) - 1);
--					cs_log_dbg(D_TRACE, "WebIf: read error ret=%d (%d%s%s)", n, err, errcode ? " " : "", errcode ? errstring : "");
-+					cs_log_dbg(D_TRACE, "WebIf: read error ret=%d (%d%s%s)", n, SSL_get_error(cur_ssl(), n), errcode ? " " : "", errcode ? errstring : "");
- 				}
--				goto out;
--			}
--#endif
--			if(n < 0 && errno == EINTR) { continue; }
--			if(n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
--			{
--				if(webif_wait(fd, POLLIN, &deadline) < 0) { goto out; }
--				continue;
-+				return -1;
- 			}
-+#else
- 			if(errno != ECONNRESET)
- 				{ cs_log_dbg(D_TRACE, "WebIf: read error ret=%d (errno=%d %s)", n, errno, strerror(errno)); }
--			goto out;
-+#endif
-+			return -1;
- 		}
--		if(webif_remaining_ms(&deadline) <= 0) { goto out; }
- 		if(!cs_realloc(result, bufsize + n + 1))
- 		{
--			allocation_failed = 1;
--			goto out;
-+			send_error500(f);
-+			NULLFREE(*result);
-+			return -1;
- 		}
- 
- 		memcpy(*result + bufsize, buf2, n);
-@@ -9359,7 +9349,9 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
- 		if(bufsize > max_request_size)
- 		{
- 			cs_log("error: too much data received from %s (%d > %d)", cs_inet_ntoa(in), bufsize, max_request_size);
--			goto out;
-+			NULLFREE(*result);
-+			*result = NULL;
-+			return -1;
- 		}
- 
- #ifdef WITH_SSL
-@@ -9373,60 +9365,8 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
- 		}
- #endif
- 	} while (!check_request(*result, bufsize));
--	ret = bufsize;
--out:
--	/* Response writes retain the existing blocking socket timeout profile. */
--	if(fcntl(fd, F_SETFL, flags) < 0) { ret = -1; }
--	if(ret < 0) { NULLFREE(*result); }
--	if(allocation_failed) { send_error500(f); }
--	return ret;
--}
--enum webif_page
--{
--	WEBIF_PAGE_UNKNOWN = -1,
--	WEBIF_PAGE_CONFIG,
--	WEBIF_PAGE_READERS,
--	WEBIF_PAGE_ENTITLEMENTS,
--	WEBIF_PAGE_STATUS,
--	WEBIF_PAGE_USERCONFIG,
--	WEBIF_PAGE_READERCONFIG,
--	WEBIF_PAGE_SERVICES,
--	WEBIF_PAGE_USER_EDIT,
--	WEBIF_PAGE_CSS,
--	WEBIF_PAGE_SERVICES_EDIT,
--	WEBIF_PAGE_SAVETEMPLATES,
--	WEBIF_PAGE_SHUTDOWN,
--	WEBIF_PAGE_SCRIPT,
--	WEBIF_PAGE_SCANUSB,
--	WEBIF_PAGE_FILES,
--	WEBIF_PAGE_READERSTATS,
--	WEBIF_PAGE_FAILBAN,
--	WEBIF_PAGE_JS,
--	WEBIF_PAGE_API_HTML,
--	WEBIF_PAGE_IMAGE,
--	WEBIF_PAGE_FAVICON,
--	WEBIF_PAGE_GRAPH,
--	WEBIF_PAGE_API_XML,
--	WEBIF_PAGE_CACHEEX,
--	WEBIF_PAGE_API_JSON,
--	WEBIF_PAGE_EMM,
--	WEBIF_PAGE_EMM_RUNNING,
--	WEBIF_PAGE_ROBOTS,
--	WEBIF_PAGE_GHTTP,
--	WEBIF_PAGE_LOGPOLL,
--	WEBIF_PAGE_JQUERY,
--#ifdef WEBIF_WIKI
--	WEBIF_PAGE_WIKI,
--	WEBIF_PAGE_WIKI_STATUS,
--#endif
--	WEBIF_PAGE_COUNT
--};
--
--static bool is_api_page(enum webif_page page)
--{
--	return page == WEBIF_PAGE_API_HTML || page == WEBIF_PAGE_API_XML || page == WEBIF_PAGE_API_JSON;
-+	return bufsize;
- }
--
- static int32_t process_request(FILE * f, IN_ADDR_T in)
- {
- 	int32_t ok = 0;
-@@ -9459,47 +9399,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9459,47 +9525,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		char *method, *path, *protocol, *str1, *saveptr1 = NULL, *authheader = NULL, *extraheader = NULL, *filebuf = NULL;
  		char *pch, *tmp, *buf, *nameInUrl, subdir[32];
  		/* List of possible pages */
@@ -15602,7 +15392,7 @@ index 8ee8e727..a2ee37fc 100644
  		uint32_t etagheader = 0;
  		struct uriparams params;
  		params.paramcount = 0;
-@@ -9583,9 +9523,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9583,9 +9649,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/* Map page to our static page definitions */
@@ -15614,7 +15404,7 @@ index 8ee8e727..a2ee37fc 100644
  		}
  
  		parseParams(&params, pch);
-@@ -9692,15 +9632,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9692,15 +9758,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/*build page*/
@@ -15633,7 +15423,7 @@ index 8ee8e727..a2ee37fc 100644
  		{
  			send_file(f, "JQ", subdir, modifiedheader, etagheader, extraheader);
  		}
-@@ -9759,12 +9699,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9759,12 +9825,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				tpl_printf(vars, TPLADD, "POLLREFRESHTIME", "%d", cfg.poll_refresh);
  			}
  			if	(	cfg.http_refresh > 0 &&
@@ -15650,7 +15440,7 @@ index 8ee8e727..a2ee37fc 100644
  				tpl_addVar(vars, TPLADD, "REFRESH", tpl_getTpl(vars, "REFRESH"));
  			}
  #ifdef WEBIF_JQUERY
-@@ -9791,8 +9731,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9791,8 +9857,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			tpl_addVar(vars, TPLADD, "RUNAS", urlencode(vars, username(first_client)));
  
  			time_t now = time((time_t *)0);
@@ -15661,7 +15451,7 @@ index 8ee8e727..a2ee37fc 100644
  			{
  				char tbuffer [30];
  				strftime(tbuffer, 30, "%Y-%m-%dT%H:%M:%S%z", &st);
-@@ -9829,105 +9769,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9829,105 +9895,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			char *result = NULL;
  
  			// WebIf allows modifying many things. Thus, all pages except images/css/static are expected to be non-threadsafe!
@@ -15801,7 +15591,7 @@ index 8ee8e727..a2ee37fc 100644
  				result = send_oscam_wiki_status(vars, &params);
  				break;
  #endif
-@@ -9935,20 +9878,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9935,20 +10004,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				result = send_oscam_status(vars, &params, 0);
  				break;
  			}
@@ -15827,76 +15617,7 @@ index 8ee8e727..a2ee37fc 100644
  					{ send_headers(f, 200, "OK", extraheader, "application/json", 0, cs_strlen(result), NULL, 0); }
  #endif
  				else
-@@ -9988,17 +9931,40 @@ static void *serve_process(void *conn)
- #ifdef WITH_SSL
- 	if(ssl_active)
- 	{
--		FILE *f = NULL;
--		int32_t request_ok = -1;
- 		if(SSL_set_fd(ssl, s))
- 		{
--			int32_t ok = webif_ssl_accept(ssl, s);
--			if(ok == 1)
-+			int32_t ok = (SSL_accept(ssl) != -1);
-+			if(!ok)
- 			{
--				request_ok = process_request((FILE *)ssl, in);
-+				int8_t tries = 100;
-+				while(!ok && tries--)
-+				{
-+					int32_t err = SSL_get_error(ssl, -1);
-+					if(err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE)
-+						{ break; }
-+					else
-+					{
-+						struct pollfd pfd;
-+						pfd.fd = s;
-+						pfd.events = POLLIN | POLLPRI;
-+						int32_t rc = poll(&pfd, 1, -1);
-+						if(rc < 0)
-+						{
-+							if(errno == EINTR || errno == EAGAIN) { continue; }
-+							break;
-+						}
-+						if(rc == 1)
-+							{ ok = (SSL_accept(ssl) != -1); }
-+					}
-+				}
- 			}
--			else if(ok == 0)
-+			if(ok)
-+			{
-+				process_request((FILE *)ssl, in);
-+			}
-+			else
- 			{
-+				FILE *f;
- 				f = fdopen(s, "r+");
- 				if(f != NULL)
- 				{
-@@ -10025,6 +9991,7 @@ static void *serve_process(void *conn)
- 					else
- 						{ send_error(f, 200, "Bad Request", NULL, "This web server is running in SSL mode.", 1); }
- 					fflush(f);
-+					fclose(f);
- 					NULLFREE(filebuf);
- 				}
- 				else
-@@ -10034,11 +10001,9 @@ static void *serve_process(void *conn)
- 			}
- 		}
- 		else { cs_log("WebIf: Error calling SSL_set_fd()."); }
--		if(request_ok >= 0) { SSL_shutdown(ssl); }
-+		SSL_shutdown(ssl);
-+		close(s);
- 		SSL_free(ssl);
--		/* A fallback stream owns the socket; release TLS before its descriptor. */
--		if(f != NULL) { fclose(f); }
--		else { close(s); }
- 	}
- 	else
- #endif
-@@ -10049,15 +10014,14 @@ static void *serve_process(void *conn)
+@@ -10049,15 +10118,14 @@ static void *serve_process(void *conn)
  		{
  			process_request(f, in);
  			fflush(f);
