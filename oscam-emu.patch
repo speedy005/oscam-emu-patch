@@ -1,10 +1,10 @@
-patch version: 2.26.11-11973-802 (37bd7469)
-patch date: 2026-11-10
-patch modified by speedy005 (10/11/2026)
-patch base commit: 37bd7469ce346764e013301f0eb7d7d36b08a40b
-patch target commit: b3cf170e4147b3cac422a12c3f15e5ca7434aebd
+patch version: 2.26.11-11975-802 (7476c327)
+patch date: 2026-11-11
+patch modified by speedy005 (11/11/2026)
+patch base commit: 7476c3278853149e9beb6bba08f115763830ea0c
+patch target commit: 1f10850b3137ac9533473f303bcc4e0969e84130
 patch streamboard url: https://github.com/speedy005/oscam-git
-patch emu repository url: https://github.com/speedy005/Oscam-emu
+patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
 
 diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
@@ -487,6 +487,31 @@ index 279b4794a5aaf490b21c6e38a4808fb77205037a..9709d5e6623caddcdb32118f914ca59f
  SRC-$(CONFIG_WITH_CARDREADER) += reader-common.c
  SRC-$(CONFIG_READER_BULCRYPT) += reader-bulcrypt.c
  SRC-$(CONFIG_READER_CONAX) += reader-conax.c
+diff --git a/README.build b/README.build
+index b66d94f683fcd07a3e68f03d8022a87193a091e5..bf68e95fe6cab9eafe3946b8f6660476e50f5c6b 100644
+--- a/README.build
++++ b/README.build
+@@ -252,18 +252,8 @@ OSCam build system documentation
+     make static-libcrypto - Builds OSCam with libcrypto linked statically
+     make static-ssl    - Builds OSCam with SSL support linked statically
+ 
+- Developer tests:
+-   Build the 'tests.bin' binary and run the self-tests:
+-     make tests
+-     ./tests.bin
+-
+-   To include the optional bundled SHA-1 single-update checks for 512 MiB
+-   and 512 MiB + 1 byte inputs:
+-     OSCAM_TEST_SHA1_LARGE=1 ./tests.bin
+-
+-   These checks allocate a 512 MiB + 1 byte buffer and are skipped by
+-   default; the smaller SHA-1 length tests still run. They require the
+-   bundled SHA-1 backend (build without USE_LIBCRYPTO or USE_SSL).
++ Developer targets:
++    make tests         - Builds 'tests.bin' binary
+ 
+  Examples:
+    Build OSCam for SH4 (the compilers are in the path):
 diff --git a/README.config b/README.config
 index 03c70f7dd3702ecd3879be0f30725ad48707a219..9b99c3c4e8ed0b0348edeeb5bbb93ba7026e6982 100644
 --- a/README.config
@@ -969,6 +994,83 @@ index f40e5c80916cf15ef6da50e5e2d54cd635572e5d..b59b7b2b4e27cd38855484037e3b4572
  		echo $sha
  		break
  	;;
+diff --git a/cscrypt/sha1.c b/cscrypt/sha1.c
+index 15909289b856f52996bb86a665d814d7300ea638..dfabea88b5fbe1ce54f676ab7a5dd74ff2dc708a 100644
+--- a/cscrypt/sha1.c
++++ b/cscrypt/sha1.c
+@@ -1,4 +1,5 @@
+ #ifndef WITH_LIBCRYPTO
++//FIXME Not checked on threadsafety yet; after checking please remove this line
+ /*
+ SHA-1 in C
+ By Steve Reid <sreid@sea-to-sky.net>
+@@ -77,6 +78,8 @@ A million repetitions of "a"
+   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
+ */
+ 
++/* #define SHA1HANDSOFF  */
++
+ #include <stdio.h>
+ #include <string.h>
+ 
+@@ -128,9 +131,15 @@ void SHA1_Transform(uint32_t state[5], const uint8_t buffer[64])
+ 		uint8_t c[64];
+ 		uint32_t l[16];
+ 	} CHAR64LONG16;
+-	CHAR64LONG16 workspace;
+-	CHAR64LONG16 *block = &workspace;
+-	memcpy(block->c, buffer, sizeof(block->c));
++	CHAR64LONG16 *block;
++
++#ifdef SHA1HANDSOFF
++	static uint8_t workspace[64];
++	block = (CHAR64LONG16 *)workspace;
++	memcpy(block, buffer, 64);
++#else
++	block = (CHAR64LONG16 *)buffer;
++#endif
+ 
+ 	/* Copy context->state[] to working vars */
+ 	a = state[0];
+@@ -248,25 +257,19 @@ void SHA1_Init(SHA_CTX *context)
+ void SHA1_Update(SHA_CTX *context, const uint8_t *data, const size_t len)
+ {
+ 	size_t i, j;
+-	uint32_t old_count;
+-
+-	if(len == 0) { return; }
+ 
+ #ifdef VERBOSE
+ 	SHAPrintContext(context, "before");
+ #endif
+ 
+ 	j = (context->count[0] >> 3) & 63;
+-	/* Detect carry within the low word, even when size_t is wider. */
+-	old_count = context->count[0];
+-	context->count[0] += (uint32_t)(len << 3);
+-	if(context->count[0] < old_count) { context->count[1]++; }
+-	context->count[1] += (uint32_t)(len >> 29);
+-	if(len >= 64 - j)
++	if((context->count[0] += len << 3) < (len << 3)) { context->count[1]++; }
++	context->count[1] += (len >> 29);
++	if((j + len) > 63)
+ 	{
+ 		memcpy(&context->buffer[j], data, (i = 64 - j));
+ 		SHA1_Transform(context->state, context->buffer);
+-		for(; len - i >= 64; i += 64)
++		for(; i + 63 < len; i += 64)
+ 		{
+ 			SHA1_Transform(context->state, data + i);
+ 		}
+@@ -310,5 +313,8 @@ void SHA1_Final(uint8_t digest[SHA_DIGEST_LENGTH], SHA_CTX *context)
+ 	memset(context->count, 0, 8);
+ 	memset(finalcount, 0, 8);   /* SWR */
+ 
++#ifdef SHA1HANDSOFF  /* make SHA1Transform overwrite its own static vars */
++	SHA1_Transform(context->state, context->buffer);
++#endif
+ }
+ #endif
 diff --git a/csctapi/cardreaders.h b/csctapi/cardreaders.h
 index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecaebe4fd9a7 100644
 --- a/csctapi/cardreaders.h
@@ -981,10 +1083,10 @@ index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecae
  
  #endif
 diff --git a/globals.h b/globals.h
-index 4d2b044c727488ccad820635ea4ab9d988221555..e6000878cca16ba4edc7b1a54512a04c32926198 100644
+index 5a1c631557775910ea85358d0b6c1a424c1b534f..d12fe5d7f6a3f2ea23d7c6ae29eda9a4f1d172b9 100644
 --- a/globals.h
 +++ b/globals.h
-@@ -368,11 +368,11 @@
+@@ -368,9 +368,9 @@
  /* ===========================
   *			constants
   * =========================== */
@@ -994,11 +1096,8 @@ index 4d2b044c727488ccad820635ea4ab9d988221555..e6000878cca16ba4edc7b1a54512a04c
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
--#define CS_VERSION				"2.26.11-11973"
-+#define CS_VERSION				"2.26.09-11968"
+ #define CS_VERSION				"2.26.11-11975"
  #endif
- #ifndef CS_GIT_COMMIT
- #define CS_GIT_COMMIT			"a2b4c6d8"
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
  
@@ -13437,6 +13536,194 @@ index eec350e9daec7516d86ba75af5749bb3bf0a6813..316c2bea3371b0305dd12367303901d2
  extern const struct s_cardsystem reader_dgcrypt;
 +extern const struct s_cardsystem reader_emu;
  
+ #endif
+diff --git a/tests.c b/tests.c
+index 0a96878bfa530652274bb126be426e3d3e969579..fc1085815cd4326c4304f1c2afea5d6b29c68f5d 100644
+--- a/tests.c
++++ b/tests.c
+@@ -259,8 +259,8 @@ static int run_md5_tests(void)
+ 	return failures;
+ }
+ 
+-/* SHA1: exercises whole-input and streaming Init/Update/Final calls,
+- *       split on byte 1 to catch partial-update bugs.
++/* SHA1: exercises both one-shot SHA1() and the Init/Update/Final
++ *       variant, split on byte 1 to catch partial-update bugs.
+  *       Vectors: FIPS 180-1. */
+ static int run_sha1_tests(void)
+ {
+@@ -270,7 +270,6 @@ static int run_sha1_tests(void)
+ 		{ "448bit",  "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+ 		                                                        0, "84983e441c3bd26ebaae4aa1f95129e5e54670f1" },
+ 		{ "fox",     "The quick brown fox jumps over the lazy dog", 0, "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12" },
+-		{ "1M_a",    "a",                                   1000000, "34aa973cd4c4daa4f61eeb2bdbad27316534016f" },
+ 		{ NULL, NULL, 0, NULL }
+ 	};
+ 	int failures = 0;
+@@ -312,79 +311,6 @@ static int run_sha1_tests(void)
+ 	return failures;
+ }
+ 
+-static int run_sha1_input_tests(void)
+-{
+-	static const size_t sizes[] = { 0, 1, 55, 56, 57, 63, 64, 65, 127, 128, 129, 255 };
+-	static const size_t chunks[] = { 1, 7, 63, 64, 65, 255 };
+-	union { uint32_t align; uint8_t bytes[259]; } input;
+-	uint8_t saved[sizeof(input.bytes)], expected[20], got[20];
+-	int failures = 0;
+-	for (size_t i = 0; i < sizeof(saved); i++) saved[i] = (uint8_t)(i * 37 + 11);
+-	printf("SHA1 input preservation and update boundaries");
+-	for (size_t offset = 1; offset <= 3; offset++)
+-	{
+-		for (size_t n = 0; n < sizeof(sizes) / sizeof(sizes[0]); n++)
+-		{
+-			SHA_CTX reference;
+-			SHA1_Init(&reference);
+-			for (size_t i = 0; i < sizes[n]; i++) SHA1_Update(&reference, saved + offset + i, 1);
+-			SHA1_Final(expected, &reference);
+-			for (size_t c = 0; c < sizeof(chunks) / sizeof(chunks[0]); c++)
+-			{
+-				for (size_t prefix = 0; prefix <= 1 && prefix <= sizes[n]; prefix++)
+-				{
+-					SHA_CTX context;
+-					memcpy(input.bytes, saved, sizeof(saved));
+-					SHA1_Init(&context);
+-					if (prefix) SHA1_Update(&context, input.bytes + offset, prefix);
+-					for (size_t pos = prefix; pos < sizes[n]; )
+-					{
+-						size_t count = sizes[n] - pos;
+-						if (count > chunks[c]) count = chunks[c];
+-						SHA1_Update(&context, input.bytes + offset + pos, count);
+-						pos += count;
+-					}
+-					SHA1_Final(got, &context);
+-					if (memcmp(expected, got, sizeof(got)) || memcmp(input.bytes, saved, sizeof(saved)))
+-					{
+-						printf("\n === ERROR === offset=%zu size=%zu chunk=%zu prefix=%zu\n", offset, sizes[n], chunks[c], prefix);
+-						failures++;
+-					}
+-				}
+-			}
+-		}
+-	}
+-	if (!failures) printf(" [OK]\n");
+-
+-	/* Const storage also catches writes on hosts that map it read-only. */
+-	static const uint8_t readonly[] =
+-		"0123456789abcdef0123456789abcdef0123456789abcdef"
+-		"0123456789abcdef0123456789abcdef0123456789abcdef"
+-		"0123456789abcdef0123456789abcdef0123456789abcdef";
+-	SHA_CTX context, reference;
+-	SHA1_Init(&reference);
+-	for (size_t i = 0; i < 128; i++) SHA1_Update(&reference, readonly + 1 + i, 1);
+-	SHA1_Final(expected, &reference);
+-	SHA1_Init(&context);
+-	SHA1_Update(&context, readonly + 1, 128);
+-	SHA1_Final(got, &context);
+-	printf("SHA1 const input");
+-	if (!memcmp(expected, got, sizeof(got))) printf(" [OK]\n");
+-	else { printf(" [FAIL]\n"); failures++; }
+-#if !defined(WITH_SSL) && !defined(WITH_LIBCRYPTO)
+-	/* The bundled transform takes state words; OpenSSL takes a context. */
+-	SHA1_Init(&reference);
+-	SHA1_Update(&reference, readonly + 1, 64);
+-	SHA1_Init(&context);
+-	SHA1_Transform(context.state, readonly + 1);
+-	printf("SHA1 direct transform of const unaligned input");
+-	if (!memcmp(reference.state, context.state, sizeof(context.state))) printf(" [OK]\n");
+-	else { printf(" [FAIL]\n"); failures++; }
+-#endif
+-	fflush(stdout);
+-	return failures;
+-}
+-
+ /* SHA256: streaming API only.
+  *         Vectors: NIST FIPS 180-2. */
+ static int run_sha256_tests(void)
+@@ -433,72 +359,6 @@ static int run_sha256_tests(void)
+ 	return failures;
+ }
+ 
+-#if !defined(WITH_SSL) && !defined(WITH_LIBCRYPTO)
+-static int run_sha1_length_tests(void)
+-{
+-	int failures = 0;
+-	SHA_CTX context, before;
+-	const uint8_t byte = 0;
+-	printf("SHA1 update lengths\n");
+-	memset(&context, 0xa5, sizeof(context));
+-	SHA1_Init(&context);
+-	for (size_t prefix = 0; prefix < 2; prefix++)
+-	{
+-		memcpy(&before, &context, sizeof(context));
+-		SHA1_Update(&context, NULL, 0);
+-		printf(" Testing NULL/zero %s", prefix ? "after a partial update" : "after init");
+-		if (!memcmp(&context, &before, sizeof(context))) { printf(" [OK]\n"); }
+-		else { printf(" [FAIL]\n"); failures++; }
+-		SHA1_Update(&context, &byte, 1);
+-	}
+-
+-	const uint32_t high[] = { 7, UINT32_MAX };
+-	for (size_t i = 0; i < sizeof(high) / sizeof(*high); i++)
+-	{
+-		memset(&context, 0, sizeof(context));
+-		SHA1_Init(&context);
+-		context.count[0] = UINT32_C(0xfffffff8);
+-		context.count[1] = high[i];
+-		SHA1_Update(&context, &byte, 1);
+-		printf(" Testing bit-count carry from high word %" PRIu32, high[i]);
+-		if (context.count[0] == 0 && context.count[1] == (uint32_t)(high[i] + 1)) { printf(" [OK]\n"); }
+-		else { printf(" [FAIL]\n"); failures++; }
+-	}
+-
+-	const char *large = getenv("OSCAM_TEST_SHA1_LARGE");
+-	if (!large || strcmp(large, "1"))
+-	{
+-		printf(" Skipping 512 MiB updates (set OSCAM_TEST_SHA1_LARGE=1; uses 512 MiB + 1 byte)\n");
+-		return failures;
+-	}
+-	const size_t size = (size_t)512 * 1024 * 1024;
+-	uint8_t *data = malloc(size + 1);
+-	if (!data) { printf(" Large-update allocation failed\n"); return failures + 1; }
+-	/* SHA-1 of zero bytes, independently checked with OpenSSL. */
+-	const char *expected[] = {
+-		"5b088492c9f4778f409b7ae61477dec124c99033",
+-		"3e1bb536d18494c32e66ef9f479d65bbe0d863de"
+-	};
+-	for (size_t extra = 0; extra < 2; extra++)
+-	{
+-		uint8_t digest[SHA_DIGEST_LENGTH];
+-		memset(data, 0, size + extra);
+-		SHA1_Init(&context);
+-		SHA1_Update(&context, data, size + extra);
+-		printf(" Testing 512 MiB + %zu bytes in one update", extra);
+-		if (context.count[0] != extra * 8 || context.count[1] != 1)
+-		{
+-			printf(" [FAIL: bit count]"); failures++;
+-		}
+-		SHA1_Final(digest, &context);
+-		if (hex_equal(digest, sizeof(digest), expected[extra])) { printf(" [OK]\n"); }
+-		else { report_mismatch("SHA1 large update", "zero bytes", digest, sizeof(digest), expected[extra]); failures++; }
+-	}
+-	free(data);
+-	return failures;
+-}
+-#endif
+-
+ /* --------------------------------------------------------------------- */
+ /*  AES                                                                  */
+ /* --------------------------------------------------------------------- */
+@@ -1382,11 +1242,7 @@ static int run_crypto_tests(void)
+ 	failures += run_md5_crypt_tests();
+ #endif
+ 	failures += run_sha1_tests();
+-	failures += run_sha1_input_tests();
+ 	failures += run_sha256_tests();
+-#if !defined(WITH_SSL) && !defined(WITH_LIBCRYPTO)
+-	failures += run_sha1_length_tests();
+-#endif
+ #ifdef WITH_LIB_MDC2
+ 	failures += run_mdc2_tests();
  #endif
 diff --git a/webif/config/streamrelay.html b/webif/config/streamrelay.html
 index f79d5a1c6cb2a0592f79eafb6dc5c16a7419b642..3804d00f5f18e8c5fa522cca09629318fec02afe 100644
