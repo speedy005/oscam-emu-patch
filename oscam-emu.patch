@@ -1,343 +1,10 @@
-patch version: 2.26.11-11975-802 (7476c327)
-patch date: 2026-11-11
-patch modified by speedy005 (11/11/2026)
-patch base commit: 7476c3278853149e9beb6bba08f115763830ea0c
-patch target commit: d27161da046571eec85956ebec3aebd9cec0f315
-patch streamboard url: https://github.com/speedy005/oscam-git.git
-patch emu repository url: https://github.com/speedy005/Oscam-emu.git
-patch emu branch: master
-
-diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..31b59e9a6233cd411846418d05fd70a56386c8ba
---- /dev/null
-+++ b/.github/workflows/build-oscam.yml
-@@ -0,0 +1,53 @@
-+name: build oscam-emu
-+
-+on:
-+  push:
-+    branches:
-+      - master
-+    paths-ignore:
-+      - '.github/**'
-+
-+  pull_request:
-+    branches:
-+      - master
-+    paths-ignore:
-+      - '.github/**'
-+
-+  workflow_dispatch:
-+
-+permissions:
-+  contents: read
-+
-+jobs:
-+  build:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+      - name: Checkout master
-+        uses: actions/checkout@v4
-+        with:
-+          ref: master
-+          fetch-depth: 1
-+          token: ${{ github.token }}
-+
-+      - name: Build libdvbcsa
-+        run: |
-+          set -e
-+
-+          git clone https://github.com/oe-mirrors/libdvbcsa.git
-+          cd libdvbcsa
-+
-+          ./bootstrap
-+          ./configure --enable-avx2
-+          make -j"$(nproc)"
-+          sudo make install
-+
-+      - name: Build oscam-emu
-+        run: |
-+          set -e
-+
-+          ./config.sh \
-+            --enable all \
-+            --disable WITH_SOFTCAM
-+
-+          make -j"$(nproc)"
-diff --git a/.github/workflows/create-patch.yml b/.github/workflows/create-patch.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..f1e19743f85ba28fe49d8931520efbb76f8ce4e5
---- /dev/null
-+++ b/.github/workflows/create-patch.yml
-@@ -0,0 +1,104 @@
-+name: create patch
-+
-+on:
-+  push:
-+    branches:
-+      - master
-+    paths-ignore:
-+      - '.github/**'
-+
-+  workflow_dispatch:
-+
-+permissions:
-+  contents: read
-+
-+jobs:
-+  create-patch:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+      # ==========================================================
-+      # Aktuelles Repository: speedy005/Oscam-emu
-+      # ==========================================================
-+      - name: Checkout master
-+        uses: actions/checkout@v4
-+        with:
-+          repository: speedy005/Oscam-emu
-+          ref: master
-+          fetch-depth: 0
-+          token: ${{ github.token }}
-+
-+      # ==========================================================
-+      # Separates Patch-Repository
-+      # ==========================================================
-+      - name: Checkout oscam-emu-patch
-+        uses: actions/checkout@v4
-+        with:
-+          repository: speedy005/oscam-emu-patch
-+          token: ${{ secrets.ACTIONS_TOKEN }}
-+          path: emu
-+          fetch-depth: 0
-+
-+      # ==========================================================
-+      # OSCam-Basis herunterladen
-+      # ==========================================================
-+      - name: Checkout OSCam base
-+        run: |
-+          set -e
-+
-+          git clone --depth 1 \
-+            --branch master \
-+            https://github.com/speedy005/oscam-git.git \
-+            ../oscam-base
-+
-+      # ==========================================================
-+      # Patch erstellen
-+      # ==========================================================
-+      - name: Create patch
-+        run: |
-+          set -e
-+
-+          echo "Vergleiche OSCam-Emu mit OSCam-Basis..."
-+
-+          git diff --no-index \
-+            --src-prefix=a/ \
-+            --dst-prefix=b/ \
-+            ../oscam-base/ . \
-+            -- ':!.git' ':!.github' ':!.gitlab' \
-+            > emu/oscam-emu.patch || RESULT=$?
-+
-+          if [ "${RESULT:-0}" -gt 1 ]; then
-+            echo "Fehler beim Erstellen des Patches."
-+            exit 1
-+          fi
-+
-+          if [ ! -s emu/oscam-emu.patch ]; then
-+            echo "FEHLER: Patch ist leer!"
-+            exit 1
-+          fi
-+
-+          sed -i "1s/^/patch version: $(./config.sh --oscam-version) ($(./config.sh --oscam-commit))\npatch date: $(date '+%Y-%m-%d %H:%M:%S %Z (%:z)')\n---\n/" emu/oscam-emu.patch
-+
-+          echo "Patch erfolgreich erstellt:"
-+          wc -c emu/oscam-emu.patch
-+
-+      # ==========================================================
-+      # Patch committen und pushen
-+      # ==========================================================
-+      - name: Commit oscam-emu.patch
-+        run: |
-+          set -e
-+
-+          cd emu
-+
-+          git config user.name "oscam-emu-bot"
-+          git config user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+
-+          git add oscam-emu.patch
-+
-+          if ! git diff --cached --quiet; then
-+            git commit -m "Sync patch with $(../config.sh --oscam-version)"
-+            git push origin HEAD:master
-+          else
-+            echo "No changes to commit."
-+          fi
-diff --git a/.github/workflows/lockdown-repo.yml b/.github/workflows/lockdown-repo.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..4c5c669df9ffb55a260f7b3bf6ff2a056eaf5620
---- /dev/null
-+++ b/.github/workflows/lockdown-repo.yml
-@@ -0,0 +1,36 @@
-+name: 'lockdown repo'
-+
-+on:
-+  issues:
-+    types:
-+      - opened
-+
-+  pull_request_target:
-+    types:
-+      - opened
-+
-+  workflow_dispatch:
-+
-+permissions:
-+  contents: read
-+  issues: write
-+  pull-requests: write
-+
-+jobs:
-+  lockdown:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+      - name: Lock down issues and pull requests
-+        uses: dessant/repo-lockdown@v4
-+        with:
-+          close-issue: true
-+          issue-comment: >
-+            This repository does not accept bug reports.
-+          skip-closed-issue-comment: true
-+
-+          close-pr: true
-+          pr-comment: >
-+            This repository does not accept pull requests
-+            because further development has stopped.
-+          skip-closed-pr-comment: true
-diff --git a/.github/workflows/merge-gitlab.yml b/.github/workflows/merge-gitlab.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..2d0ed07805854c4e3be55cf0e403fbeb3749a7b3
---- /dev/null
-+++ b/.github/workflows/merge-gitlab.yml
-@@ -0,0 +1,43 @@
-+name: merge gitlab
-+
-+on:
-+  workflow_call:
-+  workflow_dispatch:
-+
-+permissions:
-+  contents: write
-+
-+jobs:
-+  merge:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+      - name: Checkout repository
-+        uses: actions/checkout@v4
-+        with:
-+          ref: master
-+          fetch-depth: 0
-+          token: ${{ github.token }}
-+
-+      - name: Git config
-+        run: |
-+          git config user.name "oscam-emu-bot"
-+          git config user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+
-+      - name: Merge oscam-gitlab into master
-+        run: |
-+          set -e
-+
-+          git fetch origin master oscam-gitlab
-+
-+          if git merge --no-ff origin/oscam-gitlab \
-+              -m "Auto-Merge branch 'oscam-gitlab'"; then
-+
-+            git push --follow-tags origin master
-+
-+          else
-+            echo
-+            echo "Files with merge conflicts:"
-+            git diff --check
-+            exit 1
-+          fi
-diff --git a/.github/workflows/sync-gitlab.yml b/.github/workflows/sync-gitlab.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..82feb1c786bb440fc75f8a68961d739e5c2be71a
---- /dev/null
-+++ b/.github/workflows/sync-gitlab.yml
-@@ -0,0 +1,61 @@
-+name: sync gitlab
-+
-+on:
-+  workflow_call:
-+
-+  workflow_dispatch:
-+
-+  repository_dispatch:
-+    types:
-+      - invoke-sync-gitlab
-+
-+permissions:
-+  contents: write
-+
-+jobs:
-+  sync:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+      - name: Checkout oscam-gitlab
-+        uses: actions/checkout@v4
-+        with:
-+          ref: oscam-gitlab
-+          fetch-depth: 0
-+          token: ${{ github.token }}
-+
-+      - name: Git config
-+        run: |
-+          git config user.name "oscam-emu-bot"
-+          git config user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+
-+      - name: Sync oscam-gitlab with upstream
-+        run: |
-+          set -e
-+
-+          git remote add --track master mirror https://github.com/speedy005/Oscam-emu.git
-+          git fetch mirror
-+
-+          ahead=$(git rev-list mirror/master..HEAD --count)
-+
-+          if [ "$ahead" -gt 0 ]; then
-+            force='--force'
-+
-+            printf '\n%s commit(s) ahead upstream -> reset branch and force push changes\n' "$ahead"
-+
-+            git reset --hard "HEAD~$ahead"
-+          fi
-+
-+          git merge mirror/master
-+
-+          if [ -n "${force:-}" ]; then
-+            git push --follow-tags origin --force oscam-gitlab
-+          else
-+            git push --follow-tags origin oscam-gitlab
-+          fi
-+
-+  reuse:
-+    needs:
-+      - sync
-+
-+    uses: ./.github/workflows/merge-gitlab.yml
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 8f3148abfb3d93848c25d7bc475b17b8af2e648c..ccc8556933c88e3274a96c3588badaa707c00b86 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
+patch version: 2.26.11-11975-802 (8a1ce134)
+patch date: 2026-11-11 16:58:37 UTC (+00:00)
+---
+diff --git a/../oscam-base/CMakeLists.txt b/./CMakeLists.txt
+index 8f3148ab..ccc85569 100644
+--- a/../oscam-base/CMakeLists.txt
++++ b/./CMakeLists.txt
 @@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
  # Manage config.h based on command line parameters
  # Manipulate config file based on given parameters and read unset parameters
@@ -418,10 +85,10 @@ index 8f3148abfb3d93848c25d7bc475b17b8af2e648c..ccc8556933c88e3274a96c3588badaa7
 +endif (WITH_EMU)
 +
  message (STATUS "")
-diff --git a/Distribution/doc/man/oscam.server.5 b/Distribution/doc/man/oscam.server.5
-index 56d1925ca9d66e94d39146cf73f38b8a9a650301..27fff61b2303023a248118f2af5e482d6c857258 100644
---- a/Distribution/doc/man/oscam.server.5
-+++ b/Distribution/doc/man/oscam.server.5
+diff --git a/../oscam-base/Distribution/doc/man/oscam.server.5 b/./Distribution/doc/man/oscam.server.5
+index 56d1925c..27fff61b 100644
+--- a/../oscam-base/Distribution/doc/man/oscam.server.5
++++ b/./Distribution/doc/man/oscam.server.5
 @@ -649,6 +649,11 @@ set reader's CCcam reshare hop, default:0
    \fBx\fP = resharing for direct peer and share level x
  .RE
@@ -434,10 +101,10 @@ index 56d1925ca9d66e94d39146cf73f38b8a9a650301..27fff61b2303023a248118f2af5e482d
  \fBccckeepalive\fP = \fB0\fP|\fB1\fP
  .RS 3n
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
-diff --git a/Distribution/doc/txt/oscam.server.txt b/Distribution/doc/txt/oscam.server.txt
-index a43c9db6087784a29993192a4b4978489012d45b..4b5d2a76fb56c6c616c6647692f767fbdbf7da5e 100644
---- a/Distribution/doc/txt/oscam.server.txt
-+++ b/Distribution/doc/txt/oscam.server.txt
+diff --git a/../oscam-base/Distribution/doc/txt/oscam.server.txt b/./Distribution/doc/txt/oscam.server.txt
+index a43c9db6..4b5d2a76 100644
+--- a/../oscam-base/Distribution/doc/txt/oscam.server.txt
++++ b/./Distribution/doc/txt/oscam.server.txt
 @@ -509,6 +509,9 @@ DESCRIPTIONS
  	    0 = resharing for direct peer only
  	    x = resharing for direct peer and share level x
@@ -448,10 +115,10 @@ index a43c9db6087784a29993192a4b4978489012d45b..4b5d2a76fb56c6c616c6647692f767fb
         ccckeepalive = 0|1
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
-diff --git a/Makefile b/Makefile
-index 279b4794a5aaf490b21c6e38a4808fb77205037a..9709d5e6623caddcdb32118f914ca59f4d1c282e 100644
---- a/Makefile
-+++ b/Makefile
+diff --git a/../oscam-base/Makefile b/./Makefile
+index 279b4794..9709d5e6 100644
+--- a/../oscam-base/Makefile
++++ b/./Makefile
 @@ -28,6 +28,9 @@ ifeq ($(uname_S),Darwin)
  	LINKER_VER_OPT:=-Wl,-v
  endif
@@ -512,10 +179,10 @@ index 279b4794a5aaf490b21c6e38a4808fb77205037a..9709d5e6623caddcdb32118f914ca59f
  SRC-$(CONFIG_WITH_CARDREADER) += reader-common.c
  SRC-$(CONFIG_READER_BULCRYPT) += reader-bulcrypt.c
  SRC-$(CONFIG_READER_CONAX) += reader-conax.c
-diff --git a/README.build b/README.build
-index b66d94f683fcd07a3e68f03d8022a87193a091e5..bf68e95fe6cab9eafe3946b8f6660476e50f5c6b 100644
---- a/README.build
-+++ b/README.build
+diff --git a/../oscam-base/README.build b/./README.build
+index b66d94f6..bf68e95f 100644
+--- a/../oscam-base/README.build
++++ b/./README.build
 @@ -252,18 +252,8 @@ OSCam build system documentation
      make static-libcrypto - Builds OSCam with libcrypto linked statically
      make static-ssl    - Builds OSCam with SSL support linked statically
@@ -537,10 +204,10 @@ index b66d94f683fcd07a3e68f03d8022a87193a091e5..bf68e95fe6cab9eafe3946b8f6660476
  
   Examples:
     Build OSCam for SH4 (the compilers are in the path):
-diff --git a/README.config b/README.config
-index 03c70f7dd3702ecd3879be0f30725ad48707a219..9b99c3c4e8ed0b0348edeeb5bbb93ba7026e6982 100644
---- a/README.config
-+++ b/README.config
+diff --git a/../oscam-base/README.config b/./README.config
+index 03c70f7d..9b99c3c4 100644
+--- a/../oscam-base/README.config
++++ b/./README.config
 @@ -81,7 +81,7 @@ Examples:
    ./config.sh --create-cert ecdsa prime256v1 ca 'My OSCam Distribution'
  
@@ -550,10 +217,10 @@ index 03c70f7dd3702ecd3879be0f30725ad48707a219..9b99c3c4e8ed0b0348edeeb5bbb93ba7
      protocols: MODULE_CAMD33 MODULE_CAMD35 MODULE_CAMD35_TCP MODULE_NEWCAMD MODULE_CCCAM MODULE_CCCSHARE MODULE_GBOX MODULE_RADEGAST MODULE_SCAM MODULE_SERIAL MODULE_CONSTCW MODULE_PANDORA MODULE_GHTTP MODULE_STREAMRELAY
        readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
   card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
-diff --git a/README.md b/README.md
-index 32e2e616fca86a957d9be1bb742dea674871afb0..a818d140d23b5dd59269fbc768a37dc5ec76ae8c 100644
---- a/README.md
-+++ b/README.md
+diff --git a/../oscam-base/README.md b/./README.md
+index 32e2e616..a818d140 100644
+--- a/../oscam-base/README.md
++++ b/./README.md
 @@ -1,79 +1,294 @@
 -# OSCam: Open Source Conditional Access Module
 +# 🚀 OSCam-Emu | Open Source CAM with Emulator
@@ -905,10 +572,10 @@ index 32e2e616fca86a957d9be1bb742dea674871afb0..a818d140d23b5dd59269fbc768a37dc5
 +  <a href="https://github.com/speedy005/Oscam-emu/issues">🐛 Issues</a> ·
 +  <a href="https://github.com/speedy005/Oscam-emu/discussions">💬 Discussions</a>
 +</p>
-diff --git a/config.h b/config.h
-index 06b18eecde4cf2ace39c80b596d269099b258494..47afd6587a58fbcf1941d5146b85350e9af92912 100644
---- a/config.h
-+++ b/config.h
+diff --git a/../oscam-base/config.h b/./config.h
+index 06b18eec..47afd658 100644
+--- a/../oscam-base/config.h
++++ b/./config.h
 @@ -1,6 +1,8 @@
  #ifndef CONFIG_H_
  #define CONFIG_H_
@@ -927,10 +594,10 @@ index 06b18eecde4cf2ace39c80b596d269099b258494..47afd6587a58fbcf1941d5146b85350e
  #endif
  //#define WITH_NEUTRINO 1
  #define READ_SDT_CHARSETS 1
-diff --git a/config.sh b/config.sh
-index f40e5c80916cf15ef6da50e5e2d54cd635572e5d..b59b7b2b4e27cd38855484037e3b4572091e5305 100755
---- a/config.sh
-+++ b/config.sh
+diff --git a/../oscam-base/config.sh b/./config.sh
+index f40e5c80..b59b7b2b 100755
+--- a/../oscam-base/config.sh
++++ b/./config.sh
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -1019,10 +686,10 @@ index f40e5c80916cf15ef6da50e5e2d54cd635572e5d..b59b7b2b4e27cd38855484037e3b4572
  		echo $sha
  		break
  	;;
-diff --git a/cscrypt/sha1.c b/cscrypt/sha1.c
-index 15909289b856f52996bb86a665d814d7300ea638..dfabea88b5fbe1ce54f676ab7a5dd74ff2dc708a 100644
---- a/cscrypt/sha1.c
-+++ b/cscrypt/sha1.c
+diff --git a/../oscam-base/cscrypt/sha1.c b/./cscrypt/sha1.c
+index 15909289..dfabea88 100644
+--- a/../oscam-base/cscrypt/sha1.c
++++ b/./cscrypt/sha1.c
 @@ -1,4 +1,5 @@
  #ifndef WITH_LIBCRYPTO
 +//FIXME Not checked on threadsafety yet; after checking please remove this line
@@ -1096,10 +763,10 @@ index 15909289b856f52996bb86a665d814d7300ea638..dfabea88b5fbe1ce54f676ab7a5dd74f
 +#endif
  }
  #endif
-diff --git a/csctapi/cardreaders.h b/csctapi/cardreaders.h
-index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecaebe4fd9a7 100644
---- a/csctapi/cardreaders.h
-+++ b/csctapi/cardreaders.h
+diff --git a/../oscam-base/csctapi/cardreaders.h b/./csctapi/cardreaders.h
+index 4cda2edd..6cd27dae 100644
+--- a/../oscam-base/csctapi/cardreaders.h
++++ b/./csctapi/cardreaders.h
 @@ -15,5 +15,6 @@ extern const struct s_cardreader cardreader_smartreader;
  extern const struct s_cardreader cardreader_stapi;
  extern const struct s_cardreader cardreader_stinger;
@@ -1107,10 +774,3002 @@ index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecae
 +extern const struct s_cardreader cardreader_emu;
  
  #endif
-diff --git a/globals.h b/globals.h
-index 5a1c631557775910ea85358d0b6c1a424c1b534f..d12fe5d7f6a3f2ea23d7c6ae29eda9a4f1d172b9 100644
---- a/globals.h
-+++ b/globals.h
+diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
+new file mode 100644
+index 00000000..931689aa
+--- /dev/null
++++ b/./emu/.git/FETCH_HEAD
+@@ -0,0 +1 @@
++d8a55b72469f5e139507c1a307eba55f4f09752f		branch 'master' of https://github.com/speedy005/oscam-emu-patch
+diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
+new file mode 100644
+index 00000000..cb089cd8
+--- /dev/null
++++ b/./emu/.git/HEAD
+@@ -0,0 +1 @@
++ref: refs/heads/master
+diff --git a/./emu/.git/config b/./emu/.git/config
+new file mode 100644
+index 00000000..24dd778c
+--- /dev/null
++++ b/./emu/.git/config
+@@ -0,0 +1,15 @@
++[core]
++	repositoryformatversion = 0
++	filemode = true
++	bare = false
++	logallrefupdates = true
++[remote "origin"]
++	url = https://github.com/speedy005/oscam-emu-patch
++	fetch = +refs/heads/*:refs/remotes/origin/*
++[gc]
++	auto = 0
++[http "https://github.com/"]
++	extraheader = AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46Z2l0aHViX3BhdF8xMUFRRjJDSFkwSFZ4WGpCZUhuMTY0X041YW5WUXBHalAwRlViVkxSOE5rb2pQQ0hvUTBlRTNvTVp2SE53dHBOVGYzNVU2RzIzNHlxbnp2UVZQ
++[branch "master"]
++	remote = origin
++	merge = refs/heads/master
+diff --git a/./emu/.git/config.worktree b/./emu/.git/config.worktree
+new file mode 100644
+index 00000000..82748328
+--- /dev/null
++++ b/./emu/.git/config.worktree
+@@ -0,0 +1,5 @@
++[core]
++	sparseCheckout = false
++	sparseCheckoutCone = false
++[index]
++	sparse = false
+diff --git a/./emu/.git/description b/./emu/.git/description
+new file mode 100755
+index 00000000..498b267a
+--- /dev/null
++++ b/./emu/.git/description
+@@ -0,0 +1 @@
++Unnamed repository; edit this file 'description' to name the repository.
+diff --git a/./emu/.git/hooks/applypatch-msg.sample b/./emu/.git/hooks/applypatch-msg.sample
+new file mode 100755
+index 00000000..a5d7b84a
+--- /dev/null
++++ b/./emu/.git/hooks/applypatch-msg.sample
+@@ -0,0 +1,15 @@
++#!/bin/sh
++#
++# An example hook script to check the commit log message taken by
++# applypatch from an e-mail message.
++#
++# The hook should exit with non-zero status after issuing an
++# appropriate message if it wants to stop the commit.  The hook is
++# allowed to edit the commit message file.
++#
++# To enable this hook, rename this file to "applypatch-msg".
++
++. git-sh-setup
++commitmsg="$(git rev-parse --git-path hooks/commit-msg)"
++test -x "$commitmsg" && exec "$commitmsg" ${1+"$@"}
++:
+diff --git a/./emu/.git/hooks/commit-msg.sample b/./emu/.git/hooks/commit-msg.sample
+new file mode 100755
+index 00000000..f7458efe
+--- /dev/null
++++ b/./emu/.git/hooks/commit-msg.sample
+@@ -0,0 +1,74 @@
++#!/bin/sh
++#
++# An example hook script to check the commit log message.
++# Called by "git commit" with one argument, the name of the file
++# that has the commit message.  The hook should exit with non-zero
++# status after issuing an appropriate message if it wants to stop the
++# commit.  The hook is allowed to edit the commit message file.
++#
++# To enable this hook, rename this file to "commit-msg".
++
++# Uncomment the below to add a Signed-off-by line to the message.
++# Doing this in a hook is a bad idea in general, but the prepare-commit-msg
++# hook is more suited to it.
++#
++# SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
++# grep -qs "^$SOB" "$1" || echo "$SOB" >> "$1"
++
++# This example catches duplicate Signed-off-by lines and messages that
++# would confuse 'git am'.
++
++ret=0
++
++test "" = "$(grep '^Signed-off-by: ' "$1" |
++	 sort | uniq -c | sed -e '/^[ 	]*1[ 	]/d')" || {
++	echo >&2 Duplicate Signed-off-by lines.
++	ret=1
++}
++
++comment_re="$(
++	{
++		git config --get-regexp "^core\.comment(char|string)\$" ||
++			echo '#'
++	} | sed -n -e '
++		${
++			s/^[^ ]* //
++			s|[][*./\]|\\&|g
++			s/^auto$/[#;@!$%^&|:]/
++			p
++		}'
++)"
++scissors_line="^${comment_re} -\{8,\} >8 -\{8,\}\$"
++comment_line="^${comment_re}.*"
++blank_line='^[ 	]*$'
++# Disallow lines starting with "diff -" or "Index: " in the body of the
++# message. Stop looking if we see a scissors line.
++line="$(sed -n -e "
++	# Skip comments and blank lines at the start of the file.
++	/${scissors_line}/q
++	/${comment_line}/d
++	/${blank_line}/d
++	# The first paragraph will become the subject header so
++	# does not need to be checked.
++	: subject
++	n
++	/${scissors_line}/q
++	/${blank_line}/!b subject
++	# Check the body of the message for problematic
++	# prefixes.
++	: body
++	n
++	/${scissors_line}/q
++	/${comment_line}/b body
++	/^diff -/{p;q;}
++	/^Index: /{p;q;}
++	b body
++	" "$1")"
++if test -n "$line"
++then
++	echo >&2 "Message contains a diff that will confuse 'git am'."
++	echo >&2 "To fix this indent the diff."
++	ret=1
++fi
++
++exit $ret
+diff --git a/./emu/.git/hooks/fsmonitor-watchman.sample b/./emu/.git/hooks/fsmonitor-watchman.sample
+new file mode 100755
+index 00000000..429e0a51
+--- /dev/null
++++ b/./emu/.git/hooks/fsmonitor-watchman.sample
+@@ -0,0 +1,168 @@
++#!/usr/bin/perl
++
++use strict;
++use warnings;
++use IPC::Open2;
++
++# An example hook script to integrate Watchman
++# (https://facebook.github.io/watchman/) with git to speed up detecting
++# new and modified files.
++#
++# The hook is passed a version (currently 2) and last update token
++# formatted as a string and outputs to stdout a new update token and
++# all files that have been modified since the update token. Paths must
++# be relative to the root of the working tree and separated by a single NUL.
++#
++# To enable this hook, rename this file to "query-watchman" and set
++# 'git config core.fsmonitor .git/hooks/query-watchman'
++#
++my ($version, $last_update_token) = @ARGV;
++
++# Uncomment for debugging
++# print STDERR "$0 $version $last_update_token\n";
++
++# Check the hook interface version
++if ($version ne 2) {
++	die "Unsupported query-fsmonitor hook version '$version'.\n" .
++	    "Falling back to scanning...\n";
++}
++
++my $git_work_tree = get_working_dir();
++
++my $json_pkg;
++eval {
++	require JSON::XS;
++	$json_pkg = "JSON::XS";
++	1;
++} or do {
++	require JSON::PP;
++	$json_pkg = "JSON::PP";
++};
++
++launch_watchman();
++
++sub launch_watchman {
++	my $o = watchman_query();
++	if (is_work_tree_watched($o)) {
++		output_result($o->{clock}, @{$o->{files}});
++	}
++}
++
++sub output_result {
++	my ($clockid, @files) = @_;
++
++	# Uncomment for debugging watchman output
++	# open (my $fh, ">", ".git/watchman-output.out");
++	# binmode $fh, ":utf8";
++	# print $fh "$clockid\n@files\n";
++	# close $fh;
++
++	binmode STDOUT, ":utf8";
++	print $clockid;
++	print "\0";
++	local $, = "\0";
++	print @files;
++}
++
++sub watchman_clock {
++	my $response = qx/watchman clock "$git_work_tree"/;
++	die "Failed to get clock id on '$git_work_tree'.\n" .
++		"Falling back to scanning...\n" if $? != 0;
++
++	return $json_pkg->new->utf8->decode($response);
++}
++
++sub watchman_query {
++	my $pid = open2(\*CHLD_OUT, \*CHLD_IN, 'watchman -j --no-pretty')
++	or die "open2() failed: $!\n" .
++	"Falling back to scanning...\n";
++
++	# In the query expression below we're asking for names of files that
++	# changed since $last_update_token but not from the .git folder.
++	#
++	# To accomplish this, we're using the "since" generator to use the
++	# recency index to select candidate nodes and "fields" to limit the
++	# output to file names only. Then we're using the "expression" term to
++	# further constrain the results.
++	my $last_update_line = "";
++	if (substr($last_update_token, 0, 1) eq "c") {
++		$last_update_token = "\"$last_update_token\"";
++		$last_update_line = qq[\n"since": $last_update_token,];
++	}
++	my $query = <<"	END";
++		["query", "$git_work_tree", {$last_update_line
++			"fields": ["name"],
++			"expression": ["not", ["dirname", ".git"]]
++		}]
++	END
++
++	# Uncomment for debugging the watchman query
++	# open (my $fh, ">", ".git/watchman-query.json");
++	# print $fh $query;
++	# close $fh;
++
++	print CHLD_IN $query;
++	close CHLD_IN;
++	my $response = do {local $/; <CHLD_OUT>};
++
++	# Uncomment for debugging the watch response
++	# open ($fh, ">", ".git/watchman-response.json");
++	# print $fh $response;
++	# close $fh;
++
++	die "Watchman: command returned no output.\n" .
++	"Falling back to scanning...\n" if $response eq "";
++	die "Watchman: command returned invalid output: $response\n" .
++	"Falling back to scanning...\n" unless $response =~ /^\{/;
++
++	return $json_pkg->new->utf8->decode($response);
++}
++
++sub is_work_tree_watched {
++	my ($output) = @_;
++	my $error = $output->{error};
++	if ($error and $error =~ m/unable to resolve root .* directory (.*) is not watched/) {
++		my $response = qx/watchman watch "$git_work_tree"/;
++		die "Failed to make watchman watch '$git_work_tree'.\n" .
++		    "Falling back to scanning...\n" if $? != 0;
++		$output = $json_pkg->new->utf8->decode($response);
++		$error = $output->{error};
++		die "Watchman: $error.\n" .
++		"Falling back to scanning...\n" if $error;
++
++		# Uncomment for debugging watchman output
++		# open (my $fh, ">", ".git/watchman-output.out");
++		# close $fh;
++
++		# Watchman will always return all files on the first query so
++		# return the fast "everything is dirty" flag to git and do the
++		# Watchman query just to get it over with now so we won't pay
++		# the cost in git to look up each individual file.
++		my $o = watchman_clock();
++		$error = $o->{error};
++
++		die "Watchman: $error.\n" .
++		"Falling back to scanning...\n" if $error;
++
++		output_result($o->{clock}, ("/"));
++		return 0;
++	}
++
++	die "Watchman: $error.\n" .
++	"Falling back to scanning...\n" if $error;
++
++	return 1;
++}
++
++sub get_working_dir {
++	my $working_dir;
++	if ($^O =~ 'msys' || $^O =~ 'cygwin') {
++		$working_dir = Win32::GetCwd();
++		$working_dir =~ tr/\\/\//;
++	} else {
++		require Cwd;
++		$working_dir = Cwd::cwd();
++	}
++
++	return $working_dir;
++}
+diff --git a/./emu/.git/hooks/post-update.sample b/./emu/.git/hooks/post-update.sample
+new file mode 100755
+index 00000000..ec17ec19
+--- /dev/null
++++ b/./emu/.git/hooks/post-update.sample
+@@ -0,0 +1,8 @@
++#!/bin/sh
++#
++# An example hook script to prepare a packed repository for use over
++# dumb transports.
++#
++# To enable this hook, rename this file to "post-update".
++
++exec git update-server-info
+diff --git a/./emu/.git/hooks/pre-applypatch.sample b/./emu/.git/hooks/pre-applypatch.sample
+new file mode 100755
+index 00000000..4142082b
+--- /dev/null
++++ b/./emu/.git/hooks/pre-applypatch.sample
+@@ -0,0 +1,14 @@
++#!/bin/sh
++#
++# An example hook script to verify what is about to be committed
++# by applypatch from an e-mail message.
++#
++# The hook should exit with non-zero status after issuing an
++# appropriate message if it wants to stop the commit.
++#
++# To enable this hook, rename this file to "pre-applypatch".
++
++. git-sh-setup
++precommit="$(git rev-parse --git-path hooks/pre-commit)"
++test -x "$precommit" && exec "$precommit" ${1+"$@"}
++:
+diff --git a/./emu/.git/hooks/pre-commit.sample b/./emu/.git/hooks/pre-commit.sample
+new file mode 100755
+index 00000000..29ed5ee4
+--- /dev/null
++++ b/./emu/.git/hooks/pre-commit.sample
+@@ -0,0 +1,49 @@
++#!/bin/sh
++#
++# An example hook script to verify what is about to be committed.
++# Called by "git commit" with no arguments.  The hook should
++# exit with non-zero status after issuing an appropriate message if
++# it wants to stop the commit.
++#
++# To enable this hook, rename this file to "pre-commit".
++
++if git rev-parse --verify HEAD >/dev/null 2>&1
++then
++	against=HEAD
++else
++	# Initial commit: diff against an empty tree object
++	against=$(git hash-object -t tree /dev/null)
++fi
++
++# If you want to allow non-ASCII filenames set this variable to true.
++allownonascii=$(git config --type=bool hooks.allownonascii)
++
++# Redirect output to stderr.
++exec 1>&2
++
++# Cross platform projects tend to avoid non-ASCII filenames; prevent
++# them from being added to the repository. We exploit the fact that the
++# printable range starts at the space character and ends with tilde.
++if [ "$allownonascii" != "true" ] &&
++	# Note that the use of brackets around a tr range is ok here, (it's
++	# even required, for portability to Solaris 10's /usr/bin/tr), since
++	# the square bracket bytes happen to fall in the designated range.
++	test $(git diff-index --cached --name-only --diff-filter=A -z $against |
++	  LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
++then
++	cat <<\EOF
++Error: Attempt to add a non-ASCII file name.
++
++This can cause problems if you want to work with people on other platforms.
++
++To be portable it is advisable to rename the file.
++
++If you know what you are doing you can disable this check using:
++
++  git config hooks.allownonascii true
++EOF
++	exit 1
++fi
++
++# If there are whitespace errors, print the offending file names and fail.
++exec git diff-index --check --cached $against --
+diff --git a/./emu/.git/hooks/pre-merge-commit.sample b/./emu/.git/hooks/pre-merge-commit.sample
+new file mode 100755
+index 00000000..399eab19
+--- /dev/null
++++ b/./emu/.git/hooks/pre-merge-commit.sample
+@@ -0,0 +1,13 @@
++#!/bin/sh
++#
++# An example hook script to verify what is about to be committed.
++# Called by "git merge" with no arguments.  The hook should
++# exit with non-zero status after issuing an appropriate message to
++# stderr if it wants to stop the merge commit.
++#
++# To enable this hook, rename this file to "pre-merge-commit".
++
++. git-sh-setup
++test -x "$GIT_DIR/hooks/pre-commit" &&
++        exec "$GIT_DIR/hooks/pre-commit"
++:
+diff --git a/./emu/.git/hooks/pre-push.sample b/./emu/.git/hooks/pre-push.sample
+new file mode 100755
+index 00000000..4ce688d3
+--- /dev/null
++++ b/./emu/.git/hooks/pre-push.sample
+@@ -0,0 +1,53 @@
++#!/bin/sh
++
++# An example hook script to verify what is about to be pushed.  Called by "git
++# push" after it has checked the remote status, but before anything has been
++# pushed.  If this script exits with a non-zero status nothing will be pushed.
++#
++# This hook is called with the following parameters:
++#
++# $1 -- Name of the remote to which the push is being done
++# $2 -- URL to which the push is being done
++#
++# If pushing without using a named remote those arguments will be equal.
++#
++# Information about the commits which are being pushed is supplied as lines to
++# the standard input in the form:
++#
++#   <local ref> <local oid> <remote ref> <remote oid>
++#
++# This sample shows how to prevent push of commits where the log message starts
++# with "WIP" (work in progress).
++
++remote="$1"
++url="$2"
++
++zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
++
++while read local_ref local_oid remote_ref remote_oid
++do
++	if test "$local_oid" = "$zero"
++	then
++		# Handle delete
++		:
++	else
++		if test "$remote_oid" = "$zero"
++		then
++			# New branch, examine all commits
++			range="$local_oid"
++		else
++			# Update to existing branch, examine new commits
++			range="$remote_oid..$local_oid"
++		fi
++
++		# Check for WIP commit
++		commit=$(git rev-list -n 1 --grep '^WIP' "$range")
++		if test -n "$commit"
++		then
++			echo >&2 "Found WIP commit in $local_ref, not pushing"
++			exit 1
++		fi
++	fi
++done
++
++exit 0
+diff --git a/./emu/.git/hooks/pre-rebase.sample b/./emu/.git/hooks/pre-rebase.sample
+new file mode 100755
+index 00000000..6cbef5c3
+--- /dev/null
++++ b/./emu/.git/hooks/pre-rebase.sample
+@@ -0,0 +1,169 @@
++#!/bin/sh
++#
++# Copyright (c) 2006, 2008 Junio C Hamano
++#
++# The "pre-rebase" hook is run just before "git rebase" starts doing
++# its job, and can prevent the command from running by exiting with
++# non-zero status.
++#
++# The hook is called with the following parameters:
++#
++# $1 -- the upstream the series was forked from.
++# $2 -- the branch being rebased (or empty when rebasing the current branch).
++#
++# This sample shows how to prevent topic branches that are already
++# merged to 'next' branch from getting rebased, because allowing it
++# would result in rebasing already published history.
++
++publish=next
++basebranch="$1"
++if test "$#" = 2
++then
++	topic="refs/heads/$2"
++else
++	topic=`git symbolic-ref HEAD` ||
++	exit 0 ;# we do not interrupt rebasing detached HEAD
++fi
++
++case "$topic" in
++refs/heads/??/*)
++	;;
++*)
++	exit 0 ;# we do not interrupt others.
++	;;
++esac
++
++# Now we are dealing with a topic branch being rebased
++# on top of master.  Is it OK to rebase it?
++
++# Does the topic really exist?
++git show-ref -q "$topic" || {
++	echo >&2 "No such branch $topic"
++	exit 1
++}
++
++# Is topic fully merged to master?
++not_in_master=`git rev-list --pretty=oneline ^master "$topic"`
++if test -z "$not_in_master"
++then
++	echo >&2 "$topic is fully merged to master; better remove it."
++	exit 1 ;# we could allow it, but there is no point.
++fi
++
++# Is topic ever merged to next?  If so you should not be rebasing it.
++only_next_1=`git rev-list ^master "^$topic" ${publish} | sort`
++only_next_2=`git rev-list ^master           ${publish} | sort`
++if test "$only_next_1" = "$only_next_2"
++then
++	not_in_topic=`git rev-list "^$topic" master`
++	if test -z "$not_in_topic"
++	then
++		echo >&2 "$topic is already up to date with master"
++		exit 1 ;# we could allow it, but there is no point.
++	else
++		exit 0
++	fi
++else
++	not_in_next=`git rev-list --pretty=oneline ^${publish} "$topic"`
++	/usr/bin/perl -e '
++		my $topic = $ARGV[0];
++		my $msg = "* $topic has commits already merged to public branch:\n";
++		my (%not_in_next) = map {
++			/^([0-9a-f]+) /;
++			($1 => 1);
++		} split(/\n/, $ARGV[1]);
++		for my $elem (map {
++				/^([0-9a-f]+) (.*)$/;
++				[$1 => $2];
++			} split(/\n/, $ARGV[2])) {
++			if (!exists $not_in_next{$elem->[0]}) {
++				if ($msg) {
++					print STDERR $msg;
++					undef $msg;
++				}
++				print STDERR " $elem->[1]\n";
++			}
++		}
++	' "$topic" "$not_in_next" "$not_in_master"
++	exit 1
++fi
++
++<<\DOC_END
++
++This sample hook safeguards topic branches that have been
++published from being rewound.
++
++The workflow assumed here is:
++
++ * Once a topic branch forks from "master", "master" is never
++   merged into it again (either directly or indirectly).
++
++ * Once a topic branch is fully cooked and merged into "master",
++   it is deleted.  If you need to build on top of it to correct
++   earlier mistakes, a new topic branch is created by forking at
++   the tip of the "master".  This is not strictly necessary, but
++   it makes it easier to keep your history simple.
++
++ * Whenever you need to test or publish your changes to topic
++   branches, merge them into "next" branch.
++
++The script, being an example, hardcodes the publish branch name
++to be "next", but it is trivial to make it configurable via
++$GIT_DIR/config mechanism.
++
++With this workflow, you would want to know:
++
++(1) ... if a topic branch has ever been merged to "next".  Young
++    topic branches can have stupid mistakes you would rather
++    clean up before publishing, and things that have not been
++    merged into other branches can be easily rebased without
++    affecting other people.  But once it is published, you would
++    not want to rewind it.
++
++(2) ... if a topic branch has been fully merged to "master".
++    Then you can delete it.  More importantly, you should not
++    build on top of it -- other people may already want to
++    change things related to the topic as patches against your
++    "master", so if you need further changes, it is better to
++    fork the topic (perhaps with the same name) afresh from the
++    tip of "master".
++
++Let's look at this example:
++
++		   o---o---o---o---o---o---o---o---o---o "next"
++		  /       /           /           /
++		 /   a---a---b A     /           /
++		/   /               /           /
++	       /   /   c---c---c---c B         /
++	      /   /   /             \         /
++	     /   /   /   b---b C     \       /
++	    /   /   /   /             \     /
++    ---o---o---o---o---o---o---o---o---o---o---o "master"
++
++
++A, B and C are topic branches.
++
++ * A has one fix since it was merged up to "next".
++
++ * B has finished.  It has been fully merged up to "master" and "next",
++   and is ready to be deleted.
++
++ * C has not merged to "next" at all.
++
++We would want to allow C to be rebased, refuse A, and encourage
++B to be deleted.
++
++To compute (1):
++
++	git rev-list ^master ^topic next
++	git rev-list ^master        next
++
++	if these match, topic has not merged in next at all.
++
++To compute (2):
++
++	git rev-list master..topic
++
++	if this is empty, it is fully merged to "master".
++
++DOC_END
+diff --git a/./emu/.git/hooks/pre-receive.sample b/./emu/.git/hooks/pre-receive.sample
+new file mode 100755
+index 00000000..a1fd29ec
+--- /dev/null
++++ b/./emu/.git/hooks/pre-receive.sample
+@@ -0,0 +1,24 @@
++#!/bin/sh
++#
++# An example hook script to make use of push options.
++# The example simply echoes all push options that start with 'echoback='
++# and rejects all pushes when the "reject" push option is used.
++#
++# To enable this hook, rename this file to "pre-receive".
++
++if test -n "$GIT_PUSH_OPTION_COUNT"
++then
++	i=0
++	while test "$i" -lt "$GIT_PUSH_OPTION_COUNT"
++	do
++		eval "value=\$GIT_PUSH_OPTION_$i"
++		case "$value" in
++		echoback=*)
++			echo "echo from the pre-receive-hook: ${value#*=}" >&2
++			;;
++		reject)
++			exit 1
++		esac
++		i=$((i + 1))
++	done
++fi
+diff --git a/./emu/.git/hooks/prepare-commit-msg.sample b/./emu/.git/hooks/prepare-commit-msg.sample
+new file mode 100755
+index 00000000..10fa14c5
+--- /dev/null
++++ b/./emu/.git/hooks/prepare-commit-msg.sample
+@@ -0,0 +1,42 @@
++#!/bin/sh
++#
++# An example hook script to prepare the commit log message.
++# Called by "git commit" with the name of the file that has the
++# commit message, followed by the description of the commit
++# message's source.  The hook's purpose is to edit the commit
++# message file.  If the hook fails with a non-zero status,
++# the commit is aborted.
++#
++# To enable this hook, rename this file to "prepare-commit-msg".
++
++# This hook includes three examples. The first one removes the
++# "# Please enter the commit message..." help message.
++#
++# The second includes the output of "git diff --name-status -r"
++# into the message, just before the "git status" output.  It is
++# commented because it doesn't cope with --amend or with squashed
++# commits.
++#
++# The third example adds a Signed-off-by line to the message, that can
++# still be edited.  This is rarely a good idea.
++
++COMMIT_MSG_FILE=$1
++COMMIT_SOURCE=$2
++SHA1=$3
++
++/usr/bin/perl -i.bak -ne 'print unless(m/^. Please enter the commit message/..m/^#$/)' "$COMMIT_MSG_FILE"
++
++# case "$COMMIT_SOURCE,$SHA1" in
++#  ,|template,)
++#    /usr/bin/perl -i.bak -pe '
++#       print "\n" . `git diff --cached --name-status -r`
++# 	 if /^#/ && $first++ == 0' "$COMMIT_MSG_FILE" ;;
++#  *) ;;
++# esac
++
++# SOB=$(git var GIT_COMMITTER_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
++# git interpret-trailers --in-place --trailer "$SOB" "$COMMIT_MSG_FILE"
++# if test -z "$COMMIT_SOURCE"
++# then
++#   /usr/bin/perl -i.bak -pe 'print "\n" if !$first_line++' "$COMMIT_MSG_FILE"
++# fi
+diff --git a/./emu/.git/hooks/push-to-checkout.sample b/./emu/.git/hooks/push-to-checkout.sample
+new file mode 100755
+index 00000000..af5a0c00
+--- /dev/null
++++ b/./emu/.git/hooks/push-to-checkout.sample
+@@ -0,0 +1,78 @@
++#!/bin/sh
++
++# An example hook script to update a checked-out tree on a git push.
++#
++# This hook is invoked by git-receive-pack(1) when it reacts to git
++# push and updates reference(s) in its repository, and when the push
++# tries to update the branch that is currently checked out and the
++# receive.denyCurrentBranch configuration variable is set to
++# updateInstead.
++#
++# By default, such a push is refused if the working tree and the index
++# of the remote repository has any difference from the currently
++# checked out commit; when both the working tree and the index match
++# the current commit, they are updated to match the newly pushed tip
++# of the branch. This hook is to be used to override the default
++# behaviour; however the code below reimplements the default behaviour
++# as a starting point for convenient modification.
++#
++# The hook receives the commit with which the tip of the current
++# branch is going to be updated:
++commit=$1
++
++# It can exit with a non-zero status to refuse the push (when it does
++# so, it must not modify the index or the working tree).
++die () {
++	echo >&2 "$*"
++	exit 1
++}
++
++# Or it can make any necessary changes to the working tree and to the
++# index to bring them to the desired state when the tip of the current
++# branch is updated to the new commit, and exit with a zero status.
++#
++# For example, the hook can simply run git read-tree -u -m HEAD "$1"
++# in order to emulate git fetch that is run in the reverse direction
++# with git push, as the two-tree form of git read-tree -u -m is
++# essentially the same as git switch or git checkout that switches
++# branches while keeping the local changes in the working tree that do
++# not interfere with the difference between the branches.
++
++# The below is a more-or-less exact translation to shell of the C code
++# for the default behaviour for git's push-to-checkout hook defined in
++# the push_to_deploy() function in builtin/receive-pack.c.
++#
++# Note that the hook will be executed from the repository directory,
++# not from the working tree, so if you want to perform operations on
++# the working tree, you will have to adapt your code accordingly, e.g.
++# by adding "cd .." or using relative paths.
++
++if ! git update-index -q --ignore-submodules --refresh
++then
++	die "Up-to-date check failed"
++fi
++
++if ! git diff-files --quiet --ignore-submodules --
++then
++	die "Working directory has unstaged changes"
++fi
++
++# This is a rough translation of:
++#
++#   head_has_history() ? "HEAD" : EMPTY_TREE_SHA1_HEX
++if git cat-file -e HEAD 2>/dev/null
++then
++	head=HEAD
++else
++	head=$(git hash-object -t tree --stdin </dev/null)
++fi
++
++if ! git diff-index --quiet --cached --ignore-submodules $head --
++then
++	die "Working directory has staged changes"
++fi
++
++if ! git read-tree -u -m "$commit"
++then
++	die "Could not update working tree to new HEAD"
++fi
+diff --git a/./emu/.git/hooks/sendemail-validate.sample b/./emu/.git/hooks/sendemail-validate.sample
+new file mode 100755
+index 00000000..640bcf87
+--- /dev/null
++++ b/./emu/.git/hooks/sendemail-validate.sample
+@@ -0,0 +1,77 @@
++#!/bin/sh
++
++# An example hook script to validate a patch (and/or patch series) before
++# sending it via email.
++#
++# The hook should exit with non-zero status after issuing an appropriate
++# message if it wants to prevent the email(s) from being sent.
++#
++# To enable this hook, rename this file to "sendemail-validate".
++#
++# By default, it will only check that the patch(es) can be applied on top of
++# the default upstream branch without conflicts in a secondary worktree. After
++# validation (successful or not) of the last patch of a series, the worktree
++# will be deleted.
++#
++# The following config variables can be set to change the default remote and
++# remote ref that are used to apply the patches against:
++#
++#   sendemail.validateRemote (default: origin)
++#   sendemail.validateRemoteRef (default: HEAD)
++#
++# Replace the TODO placeholders with appropriate checks according to your
++# needs.
++
++validate_cover_letter () {
++	file="$1"
++	# TODO: Replace with appropriate checks (e.g. spell checking).
++	true
++}
++
++validate_patch () {
++	file="$1"
++	# Ensure that the patch applies without conflicts.
++	git am -3 "$file" || return
++	# TODO: Replace with appropriate checks for this patch
++	# (e.g. checkpatch.pl).
++	true
++}
++
++validate_series () {
++	# TODO: Replace with appropriate checks for the whole series
++	# (e.g. quick build, coding style checks, etc.).
++	true
++}
++
++# main -------------------------------------------------------------------------
++
++if test "$GIT_SENDEMAIL_FILE_COUNTER" = 1
++then
++	remote=$(git config --default origin --get sendemail.validateRemote) &&
++	ref=$(git config --default HEAD --get sendemail.validateRemoteRef) &&
++	worktree=$(mktemp --tmpdir -d sendemail-validate.XXXXXXX) &&
++	git worktree add -fd --checkout "$worktree" "refs/remotes/$remote/$ref" &&
++	git config --replace-all sendemail.validateWorktree "$worktree"
++else
++	worktree=$(git config --get sendemail.validateWorktree)
++fi || {
++	echo "sendemail-validate: error: failed to prepare worktree" >&2
++	exit 1
++}
++
++unset GIT_DIR GIT_WORK_TREE
++cd "$worktree" &&
++
++if grep -q "^diff --git " "$1"
++then
++	validate_patch "$1"
++else
++	validate_cover_letter "$1"
++fi &&
++
++if test "$GIT_SENDEMAIL_FILE_COUNTER" = "$GIT_SENDEMAIL_FILE_TOTAL"
++then
++	git config --unset-all sendemail.validateWorktree &&
++	trap 'git worktree remove -ff "$worktree"' EXIT &&
++	validate_series
++fi
+diff --git a/./emu/.git/hooks/update.sample b/./emu/.git/hooks/update.sample
+new file mode 100755
+index 00000000..c4d426bc
+--- /dev/null
++++ b/./emu/.git/hooks/update.sample
+@@ -0,0 +1,128 @@
++#!/bin/sh
++#
++# An example hook script to block unannotated tags from entering.
++# Called by "git receive-pack" with arguments: refname sha1-old sha1-new
++#
++# To enable this hook, rename this file to "update".
++#
++# Config
++# ------
++# hooks.allowunannotated
++#   This boolean sets whether unannotated tags will be allowed into the
++#   repository.  By default they won't be.
++# hooks.allowdeletetag
++#   This boolean sets whether deleting tags will be allowed in the
++#   repository.  By default they won't be.
++# hooks.allowmodifytag
++#   This boolean sets whether a tag may be modified after creation. By default
++#   it won't be.
++# hooks.allowdeletebranch
++#   This boolean sets whether deleting branches will be allowed in the
++#   repository.  By default they won't be.
++# hooks.denycreatebranch
++#   This boolean sets whether remotely creating branches will be denied
++#   in the repository.  By default this is allowed.
++#
++
++# --- Command line
++refname="$1"
++oldrev="$2"
++newrev="$3"
++
++# --- Safety check
++if [ -z "$GIT_DIR" ]; then
++	echo "Don't run this script from the command line." >&2
++	echo " (if you want, you could supply GIT_DIR then run" >&2
++	echo "  $0 <ref> <oldrev> <newrev>)" >&2
++	exit 1
++fi
++
++if [ -z "$refname" -o -z "$oldrev" -o -z "$newrev" ]; then
++	echo "usage: $0 <ref> <oldrev> <newrev>" >&2
++	exit 1
++fi
++
++# --- Config
++allowunannotated=$(git config --type=bool hooks.allowunannotated)
++allowdeletebranch=$(git config --type=bool hooks.allowdeletebranch)
++denycreatebranch=$(git config --type=bool hooks.denycreatebranch)
++allowdeletetag=$(git config --type=bool hooks.allowdeletetag)
++allowmodifytag=$(git config --type=bool hooks.allowmodifytag)
++
++# check for no description
++projectdesc=$(sed -e '1q' "$GIT_DIR/description")
++case "$projectdesc" in
++"Unnamed repository"* | "")
++	echo "*** Project description file hasn't been set" >&2
++	exit 1
++	;;
++esac
++
++# --- Check types
++# if $newrev is 0000...0000, it's a commit to delete a ref.
++zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
++if [ "$newrev" = "$zero" ]; then
++	newrev_type=delete
++else
++	newrev_type=$(git cat-file -t $newrev)
++fi
++
++case "$refname","$newrev_type" in
++	refs/tags/*,commit)
++		# un-annotated tag
++		short_refname=${refname##refs/tags/}
++		if [ "$allowunannotated" != "true" ]; then
++			echo "*** The un-annotated tag, $short_refname, is not allowed in this repository" >&2
++			echo "*** Use 'git tag [ -a | -s ]' for tags you want to propagate." >&2
++			exit 1
++		fi
++		;;
++	refs/tags/*,delete)
++		# delete tag
++		if [ "$allowdeletetag" != "true" ]; then
++			echo "*** Deleting a tag is not allowed in this repository" >&2
++			exit 1
++		fi
++		;;
++	refs/tags/*,tag)
++		# annotated tag
++		if [ "$allowmodifytag" != "true" ] && git rev-parse $refname > /dev/null 2>&1
++		then
++			echo "*** Tag '$refname' already exists." >&2
++			echo "*** Modifying a tag is not allowed in this repository." >&2
++			exit 1
++		fi
++		;;
++	refs/heads/*,commit)
++		# branch
++		if [ "$oldrev" = "$zero" -a "$denycreatebranch" = "true" ]; then
++			echo "*** Creating a branch is not allowed in this repository" >&2
++			exit 1
++		fi
++		;;
++	refs/heads/*,delete)
++		# delete branch
++		if [ "$allowdeletebranch" != "true" ]; then
++			echo "*** Deleting a branch is not allowed in this repository" >&2
++			exit 1
++		fi
++		;;
++	refs/remotes/*,commit)
++		# tracking branch
++		;;
++	refs/remotes/*,delete)
++		# delete tracking branch
++		if [ "$allowdeletebranch" != "true" ]; then
++			echo "*** Deleting a tracking branch is not allowed in this repository" >&2
++			exit 1
++		fi
++		;;
++	*)
++		# Anything else (is there anything else?)
++		echo "*** Update hook: unknown type of update to ref $refname of type $newrev_type" >&2
++		exit 1
++		;;
++esac
++
++# --- Finished
++exit 0
+diff --git a/./emu/.git/index b/./emu/.git/index
+new file mode 100644
+index 00000000..3ae81d4d
+Binary files /dev/null and b/./emu/.git/index differ
+diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
+new file mode 100755
+index 00000000..a5196d1b
+--- /dev/null
++++ b/./emu/.git/info/exclude
+@@ -0,0 +1,6 @@
++# git ls-files --others --exclude-from=.git/info/exclude
++# Lines that start with '#' are comments.
++# For a project mostly in C, the following would be a good set of
++# exclude patterns (uncomment them if you want to use them):
++# *.[oa]
++# *~
+diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
+new file mode 100644
+index 00000000..d8eb9622
+--- /dev/null
++++ b/./emu/.git/logs/HEAD
+@@ -0,0 +1,2 @@
++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
++d8a55b72469f5e139507c1a307eba55f4f09752f d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	checkout: moving from master to master
+diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
+new file mode 100644
+index 00000000..6f01de4f
+--- /dev/null
++++ b/./emu/.git/logs/refs/heads/master
+@@ -0,0 +1 @@
++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
+diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
+new file mode 100644
+index 00000000..e80f3db5
+--- /dev/null
++++ b/./emu/.git/logs/refs/remotes/origin/master
+@@ -0,0 +1 @@
++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
+diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx
+new file mode 100644
+index 00000000..ef72e09e
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx differ
+diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack
+new file mode 100644
+index 00000000..1a0d9436
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack differ
+diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev
+new file mode 100644
+index 00000000..4cfd652f
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev differ
+diff --git a/./emu/.git/refs/heads/master b/./emu/.git/refs/heads/master
+new file mode 100644
+index 00000000..1436418b
+--- /dev/null
++++ b/./emu/.git/refs/heads/master
+@@ -0,0 +1 @@
++d8a55b72469f5e139507c1a307eba55f4f09752f
+diff --git a/./emu/.git/refs/remotes/origin/master b/./emu/.git/refs/remotes/origin/master
+new file mode 100644
+index 00000000..1436418b
+--- /dev/null
++++ b/./emu/.git/refs/remotes/origin/master
+@@ -0,0 +1 @@
++d8a55b72469f5e139507c1a307eba55f4f09752f
+diff --git a/./emu/oscam-emu.patch b/./emu/oscam-emu.patch
+new file mode 100644
+index 00000000..413256ee
+--- /dev/null
++++ b/./emu/oscam-emu.patch
+@@ -0,0 +1,1872 @@
++diff --git a/../oscam-base/CMakeLists.txt b/./CMakeLists.txt
++index 8f3148ab..ccc85569 100644
++--- a/../oscam-base/CMakeLists.txt
+++++ b/./CMakeLists.txt
++@@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
++ # Manage config.h based on command line parameters
++ # Manipulate config file based on given parameters and read unset parameters
++ 
+++execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --enabled WITH_EMU OUTPUT_VARIABLE CONFIG_WITH_EMU OUTPUT_STRIP_TRAILING_WHITESPACE)
+++if (CONFIG_WITH_EMU MATCHES "Y" AND NOT WITH_EMU EQUAL 1)
+++	add_definitions ("-DWITH_EMU")
+++	set (WITH_EMU "1")
+++	message (STATUS "  EMU is added by config compiling with EMU")
+++endif (CONFIG_WITH_EMU MATCHES "Y" AND NOT WITH_EMU EQUAL 1)
+++
+++if (WITH_EMU)
+++	execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --enabled WITH_SOFTCAM OUTPUT_VARIABLE CONFIG_WITH_SOFTCAM OUTPUT_STRIP_TRAILING_WHITESPACE)
+++	if (CONFIG_WITH_SOFTCAM MATCHES "Y" AND NOT WITH_SOFTCAM EQUAL 1)
+++		add_definitions ("-DWITH_SOFTCAM")
+++		set (WITH_SOFTCAM "1")
+++		message (STATUS "  SOFTCAM is added by config linking SoftCam.Key")
+++	endif (CONFIG_WITH_SOFTCAM MATCHES "Y" AND NOT WITH_SOFTCAM EQUAL 1)
+++endif (WITH_EMU)
+++
++ execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --show-valid OUTPUT_VARIABLE config_vars_string OUTPUT_STRIP_TRAILING_WHITESPACE)
++ string(REGEX MATCHALL "[A-Z0-9_]+" config_vars ${config_vars_string})
++ 
++@@ -750,19 +766,6 @@ if (OSCamOperatingSystem MATCHES "Mac OS X")
++ else (OSCamOperatingSystem MATCHES "Mac OS X")
++ 	target_link_libraries (${exe_name} -Wl,--start-group ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt -Wl,--end-group minilzo)
++ endif (OSCamOperatingSystem MATCHES "Mac OS X")
++-execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --enabled WEBIF OUTPUT_VARIABLE CONFIG_WEBIF OUTPUT_STRIP_TRAILING_WHITESPACE)
++-if (CONFIG_WEBIF MATCHES "Y")
++-	# Older libc versions provide clock_gettime in librt.
++-	include (CheckFunctionExists)
++-	check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
++-	if (NOT HAVE_CLOCK_GETTIME)
++-		include (CheckLibraryExists)
++-		check_library_exists (rt clock_gettime "" HAVE_CLOCK_GETTIME_IN_RT)
++-		if (HAVE_CLOCK_GETTIME_IN_RT)
++-			target_link_libraries (${exe_name} rt)
++-		endif ()
++-	endif ()
++-endif (CONFIG_WEBIF MATCHES "Y")
++ if (BUILD_TESTS)
++ 	# Test binary stays plain: no sign/upx — see Makefile rationale.
++ 	add_custom_target (run-tests COMMAND ${CMAKE_COMMAND} -E echo "Running ${exe_name}..." COMMAND ./${exe_name} DEPENDS ${exe_name} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
++@@ -1019,6 +1022,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
++ 
++ #--------------------------------------------------------------------------------
++ 
+++if (NOT OSCamOperatingSystem MATCHES "Mac OS X")
+++if (NOT DEFINED ENV{ANDROID_NDK})
+++if (NOT DEFINED ENV{ANDROID_STANDALONE_TOOLCHAIN})
+++	if (WITH_SOFTCAM)
+++		if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/SoftCam.Key)
+++				execute_process (COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/SoftCam.Key ${CMAKE_CURRENT_BINARY_DIR}/SoftCam.Key)
+++		else (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/SoftCam.Key)
+++				execute_process (COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/SoftCam.Key)
+++		endif (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/SoftCam.Key)
+++		set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--format=binary -Wl,SoftCam.Key -Wl,--format=default")
+++		if (NOT OSCamOperatingSystem MATCHES "Windows/Cygwin")
+++			set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack")
+++		endif (NOT OSCamOperatingSystem MATCHES "Windows/Cygwin")
+++	endif (WITH_SOFTCAM)
+++endif (NOT DEFINED ENV{ANDROID_STANDALONE_TOOLCHAIN})
+++endif (NOT DEFINED ENV{ANDROID_NDK})
+++endif (NOT OSCamOperatingSystem MATCHES "Mac OS X")
+++
++ #----------------------- installation -----------------------------
++ 
++ file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
++@@ -1137,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
++ 	endif (LIBDVBCSADIR)
++ endif (HAVE_LIBDVBCSA)
++ 
+++if (WITH_EMU)
+++	message (STATUS "  Compile with EMU support")
+++	if (WITH_SOFTCAM)
+++		message (STATUS "  SoftCam.Key will be linked as well")
+++	endif (WITH_SOFTCAM)
+++endif (WITH_EMU)
+++
++ message (STATUS "")
++diff --git a/../oscam-base/Distribution/doc/man/oscam.server.5 b/./Distribution/doc/man/oscam.server.5
++index 56d1925c..27fff61b 100644
++--- a/../oscam-base/Distribution/doc/man/oscam.server.5
+++++ b/./Distribution/doc/man/oscam.server.5
++@@ -649,6 +649,11 @@ set reader's CCcam reshare hop, default:0
++   \fBx\fP = resharing for direct peer and share level x
++ .RE
++ .PP
+++\fBcccwantemu\fP = \fB0\fP|\fB1\fP
+++.RS 3n
+++1 = request to provide emu from CCCam server, too, default:0
+++.RE
+++.PP
++ \fBccckeepalive\fP = \fB0\fP|\fB1\fP
++ .RS 3n
++ 1 = send keepalive messages to keep connection to remote CCCam server up, default:0
++diff --git a/../oscam-base/Distribution/doc/txt/oscam.server.txt b/./Distribution/doc/txt/oscam.server.txt
++index a43c9db6..4b5d2a76 100644
++--- a/../oscam-base/Distribution/doc/txt/oscam.server.txt
+++++ b/./Distribution/doc/txt/oscam.server.txt
++@@ -509,6 +509,9 @@ DESCRIPTIONS
++ 	    0 = resharing for direct peer only
++ 	    x = resharing for direct peer and share level x
++ 
+++       cccwantemu = 0|1
+++	  1 = request to provide emu from CCCam server, too, default:0
+++
++        ccckeepalive = 0|1
++ 	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
++ 
++diff --git a/../oscam-base/Makefile b/./Makefile
++index 279b4794..9709d5e6 100644
++--- a/../oscam-base/Makefile
+++++ b/./Makefile
++@@ -28,6 +28,9 @@ ifeq ($(uname_S),Darwin)
++ 	LINKER_VER_OPT:=-Wl,-v
++ endif
++ 
+++ifeq "$(shell ./config.sh --enabled WITH_EMU)" "Y"
+++	override USE_LIBCRYPTO=1
+++endif
++ ifdef USE_SSL
++ 	override USE_LIBCRYPTO=1
++ endif
++@@ -370,6 +373,32 @@ SRC-$(CONFIG_CS_CACHEEX) += module-cccam-cacheex.c
++ SRC-$(CONFIG_MODULE_CCCAM) += module-cccam.c
++ SRC-$(CONFIG_MODULE_CCCSHARE) += module-cccshare.c
++ SRC-$(CONFIG_MODULE_CONSTCW) += module-constcw.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-osemu.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-biss.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-cryptoworks.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-director.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-irdeto.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-nagravision.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-omnicrypt.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-powervu.c
+++SRC-$(CONFIG_WITH_EMU) += module-emulator-viaccess.c
+++ifeq "$(CONFIG_WITH_EMU)" "y"
+++ifeq "$(CONFIG_WITH_SOFTCAM)" "y"
+++UNAME := $(shell uname -s)
+++ifneq ($(UNAME),Darwin)
+++ifndef ANDROID_NDK
+++ifndef ANDROID_STANDALONE_TOOLCHAIN
+++TOUCH_SK := $(shell touch SoftCam.Key)
+++override LDFLAGS += -Wl,--format=binary -Wl,SoftCam.Key -Wl,--format=default
+++ifneq ($(uname_S),Cygwin)
+++override LDFLAGS += -Wl,-z,noexecstack
+++endif
+++endif
+++endif
+++endif
+++endif
+++endif
++ SRC-$(CONFIG_CS_CACHEEX) += module-csp.c
++ SRC-$(CONFIG_CW_CYCLE_CHECK) += module-cw-cycle-check.c
++ SRC-$(CONFIG_WITH_AZBOX) += module-dvbapi-azbox.c
++@@ -405,16 +434,6 @@ SRC-$(CONFIG_WEBIF) += module-webif-tpl.c
++ SRC-$(CONFIG_WEBIF) += module-webif.c
++ SRC-$(CONFIG_WEBIF) += webif/pages.c
++ SRC-$(CONFIG_WEBIF_WIKI) += webif/pages_wiki.c
++-
++-ifeq ($(CONFIG_WEBIF),y)
++-	# Older libc versions provide clock_gettime in librt.
++-	CLOCK_TEST = printf '%s\n' \
++-		'int main(void) { struct timespec ts; return clock_gettime(CLOCK_MONOTONIC, &ts); }' | \
++-		$(CC) $(CFLAGS) -D_GNU_SOURCE -include time.h -x c -o /dev/null -
++-	CLOCK_LIB := $(shell $(CLOCK_TEST) >/dev/null 2>&1 || \
++-		{ $(CLOCK_TEST) -lrt >/dev/null 2>&1 && echo -lrt; })
++-	override LIBS += $(CLOCK_LIB)
++-endif
++ SRC-$(CONFIG_WITH_CARDREADER) += reader-common.c
++ SRC-$(CONFIG_READER_BULCRYPT) += reader-bulcrypt.c
++ SRC-$(CONFIG_READER_CONAX) += reader-conax.c
++diff --git a/../oscam-base/README.build b/./README.build
++index b66d94f6..bf68e95f 100644
++--- a/../oscam-base/README.build
+++++ b/./README.build
++@@ -252,18 +252,8 @@ OSCam build system documentation
++     make static-libcrypto - Builds OSCam with libcrypto linked statically
++     make static-ssl    - Builds OSCam with SSL support linked statically
++ 
++- Developer tests:
++-   Build the 'tests.bin' binary and run the self-tests:
++-     make tests
++-     ./tests.bin
++-
++-   To include the optional bundled SHA-1 single-update checks for 512 MiB
++-   and 512 MiB + 1 byte inputs:
++-     OSCAM_TEST_SHA1_LARGE=1 ./tests.bin
++-
++-   These checks allocate a 512 MiB + 1 byte buffer and are skipped by
++-   default; the smaller SHA-1 length tests still run. They require the
++-   bundled SHA-1 backend (build without USE_LIBCRYPTO or USE_SSL).
+++ Developer targets:
+++    make tests         - Builds 'tests.bin' binary
++ 
++  Examples:
++    Build OSCam for SH4 (the compilers are in the path):
++diff --git a/../oscam-base/README.config b/./README.config
++index 03c70f7d..9b99c3c4 100644
++--- a/../oscam-base/README.config
+++++ b/./README.config
++@@ -81,7 +81,7 @@ Examples:
++   ./config.sh --create-cert ecdsa prime256v1 ca 'My OSCam Distribution'
++ 
++ Available options:
++-       addons: WEBIF WEBIF_LIVELOG WEBIF_JQUERY WITH_COMPRESS_WEBIF WITH_SSL HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_SIGNING
+++       addons: WEBIF WEBIF_LIVELOG WEBIF_JQUERY WITH_COMPRESS_WEBIF WITH_SSL HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_SIGNING WITH_EMU WITH_SOFTCAM
++     protocols: MODULE_CAMD33 MODULE_CAMD35 MODULE_CAMD35_TCP MODULE_NEWCAMD MODULE_CCCAM MODULE_CCCSHARE MODULE_GBOX MODULE_RADEGAST MODULE_SCAM MODULE_SERIAL MODULE_CONSTCW MODULE_PANDORA MODULE_GHTTP MODULE_STREAMRELAY
++       readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
++  card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
++diff --git a/../oscam-base/README.md b/./README.md
++index 32e2e616..a818d140 100644
++--- a/../oscam-base/README.md
+++++ b/./README.md
++@@ -1,79 +1,294 @@
++-# OSCam: Open Source Conditional Access Module
+++# 🚀 OSCam-Emu | Open Source CAM with Emulator
++ 
++-[![GitLab Last Commit](https://img.shields.io/gitlab/last-commit/11?gitlab_url=https%3A%2F%2Fgit.streamboard.tv&style=for-the-badge)](https://git.streamboard.tv/common/oscam/-/commits/master)
++-[![GitLab Tag](https://img.shields.io/gitlab/v/tag/11?gitlab_url=https%3A%2F%2Fgit.streamboard.tv&style=for-the-badge)](https://git.streamboard.tv/common/oscam/-/tags)
++-[![GitLab License](https://img.shields.io/gitlab/license/11?gitlab_url=https%3A%2F%2Fgit.streamboard.tv&style=for-the-badge)](https://git.streamboard.tv/common/oscam/-/blob/master/COPYING)
+++<p align="center">
+++  <img src="https://img.shields.io/badge/OSCam--Emu-Open%20Source-00ADD8?style=for-the-badge&logo=github" alt="OSCam-Emu Open Source">
+++  <img src="https://img.shields.io/badge/Platform-Multi--Architecture-6C5CE7?style=for-the-badge" alt="Multi Architecture">
+++  <img src="https://img.shields.io/badge/License-GPL--3.0%2B-2EA44F?style=for-the-badge" alt="GPL License">
+++</p>
++ 
++-## Quick links
+++<p align="center">
+++  <strong>Powerful. Flexible. Open Source.</strong>
+++  <br>
+++  <strong>Leistungsstark. Flexibel. Open Source.</strong>
+++  <br><br>
+++  An open-source CAM project with emulator support, flexible build options and cross-compilation capabilities.
+++  <br>
+++  Ein Open-Source-CAM-Projekt mit Emulator-Unterstützung, flexiblen Build-Optionen und Cross-Compilation.
+++</p>
++ 
++-- [Releases](https://git.streamboard.tv/common/oscam/-/commits/master)
++-- [GitLab repository](https://git.streamboard.tv/common/oscam)
++-- [Wiki](https://git.streamboard.tv/common/oscam/-/wikis/home)
++-- [Issue tracker](https://git.streamboard.tv/common/oscam/-/issues)
++-- [Support forum](https://board.streamboard.tv/forum/)
+++<p align="center">
+++  <a href="https://github.com/speedy005/Oscam-emu/actions/workflows/build-oscam.yml">
+++    <img src="https://github.com/speedy005/Oscam-emu/actions/workflows/build-oscam.yml/badge.svg" alt="Build Status">
+++  </a>
+++  <a href="https://github.com/speedy005/Oscam-emu/actions/workflows/sync-gitlab.yml">
+++    <img src="https://github.com/speedy005/Oscam-emu/actions/workflows/sync-gitlab.yml/badge.svg" alt="GitLab Sync">
+++  </a>
+++  <a href="https://github.com/speedy005/Oscam-emu/actions/workflows/create-patch.yml">
+++    <img src="https://github.com/speedy005/Oscam-emu/actions/workflows/create-patch.yml/badge.svg" alt="Patch Workflow">
+++  </a>
+++</p>
++ 
++-## Releases
+++<p align="center">
+++  <a href="https://github.com/speedy005/Oscam-emu">📦 Repository</a> •
+++  <a href="https://github.com/speedy005/Oscam-emu/commits">🕘 History</a> •
+++  <a href="https://github.com/speedy005/Oscam-emu/issues">🐛 Issues</a> •
+++  <a href="https://github.com/speedy005/Oscam-emu/discussions">💬 Discussions</a>
+++</p>
++ 
++-For the latest changes and release history, see the
++-[OSCam commits](https://git.streamboard.tv/common/oscam/-/commits/master) page.
+++---
++ 
++-## GitLab repository
+++## 📚 Table of Contents
++ 
++-Project page: [git.streamboard.tv/common/oscam](https://git.streamboard.tv/common/oscam)
+++- [🇩🇪 Deutsch](#-deutsch)
+++  - [✨ Projektübersicht](#-projektübersicht)
+++  - [⚡ Schnellstart](#-schnellstart)
+++  - [🔧 Cross-Compilation](#-cross-compilation-1)
+++  - [🧰 Abhängigkeiten](#-abhängigkeiten)
+++  - [📖 Dokumentation und Support](#-dokumentation-und-support)
+++- [🇬🇧 English](#-english)
+++  - [✨ Project Overview](#-project-overview)
+++  - [⚡ Quick Start](#-quick-start)
+++  - [🔧 Cross-Compilation](#-cross-compilation-2)
+++  - [🧰 Dependencies](#-dependencies)
+++  - [📖 Documentation and Support](#-documentation-and-support)
+++- [📜 License](#-license)
++ 
++-## Building & Dependencies
+++---
++ 
++-For detailed information about building OSCam, cross-compilation for
++-different CPUs, required and optional dependencies, SSL support, hardware
++-modules, and platform-specific or distribution-specific notes, please
++-refer to the OSCam wiki:
+++# 🇩🇪 Deutsch
++ 
++-- [Wiki Home](https://git.streamboard.tv/common/oscam/-/wikis/home)
+++## ✨ Projektübersicht
++ 
++-## License
+++**OSCam-Emu** ist ein Open-Source-CAM-Projekt mit Emulator-Unterstützung. Es basiert auf dem Streamboard mp-cardserver 0.9d von dukat und wurde über viele Jahre von zahlreichen Entwicklern erweitert und weiterentwickelt.
++ 
++-OSCam: Open Source CAM
+++Das Projekt bietet ein flexibles Build-System, Unterstützung für unterschiedliche Prozessorarchitekturen sowie optionale Schnittstellen und externe Bibliotheken.
++ 
++-Copyright (C) 2009-2026 OSCam developers
+++### 🌟 Highlights
++ 
++-OSCam is based on the Streamboard mp-cardserver 0.9d by dukat and has been
++-extended and worked on by many more since then.
+++- 🧩 Erweiterbares Build-System
+++- 🖥️ Unterstützung unterschiedlicher Zielarchitekturen
+++- 🔧 Flexible Kompilierungsoptionen
+++- 🌐 Cross-Compilation für geeignete Embedded-Plattformen
+++- 📦 Optionale Bibliotheken und Hardware-Schnittstellen
+++- 📖 Dokumentation und Community-Support
++ 
++-This program is free software: you can redistribute it and/or modify it under
++-the terms of the GNU General Public License as published by the Free Software
++-Foundation, either version 3 of the License, or (at your option) any later
++-version.
+++## ⚡ Schnellstart
++ 
++-This program is distributed in the hope that it will be useful, but WITHOUT
++-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
++-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
++-details.
+++### Voraussetzungen
++ 
++-You should have received a copy of the GNU General Public License along with
++-this program. If not, see <https://www.gnu.org/licenses/>.
+++Stelle sicher, dass Git, GNU Make, ein geeigneter C-Compiler und die erforderlichen Build-Werkzeuge installiert sind.
++ 
++-For the full text of the license, please see the
++-[COPYING](https://git.streamboard.tv/common/oscam/-/blob/master/COPYING)
++-file in the OSCam repository.
+++### 1. Repository klonen
++ 
++-## Contributing
+++```bash
+++git clone https://github.com/speedy005/Oscam-emu.git
+++cd Oscam-emu
+++```
++ 
++-Contributions are welcome. If you want to help improve OSCam:
+++### 2. Kompilieren
++ 
++-- Browse the existing [issues](https://git.streamboard.tv/common/oscam/-/issues)
++-  and open a new issue if you find a bug or have a feature request.
++-- Fork the [GitLab repository](https://git.streamboard.tv/common/oscam),
++-  create a topic branch, and submit a merge request.
++-- Check the [OSCam wiki](https://git.streamboard.tv/common/oscam/-/wikis/home)
++-  for additional project information and guidelines.
+++```bash
+++make
+++```
++ 
++-## Help and Support
+++### 3. Build-Optionen anzeigen
++ 
++-- Man pages and configuration examples are available in the
++-  `Distribution/doc` directory of the source tree.
++-- For bug reports and feature requests, please use the
++-  [GitLab issue tracker](https://git.streamboard.tv/common/oscam/-/issues).
++-- For community help and general discussion (mainly German and English),
++-  visit the [support forum](https://board.streamboard.tv/forum/).
++-- For configuration guides, FAQs, and detailed documentation, see the
++-  [OSCam wiki](https://git.streamboard.tv/common/oscam/-/wikis/home).
+++```bash
+++make help
+++```
+++
+++Weitere Build- und Konfigurationshinweise findest du in `README.build` und `README.config`, sofern diese Dateien im Repository vorhanden sind.
+++
+++## 🔧 Cross-Compilation
+++
+++Mit einer passenden Toolchain lässt sich OSCam-Emu für unterstützte Zielarchitekturen kompilieren.
+++
+++**Beispiel: SH4**
+++
+++```bash
+++make CROSS=sh4-linux-
+++```
+++
+++Wenn die Toolchain nicht im `PATH` liegt, kann das Compiler-Präfix mit vollständigem Pfad angegeben werden:
+++
+++```bash
+++make CROSS=/opt/STM/STLinux-2.3/devkit/sh4/bin/sh4-linux-
+++```
+++
+++Passe den Pfad und das Compiler-Präfix an deine installierte Toolchain an.
+++
+++📘 [Cross-Compilation-Dokumentation](https://git.streamboard.tv/common/oscam/-/wikis/CrossCompiling)
+++
+++## 🧰 Abhängigkeiten
+++
+++Standardmäßig benötigt OSCam-Emu keine zusätzlichen externen Bibliotheken, sofern keine optionalen Funktionen aktiviert werden. Für SSL-Unterstützung wird beispielsweise OpenSSL beziehungsweise libcrypto benötigt.
+++
+++| Funktion | Build-Option |
+++|---|---|
+++| OpenSSL / libcrypto | `make USE_LIBCRYPTO=1` |
+++| USB-Unterstützung | `make USE_LIBUSB=1` |
+++| PC/SC-Unterstützung | `make USE_PCSC=1` |
+++| SH4 STAPI | `make USE_STAPI=1` |
+++| SH4 STAPI5 | `make USE_STAPI5=1` |
+++| Coolapi | `make USE_COOLAPI=1` |
+++| AZBOX | `make USE_AZBOX=1` |
+++
+++### Zusätzliche STAPI-Bibliotheken
+++
+++Für STAPI wird `liboscam_stapi.a` im Verzeichnis `stapi` unterhalb des Quellverzeichnisses benötigt.
+++
+++Für STAPI5 wird entsprechend `liboscam_stapi5.a` in diesem Verzeichnis benötigt.
+++
+++Bitte beachte die jeweiligen Anforderungen und Lizenzbedingungen der externen Bibliotheken.
+++
+++## 📖 Dokumentation und Support
+++
+++| Ressource | Beschreibung |
+++|---|---|
+++| [OSCam Wiki](https://git.streamboard.tv/common/oscam/-/wikis/home) | Allgemeine Dokumentation |
+++| [Building OSCam](https://git.streamboard.tv/common/oscam/-/wikis/BuildingOscam) | Build-Anleitung |
+++| [CrossCompiling](https://git.streamboard.tv/common/oscam/-/wikis/CrossCompiling) | Toolchains und Cross-Compilation |
+++| [Konfigurationswiki](https://wiki.streamboard.tv/wiki/OSCam/de/Config/oscam.conf) | Konfigurationsreferenz |
+++| [GitHub Issues](https://github.com/speedy005/Oscam-emu/issues) | Fehler und Verbesserungsvorschläge |
+++| [GitHub Discussions](https://github.com/speedy005/Oscam-emu/discussions) | Fragen und Diskussionen |
+++
+++Handbuchseiten und Konfigurationsbeispiele können sich außerdem im Verzeichnis `Distribution/doc` befinden.
+++
+++### 🤝 Mitwirken
+++
+++Fehlerberichte, konstruktive Rückmeldungen und technische Verbesserungsvorschläge sind willkommen. Bitte gib bei Fehlern möglichst genaue Schritte zur Reproduktion, relevante Build-Ausgaben und Informationen zur Zielplattform an.
+++
+++---
+++
+++# 🇬🇧 English
+++
+++## ✨ Project Overview
+++
+++**OSCam-Emu** is an open-source CAM project with emulator support. It is based on the Streamboard mp-cardserver 0.9d by dukat and has been extended and developed by numerous contributors over the years.
+++
+++The project provides a flexible build system, support for different CPU architectures, and optional interfaces and external libraries.
+++
+++### 🌟 Highlights
+++
+++- 🧩 Extensible build system
+++- 🖥️ Support for different target architectures
+++- 🔧 Flexible compilation options
+++- 🌐 Cross-compilation for supported embedded platforms
+++- 📦 Optional libraries and hardware interfaces
+++- 📖 Documentation and community support
+++
+++## ⚡ Quick Start
+++
+++### Requirements
+++
+++Make sure Git, GNU Make, a suitable C compiler, and the required build tools are installed.
+++
+++### 1. Clone the repository
+++
+++```bash
+++git clone https://github.com/speedy005/Oscam-emu.git
+++cd Oscam-emu
+++```
+++
+++### 2. Compile
+++
+++```bash
+++make
+++```
+++
+++### 3. Explore build options
+++
+++```bash
+++make help
+++```
+++
+++For additional build and configuration guidance, consult `README.build` and `README.config`, if these files are present in the repository.
+++
+++## 🔧 Cross-Compilation
+++
+++With a suitable toolchain, OSCam-Emu can be compiled for supported target architectures.
+++
+++**Example: SH4**
+++
+++```bash
+++make CROSS=sh4-linux-
+++```
+++
+++If the toolchain is not available in your `PATH`, specify the compiler prefix using its full path:
+++
+++```bash
+++make CROSS=/opt/STM/STLinux-2.3/devkit/sh4/bin/sh4-linux-
+++```
+++
+++Adjust the path and compiler prefix to match your installed toolchain.
+++
+++📘 [Cross-compilation documentation](https://git.streamboard.tv/common/oscam/-/wikis/CrossCompiling)
+++
+++## 🧰 Dependencies
+++
+++By default, OSCam-Emu does not require additional external libraries unless optional features are enabled. For example, SSL support requires OpenSSL or libcrypto.
+++
+++| Feature | Build option |
+++|---|---|
+++| OpenSSL / libcrypto | `make USE_LIBCRYPTO=1` |
+++| USB support | `make USE_LIBUSB=1` |
+++| PC/SC support | `make USE_PCSC=1` |
+++| SH4 STAPI | `make USE_STAPI=1` |
+++| SH4 STAPI5 | `make USE_STAPI5=1` |
+++| Coolapi | `make USE_COOLAPI=1` |
+++| AZBOX | `make USE_AZBOX=1` |
+++
+++### Additional STAPI Libraries
+++
+++For STAPI support, `liboscam_stapi.a` is required in the `stapi` directory under the source tree.
+++
+++For STAPI5 support, place `liboscam_stapi5.a` in the same directory.
+++
+++Please review the requirements and licensing terms for the respective external libraries.
+++
+++## 📖 Documentation and Support
+++
+++| Resource | Description |
+++|---|---|
+++| [OSCam Wiki](https://git.streamboard.tv/common/oscam/-/wikis/home) | General documentation |
+++| [Building OSCam](https://git.streamboard.tv/common/oscam/-/wikis/BuildingOscam) | Build instructions |
+++| [CrossCompiling](https://git.streamboard.tv/common/oscam/-/wikis/CrossCompiling) | Toolchains and cross-compilation |
+++| [Configuration Wiki](https://wiki.streamboard.tv/wiki/OSCam/de/Config/oscam.conf) | Configuration reference |
+++| [GitHub Issues](https://github.com/speedy005/Oscam-emu/issues) | Bugs and feature requests |
+++| [GitHub Discussions](https://github.com/speedy005/Oscam-emu/discussions) | Questions and discussions |
+++
+++Manual pages and configuration examples may also be available in the `Distribution/doc` directory.
+++
+++### 🤝 Contributing
+++
+++Bug reports, constructive feedback, and technical improvement suggestions are welcome. When reporting an issue, please include reproduction steps, relevant build output, and details about your target platform.
+++
+++---
+++
+++# 📜 License
+++
+++**OSCam-Emu — Open Source CAM with Emulator**
+++
+++Copyright (C) 2009–2026 OSCam-Emu developers.
+++
+++OSCam-Emu is based on the Streamboard mp-cardserver 0.9d by dukat and has been extended and developed by many contributors.
+++
+++This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License**, as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+++
+++This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**, without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+++
+++You should have received a copy of the GNU General Public License along with this program. If not, see [gnu.org/licenses](https://www.gnu.org/licenses/).
+++
+++For the complete license text, see the `COPYING` file in the root directory or visit the [GNU GPL v3 license page](https://www.gnu.org/licenses/gpl-3.0.html).
+++
+++---
+++
+++<p align="center">
+++  <strong>🚀 OSCam-Emu</strong>
+++  <br>
+++  <em>Open Source • Flexible Builds • Community Driven</em>
+++  <br><br>
+++  <a href="https://github.com/speedy005/Oscam-emu">📦 Repository</a> ·
+++  <a href="https://github.com/speedy005/Oscam-emu/issues">🐛 Issues</a> ·
+++  <a href="https://github.com/speedy005/Oscam-emu/discussions">💬 Discussions</a>
+++</p>
++diff --git a/../oscam-base/config.h b/./config.h
++index 06b18eec..47afd658 100644
++--- a/../oscam-base/config.h
+++++ b/./config.h
++@@ -1,6 +1,8 @@
++ #ifndef CONFIG_H_
++ #define CONFIG_H_
++ 
+++#define WITH_EMU 1
+++#define WITH_SOFTCAM 1
++ #define WEBIF 1
++ #define WEBIF_LIVELOG 1
++ #define WEBIF_JQUERY 1
++@@ -9,7 +11,7 @@
++ //#define WITH_SSL 1
++ #if defined(__linux__) || defined(__CYGWIN__)
++ #define HAVE_DVBAPI 1
++-//#define WITH_EXTENDED_CW 1
+++#define WITH_EXTENDED_CW 1
++ #endif
++ //#define WITH_NEUTRINO 1
++ #define READ_SDT_CHARSETS 1
++diff --git a/../oscam-base/config.sh b/./config.sh
++index f40e5c80..b59b7b2b 100755
++--- a/../oscam-base/config.sh
+++++ b/./config.sh
++@@ -1,6 +1,6 @@
++ #!/bin/sh
++ 
++-addons="WEBIF WEBIF_LIVELOG WEBIF_JQUERY WEBIF_WIKI WITH_COMPRESS_WEBIF HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_SIGNING"
+++addons="WEBIF WEBIF_LIVELOG WEBIF_JQUERY WEBIF_WIKI WITH_COMPRESS_WEBIF HAVE_DVBAPI WITH_EXTENDED_CW WITH_NEUTRINO READ_SDT_CHARSETS CS_ANTICASC WITH_DEBUG MODULE_MONITOR WITH_LB CS_CACHEEX CS_CACHEEX_AIO CW_CYCLE_CHECK LCDSUPPORT LEDSUPPORT CLOCKFIX IPV6SUPPORT WITH_ARM_NEON WITH_SIGNING WITH_EMU WITH_SOFTCAM"
++ protocols="MODULE_CAMD33 MODULE_CAMD35 MODULE_CAMD35_TCP MODULE_NEWCAMD MODULE_CCCAM MODULE_CCCSHARE MODULE_GBOX MODULE_RADEGAST MODULE_SCAM MODULE_SERIAL MODULE_CONSTCW MODULE_PANDORA MODULE_GHTTP MODULE_STREAMRELAY"
++ readers="READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT"
++ card_readers="CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS"
++@@ -12,7 +12,7 @@ CONFIG_WEBIF_JQUERY=y
++ # CONFIG_WEBIF_WIKI=n
++ CONFIG_WITH_COMPRESS_WEBIF=y
++ CONFIG_HAVE_DVBAPI=y
++-# CONFIG_WITH_EXTENDED_CW=n
+++CONFIG_WITH_EXTENDED_CW=y
++ # CONFIG_WITH_NEUTRINO=n
++ CONFIG_READ_SDT_CHARSETS=y
++ # CONFIG_CS_ANTICASC=n
++@@ -28,6 +28,8 @@ CONFIG_WITH_LB=y
++ # CONFIG_IPV6SUPPORT=n
++ # CONFIG_WITH_ARM_NEON=n
++ # CONFIG_WITH_SIGNING=n
+++CONFIG_WITH_EMU=y
+++CONFIG_WITH_SOFTCAM=y
++ # CONFIG_MODULE_CAMD33=n
++ CONFIG_MODULE_CAMD35=y
++ CONFIG_MODULE_CAMD35_TCP=y
++@@ -331,8 +333,8 @@ get_opts() {
++ 
++ update_deps() {
++ 	# Calculate dependencies
++-	enabled_any $(get_opts readers) $(get_opts card_readers) && enable_opt WITH_CARDREADER >/dev/null
++-	disabled_all $(get_opts readers) $(get_opts card_readers) && disable_opt WITH_CARDREADER >/dev/null
+++	enabled_any $(get_opts readers) $(get_opts card_readers) WITH_EMU && enable_opt WITH_CARDREADER >/dev/null
+++	disabled_all $(get_opts readers) $(get_opts card_readers) WITH_EMU && disable_opt WITH_CARDREADER >/dev/null
++ 	disabled WEBIF && disable_opt WEBIF_LIVELOG >/dev/null
++ 	disabled WEBIF && disable_opt WEBIF_JQUERY >/dev/null
++ 	disabled WEBIF && disable_opt WEBIF_WIKI >/dev/null
++@@ -340,6 +342,9 @@ update_deps() {
++ 	enabled MODULE_CCCSHARE && enable_opt MODULE_CCCAM >/dev/null
++ 	enabled_any CARDREADER_DB2COM CARDREADER_MP35 CARDREADER_SC8IN1 CARDREADER_STINGER && enable_opt CARDREADER_PHOENIX >/dev/null
++ 	enabled CS_CACHEEX_AIO && enable_opt CS_CACHEEX >/dev/null
+++	enabled WITH_EMU && enable_opt READER_VIACCESS >/dev/null
+++	enabled WITH_EMU && enable_opt MODULE_NEWCAMD >/dev/null
+++	disabled WITH_EMU && disable_opt WITH_SOFTCAM >/dev/null
++ }
++ 
++ list_config() {
++@@ -391,9 +396,9 @@ list_config() {
++ 	not_have_flag USE_LIBCRYPTO && echo "CONFIG_LIB_AES=y" || echo "# CONFIG_LIB_AES=n"
++ 	enabled MODULE_CCCAM && echo "CONFIG_LIB_RC6=y" || echo "# CONFIG_LIB_RC6=n"
++ 	not_have_flag USE_LIBCRYPTO && enabled MODULE_CCCAM && echo "CONFIG_LIB_SHA1=y" || echo "# CONFIG_LIB_SHA1=n"
++-	enabled_any READER_DRE MODULE_SCAM READER_VIACCESS READER_NAGRA READER_NAGRA_MERLIN READER_VIDEOGUARD READER_CONAX READER_TONGFANG && echo "CONFIG_LIB_DES=y" || echo "# CONFIG_LIB_DES=n"
++-	enabled_any MODULE_CCCAM READER_NAGRA READER_NAGRA_MERLIN READER_SECA && echo "CONFIG_LIB_IDEA=y" || echo "# CONFIG_LIB_IDEA=n"
++-	not_have_flag USE_LIBCRYPTO && enabled_any READER_CONAX READER_CRYPTOWORKS READER_NAGRA READER_NAGRA_MERLIN && echo "CONFIG_LIB_BIGNUM=y" || echo "# CONFIG_LIB_BIGNUM=n"
+++	enabled_any READER_DRE MODULE_SCAM READER_VIACCESS READER_NAGRA READER_NAGRA_MERLIN READER_VIDEOGUARD READER_CONAX READER_TONGFANG WITH_EMU && echo "CONFIG_LIB_DES=y" || echo "# CONFIG_LIB_DES=n"
+++	enabled_any MODULE_CCCAM READER_NAGRA READER_NAGRA_MERLIN READER_SECA WITH_EMU && echo "CONFIG_LIB_IDEA=y" || echo "# CONFIG_LIB_IDEA=n"
+++	not_have_flag USE_LIBCRYPTO && enabled_any READER_CONAX READER_CRYPTOWORKS READER_NAGRA READER_NAGRA_MERLIN WITH_EMU && echo "CONFIG_LIB_BIGNUM=y" || echo "# CONFIG_LIB_BIGNUM=n"
++ 	enabled READER_NAGRA_MERLIN && echo "CONFIG_LIB_MDC2=y" || echo "# CONFIG_LIB_MDC2=n"
++ 	enabled READER_NAGRA_MERLIN && echo "CONFIG_LIB_FAST_AES=y" || echo "# CONFIG_LIB_FAST_AES=n"
++ 	enabled_any READER_NAGRA_MERLIN WITH_SIGNING && echo "CONFIG_LIB_SHA256=y" || echo "# CONFIG_LIB_SHA256=n"
++@@ -522,6 +527,8 @@ menu_addons() {
++ 		IPV6SUPPORT			"IPv6 support (experimental)"					$(check_test "IPV6SUPPORT") \
++ 		WITH_ARM_NEON		"ARM NEON (SIMD/MPE) support"					$(check_test "WITH_ARM_NEON") \
++ 		WITH_SIGNING		"Binary signing with X.509 certificate"			$(check_test "WITH_SIGNING") \
+++		WITH_EMU			"Emulator support"								$(check_test "WITH_EMU") \
+++		WITH_SOFTCAM		"Built-in SoftCam.Key"							$(check_test "WITH_SOFTCAM") \
++ 		2> ${tempfile}
++ 
++ 	opt=${?}
++@@ -904,7 +911,8 @@ do
++ 	;;
++ 	'-v'|'--oscam-version')
++ 		version=`grep '^#define CS_VERSION' globals.h | cut -d\" -f2`
++-		echo $version
+++		emuversion=`grep EMU_VERSION module-emulator-osemu.h | awk '{ print $3 }'`
+++		echo $version-$emuversion
++ 		break
++ 	;;
++ 	'--submodule')
++@@ -955,7 +963,7 @@ do
++ 		break
++ 	;;
++ 	'-c'|'--oscam-commit')
++-		sha=`git log 2>/dev/null | sed -n 1p | cut -d ' ' -f2 | cut -c1-8`
+++		sha=`git log --no-merges 2>/dev/null | sed -n 1p | cut -d ' ' -f2 | cut -c1-8`
++ 		echo $sha
++ 		break
++ 	;;
++diff --git a/../oscam-base/cscrypt/sha1.c b/./cscrypt/sha1.c
++index 15909289..dfabea88 100644
++--- a/../oscam-base/cscrypt/sha1.c
+++++ b/./cscrypt/sha1.c
++@@ -1,4 +1,5 @@
++ #ifndef WITH_LIBCRYPTO
+++//FIXME Not checked on threadsafety yet; after checking please remove this line
++ /*
++ SHA-1 in C
++ By Steve Reid <sreid@sea-to-sky.net>
++@@ -77,6 +78,8 @@ A million repetitions of "a"
++   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
++ */
++ 
+++/* #define SHA1HANDSOFF  */
+++
++ #include <stdio.h>
++ #include <string.h>
++ 
++@@ -128,9 +131,15 @@ void SHA1_Transform(uint32_t state[5], const uint8_t buffer[64])
++ 		uint8_t c[64];
++ 		uint32_t l[16];
++ 	} CHAR64LONG16;
++-	CHAR64LONG16 workspace;
++-	CHAR64LONG16 *block = &workspace;
++-	memcpy(block->c, buffer, sizeof(block->c));
+++	CHAR64LONG16 *block;
+++
+++#ifdef SHA1HANDSOFF
+++	static uint8_t workspace[64];
+++	block = (CHAR64LONG16 *)workspace;
+++	memcpy(block, buffer, 64);
+++#else
+++	block = (CHAR64LONG16 *)buffer;
+++#endif
++ 
++ 	/* Copy context->state[] to working vars */
++ 	a = state[0];
++@@ -248,25 +257,19 @@ void SHA1_Init(SHA_CTX *context)
++ void SHA1_Update(SHA_CTX *context, const uint8_t *data, const size_t len)
++ {
++ 	size_t i, j;
++-	uint32_t old_count;
++-
++-	if(len == 0) { return; }
++ 
++ #ifdef VERBOSE
++ 	SHAPrintContext(context, "before");
++ #endif
++ 
++ 	j = (context->count[0] >> 3) & 63;
++-	/* Detect carry within the low word, even when size_t is wider. */
++-	old_count = context->count[0];
++-	context->count[0] += (uint32_t)(len << 3);
++-	if(context->count[0] < old_count) { context->count[1]++; }
++-	context->count[1] += (uint32_t)(len >> 29);
++-	if(len >= 64 - j)
+++	if((context->count[0] += len << 3) < (len << 3)) { context->count[1]++; }
+++	context->count[1] += (len >> 29);
+++	if((j + len) > 63)
++ 	{
++ 		memcpy(&context->buffer[j], data, (i = 64 - j));
++ 		SHA1_Transform(context->state, context->buffer);
++-		for(; len - i >= 64; i += 64)
+++		for(; i + 63 < len; i += 64)
++ 		{
++ 			SHA1_Transform(context->state, data + i);
++ 		}
++@@ -310,5 +313,8 @@ void SHA1_Final(uint8_t digest[SHA_DIGEST_LENGTH], SHA_CTX *context)
++ 	memset(context->count, 0, 8);
++ 	memset(finalcount, 0, 8);   /* SWR */
++ 
+++#ifdef SHA1HANDSOFF  /* make SHA1Transform overwrite its own static vars */
+++	SHA1_Transform(context->state, context->buffer);
+++#endif
++ }
++ #endif
++diff --git a/../oscam-base/csctapi/cardreaders.h b/./csctapi/cardreaders.h
++index 4cda2edd..6cd27dae 100644
++--- a/../oscam-base/csctapi/cardreaders.h
+++++ b/./csctapi/cardreaders.h
++@@ -15,5 +15,6 @@ extern const struct s_cardreader cardreader_smartreader;
++ extern const struct s_cardreader cardreader_stapi;
++ extern const struct s_cardreader cardreader_stinger;
++ extern const struct s_cardreader cardreader_drecas;
+++extern const struct s_cardreader cardreader_emu;
++ 
++ #endif
++diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
++new file mode 100644
++index 00000000..931689aa
++--- /dev/null
+++++ b/./emu/.git/FETCH_HEAD
++@@ -0,0 +1 @@
+++d8a55b72469f5e139507c1a307eba55f4f09752f		branch 'master' of https://github.com/speedy005/oscam-emu-patch
++diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
++new file mode 100644
++index 00000000..cb089cd8
++--- /dev/null
+++++ b/./emu/.git/HEAD
++@@ -0,0 +1 @@
+++ref: refs/heads/master
++diff --git a/./emu/.git/config b/./emu/.git/config
++new file mode 100644
++index 00000000..24dd778c
++--- /dev/null
+++++ b/./emu/.git/config
++@@ -0,0 +1,15 @@
+++[core]
+++	repositoryformatversion = 0
+++	filemode = true
+++	bare = false
+++	logallrefupdates = true
+++[remote "origin"]
+++	url = https://github.com/speedy005/oscam-emu-patch
+++	fetch = +refs/heads/*:refs/remotes/origin/*
+++[gc]
+++	auto = 0
+++[http "https://github.com/"]
+++	extraheader = AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46Z2l0aHViX3BhdF8xMUFRRjJDSFkwSFZ4WGpCZUhuMTY0X041YW5WUXBHalAwRlViVkxSOE5rb2pQQ0hvUTBlRTNvTVp2SE53dHBOVGYzNVU2RzIzNHlxbnp2UVZQ
+++[branch "master"]
+++	remote = origin
+++	merge = refs/heads/master
++diff --git a/./emu/.git/config.worktree b/./emu/.git/config.worktree
++new file mode 100644
++index 00000000..82748328
++--- /dev/null
+++++ b/./emu/.git/config.worktree
++@@ -0,0 +1,5 @@
+++[core]
+++	sparseCheckout = false
+++	sparseCheckoutCone = false
+++[index]
+++	sparse = false
++diff --git a/./emu/.git/description b/./emu/.git/description
++new file mode 100755
++index 00000000..498b267a
++--- /dev/null
+++++ b/./emu/.git/description
++@@ -0,0 +1 @@
+++Unnamed repository; edit this file 'description' to name the repository.
++diff --git a/./emu/.git/hooks/applypatch-msg.sample b/./emu/.git/hooks/applypatch-msg.sample
++new file mode 100755
++index 00000000..a5d7b84a
++--- /dev/null
+++++ b/./emu/.git/hooks/applypatch-msg.sample
++@@ -0,0 +1,15 @@
+++#!/bin/sh
+++#
+++# An example hook script to check the commit log message taken by
+++# applypatch from an e-mail message.
+++#
+++# The hook should exit with non-zero status after issuing an
+++# appropriate message if it wants to stop the commit.  The hook is
+++# allowed to edit the commit message file.
+++#
+++# To enable this hook, rename this file to "applypatch-msg".
+++
+++. git-sh-setup
+++commitmsg="$(git rev-parse --git-path hooks/commit-msg)"
+++test -x "$commitmsg" && exec "$commitmsg" ${1+"$@"}
+++:
++diff --git a/./emu/.git/hooks/commit-msg.sample b/./emu/.git/hooks/commit-msg.sample
++new file mode 100755
++index 00000000..f7458efe
++--- /dev/null
+++++ b/./emu/.git/hooks/commit-msg.sample
++@@ -0,0 +1,74 @@
+++#!/bin/sh
+++#
+++# An example hook script to check the commit log message.
+++# Called by "git commit" with one argument, the name of the file
+++# that has the commit message.  The hook should exit with non-zero
+++# status after issuing an appropriate message if it wants to stop the
+++# commit.  The hook is allowed to edit the commit message file.
+++#
+++# To enable this hook, rename this file to "commit-msg".
+++
+++# Uncomment the below to add a Signed-off-by line to the message.
+++# Doing this in a hook is a bad idea in general, but the prepare-commit-msg
+++# hook is more suited to it.
+++#
+++# SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
+++# grep -qs "^$SOB" "$1" || echo "$SOB" >> "$1"
+++
+++# This example catches duplicate Signed-off-by lines and messages that
+++# would confuse 'git am'.
+++
+++ret=0
+++
+++test "" = "$(grep '^Signed-off-by: ' "$1" |
+++	 sort | uniq -c | sed -e '/^[ 	]*1[ 	]/d')" || {
+++	echo >&2 Duplicate Signed-off-by lines.
+++	ret=1
+++}
+++
+++comment_re="$(
+++	{
+++		git config --get-regexp "^core\.comment(char|string)\$" ||
+++			echo '#'
+++	} | sed -n -e '
+++		${
+++			s/^[^ ]* //
+++			s|[][*./\]|\\&|g
+++			s/^auto$/[#;@!$%^&|:]/
+++			p
+++		}'
+++)"
+++scissors_line="^${comment_re} -\{8,\} >8 -\{8,\}\$"
+++comment_line="^${comment_re}.*"
+++blank_line='^[ 	]*$'
+++# Disallow lines starting with "diff -" or "Index: " in the body of the
+++# message. Stop looking if we see a scissors line.
+++line="$(sed -n -e "
+++	# Skip comments and blank lines at the start of the file.
+++	/${scissors_line}/q
+++	/${comment_line}/d
+++	/${blank_line}/d
+++	# The first paragraph will become the subject header so
+++	# does not need to be checked.
+++	: subject
+++	n
+++	/${scissors_line}/q
+++	/${blank_line}/!b subject
+++	# Check the body of the message for problematic
+++	# prefixes.
+++	: body
+++	n
+++	/${scissors_line}/q
+++	/${comment_line}/b body
+++	/^diff -/{p;q;}
+++	/^Index: /{p;q;}
+++	b body
+++	" "$1")"
+++if test -n "$line"
+++then
+++	echo >&2 "Message contains a diff that will confuse 'git am'."
+++	echo >&2 "To fix this indent the diff."
+++	ret=1
+++fi
+++
+++exit $ret
++diff --git a/./emu/.git/hooks/fsmonitor-watchman.sample b/./emu/.git/hooks/fsmonitor-watchman.sample
++new file mode 100755
++index 00000000..429e0a51
++--- /dev/null
+++++ b/./emu/.git/hooks/fsmonitor-watchman.sample
++@@ -0,0 +1,168 @@
+++#!/usr/bin/perl
+++
+++use strict;
+++use warnings;
+++use IPC::Open2;
+++
+++# An example hook script to integrate Watchman
+++# (https://facebook.github.io/watchman/) with git to speed up detecting
+++# new and modified files.
+++#
+++# The hook is passed a version (currently 2) and last update token
+++# formatted as a string and outputs to stdout a new update token and
+++# all files that have been modified since the update token. Paths must
+++# be relative to the root of the working tree and separated by a single NUL.
+++#
+++# To enable this hook, rename this file to "query-watchman" and set
+++# 'git config core.fsmonitor .git/hooks/query-watchman'
+++#
+++my ($version, $last_update_token) = @ARGV;
+++
+++# Uncomment for debugging
+++# print STDERR "$0 $version $last_update_token\n";
+++
+++# Check the hook interface version
+++if ($version ne 2) {
+++	die "Unsupported query-fsmonitor hook version '$version'.\n" .
+++	    "Falling back to scanning...\n";
+++}
+++
+++my $git_work_tree = get_working_dir();
+++
+++my $json_pkg;
+++eval {
+++	require JSON::XS;
+++	$json_pkg = "JSON::XS";
+++	1;
+++} or do {
+++	require JSON::PP;
+++	$json_pkg = "JSON::PP";
+++};
+++
+++launch_watchman();
+++
+++sub launch_watchman {
+++	my $o = watchman_query();
+++	if (is_work_tree_watched($o)) {
+++		output_result($o->{clock}, @{$o->{files}});
+++	}
+++}
+++
+++sub output_result {
+++	my ($clockid, @files) = @_;
+++
+++	# Uncomment for debugging watchman output
+++	# open (my $fh, ">", ".git/watchman-output.out");
+++	# binmode $fh, ":utf8";
+++	# print $fh "$clockid\n@files\n";
+++	# close $fh;
+++
+++	binmode STDOUT, ":utf8";
+++	print $clockid;
+++	print "\0";
+++	local $, = "\0";
+++	print @files;
+++}
+++
+++sub watchman_clock {
+++	my $response = qx/watchman clock "$git_work_tree"/;
+++	die "Failed to get clock id on '$git_work_tree'.\n" .
+++		"Falling back to scanning...\n" if $? != 0;
+++
+++	return $json_pkg->new->utf8->decode($response);
+++}
+++
+++sub watchman_query {
+++	my $pid = open2(\*CHLD_OUT, \*CHLD_IN, 'watchman -j --no-pretty')
+++	or die "open2() failed: $!\n" .
+++	"Falling back to scanning...\n";
+++
+++	# In the query expression below we're asking for names of files that
+++	# changed since $last_update_token but not from the .git folder.
+++	#
+++	# To accomplish this, we're using the "since" generator to use the
+++	# recency index to select candidate nodes and "fields" to limit the
+++	# output to file names only. Then we're using the "expression" term to
+++	# further constrain the results.
+++	my $last_update_line = "";
+++	if (substr($last_update_token, 0, 1) eq "c") {
+++		$last_update_token = "\"$last_update_token\"";
+++		$last_update_line = qq[\n"since": $last_update_token,];
+++	}
+++	my $query = <<"	END";
+++		["query", "$git_work_tree", {$last_update_line
+++			"fields": ["name"],
+++			"expression": ["not", ["dirname", ".git"]]
+++		}]
+++	END
+++
+++	# Uncomment for debugging the watchman query
+++	# open (my $fh, ">", ".git/watchman-query.json");
+++	# print $fh $query;
+++	# close $fh;
+++
+++	print CHLD_IN $query;
+++	close CHLD_IN;
+++	my $response = do {local $/; <CHLD_OUT>};
+++
+++	# Uncomment for debugging the watch response
+++	# open ($fh, ">", ".git/watchman-response.json");
+++	# print $fh $response;
+++	# close $fh;
+++
+++	die "Watchman: command returned no output.\n" .
+++	"Falling back to scanning...\n" if $response eq "";
+++	die "Watchman: command returned invalid output: $response\n" .
+++	"Falling back to scanning...\n" unless $response =~ /^\{/;
+++
+++	return $json_pkg->new->utf8->decode($response);
+++}
+++
+++sub is_work_tree_watched {
+++	my ($output) = @_;
+++	my $error = $output->{error};
+++	if ($error and $error =~ m/unable to resolve root .* directory (.*) is not watched/) {
+++		my $response = qx/watchman watch "$git_work_tree"/;
+++		die "Failed to make watchman watch '$git_work_tree'.\n" .
+++		    "Falling back to scanning...\n" if $? != 0;
+++		$output = $json_pkg->new->utf8->decode($response);
+++		$error = $output->{error};
+++		die "Watchman: $error.\n" .
+++		"Falling back to scanning...\n" if $error;
+++
+++		# Uncomment for debugging watchman output
+++		# open (my $fh, ">", ".git/watchman-output.out");
+++		# close $fh;
+++
+++		# Watchman will always return all files on the first query so
+++		# return the fast "everything is dirty" flag to git and do the
+++		# Watchman query just to get it over with now so we won't pay
+++		# the cost in git to look up each individual file.
+++		my $o = watchman_clock();
+++		$error = $o->{error};
+++
+++		die "Watchman: $error.\n" .
+++		"Falling back to scanning...\n" if $error;
+++
+++		output_result($o->{clock}, ("/"));
+++		return 0;
+++	}
+++
+++	die "Watchman: $error.\n" .
+++	"Falling back to scanning...\n" if $error;
+++
+++	return 1;
+++}
+++
+++sub get_working_dir {
+++	my $working_dir;
+++	if ($^O =~ 'msys' || $^O =~ 'cygwin') {
+++		$working_dir = Win32::GetCwd();
+++		$working_dir =~ tr/\\/\//;
+++	} else {
+++		require Cwd;
+++		$working_dir = Cwd::cwd();
+++	}
+++
+++	return $working_dir;
+++}
++diff --git a/./emu/.git/hooks/post-update.sample b/./emu/.git/hooks/post-update.sample
++new file mode 100755
++index 00000000..ec17ec19
++--- /dev/null
+++++ b/./emu/.git/hooks/post-update.sample
++@@ -0,0 +1,8 @@
+++#!/bin/sh
+++#
+++# An example hook script to prepare a packed repository for use over
+++# dumb transports.
+++#
+++# To enable this hook, rename this file to "post-update".
+++
+++exec git update-server-info
++diff --git a/./emu/.git/hooks/pre-applypatch.sample b/./emu/.git/hooks/pre-applypatch.sample
++new file mode 100755
++index 00000000..4142082b
++--- /dev/null
+++++ b/./emu/.git/hooks/pre-applypatch.sample
++@@ -0,0 +1,14 @@
+++#!/bin/sh
+++#
+++# An example hook script to verify what is about to be committed
+++# by applypatch from an e-mail message.
+++#
+++# The hook should exit with non-zero status after issuing an
+++# appropriate message if it wants to stop the commit.
+++#
+++# To enable this hook, rename this file to "pre-applypatch".
+++
+++. git-sh-setup
+++precommit="$(git rev-parse --git-path hooks/pre-commit)"
+++test -x "$precommit" && exec "$precommit" ${1+"$@"}
+++:
++diff --git a/./emu/.git/hooks/pre-commit.sample b/./emu/.git/hooks/pre-commit.sample
++new file mode 100755
++index 00000000..29ed5ee4
++--- /dev/null
+++++ b/./emu/.git/hooks/pre-commit.sample
++@@ -0,0 +1,49 @@
+++#!/bin/sh
+++#
+++# An example hook script to verify what is about to be committed.
+++# Called by "git commit" with no arguments.  The hook should
+++# exit with non-zero status after issuing an appropriate message if
+++# it wants to stop the commit.
+++#
+++# To enable this hook, rename this file to "pre-commit".
+++
+++if git rev-parse --verify HEAD >/dev/null 2>&1
+++then
+++	against=HEAD
+++else
+++	# Initial commit: diff against an empty tree object
+++	against=$(git hash-object -t tree /dev/null)
+++fi
+++
+++# If you want to allow non-ASCII filenames set this variable to true.
+++allownonascii=$(git config --type=bool hooks.allownonascii)
+++
+++# Redirect output to stderr.
+++exec 1>&2
+++
+++# Cross platform projects tend to avoid non-ASCII filenames; prevent
+++# them from being added to the repository. We exploit the fact that the
+++# printable range starts at the space character and ends with tilde.
+++if [ "$allownonascii" != "true" ] &&
+++	# Note that the use of brackets around a tr range is ok here, (it's
+++	# even required, for portability to Solaris 10's /usr/bin/tr), since
+++	# the square bracket bytes happen to fall in the designated range.
+++	test $(git diff-index --cached --name-only --diff-filter=A -z $against |
+++	  LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+++then
+++	cat <<\EOF
+++Error: Attempt to add a non-ASCII file name.
+++
+++This can cause problems if you want to work with people on other platforms.
+++
+++To be portable it is advisable to rename the file.
+++
+++If you know what you are doing you can disable this check using:
+++
+++  git config hooks.allownonascii true
+++EOF
+++	exit 1
+++fi
+++
+++# If there are whitespace errors, print the offending file names and fail.
+++exec git diff-index --check --cached $against --
++diff --git a/./emu/.git/hooks/pre-merge-commit.sample b/./emu/.git/hooks/pre-merge-commit.sample
++new file mode 100755
++index 00000000..399eab19
++--- /dev/null
+++++ b/./emu/.git/hooks/pre-merge-commit.sample
++@@ -0,0 +1,13 @@
+++#!/bin/sh
+++#
+++# An example hook script to verify what is about to be committed.
+++# Called by "git merge" with no arguments.  The hook should
+++# exit with non-zero status after issuing an appropriate message to
+++# stderr if it wants to stop the merge commit.
+++#
+++# To enable this hook, rename this file to "pre-merge-commit".
+++
+++. git-sh-setup
+++test -x "$GIT_DIR/hooks/pre-commit" &&
+++        exec "$GIT_DIR/hooks/pre-commit"
+++:
++diff --git a/./emu/.git/hooks/pre-push.sample b/./emu/.git/hooks/pre-push.sample
++new file mode 100755
++index 00000000..4ce688d3
++--- /dev/null
+++++ b/./emu/.git/hooks/pre-push.sample
++@@ -0,0 +1,53 @@
+++#!/bin/sh
+++
+++# An example hook script to verify what is about to be pushed.  Called by "git
+++# push" after it has checked the remote status, but before anything has been
+++# pushed.  If this script exits with a non-zero status nothing will be pushed.
+++#
+++# This hook is called with the following parameters:
+++#
+++# $1 -- Name of the remote to which the push is being done
+++# $2 -- URL to which the push is being done
+++#
+++# If pushing without using a named remote those arguments will be equal.
+++#
+++# Information about the commits which are being pushed is supplied as lines to
+++# the standard input in the form:
+++#
+++#   <local ref> <local oid> <remote ref> <remote oid>
+++#
+++# This sample shows how to prevent push of commits where the log message starts
+++# with "WIP" (work in progress).
+++
+++remote="$1"
+++url="$2"
+++
+++zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+++
+++while read local_ref local_oid remote_ref remote_oid
+++do
+++	if test "$local_oid" = "$zero"
+++	then
+++		# Handle delete
+++		:
+++	else
+++		if test "$remote_oid" = "$zero"
+++		then
+++			# New branch, examine all commits
+++			range="$local_oid"
+++		else
+++			# Update to existing branch, examine new commits
+++			range="$remote_oid..$local_oid"
+++		fi
+++
+++		# Check for WIP commit
+++		commit=$(git rev-list -n 1 --grep '^WIP' "$range")
+++		if test -n "$commit"
+++		then
+++			echo >&2 "Found WIP commit in $local_ref, not pushing"
+++			exit 1
+++		fi
+++	fi
+++done
+++
+++exit 0
++diff --git a/./emu/.git/hooks/pre-rebase.sample b/./emu/.git/hooks/pre-rebase.sample
++new file mode 100755
++index 00000000..6cbef5c3
++--- /dev/null
+++++ b/./emu/.git/hooks/pre-rebase.sample
++@@ -0,0 +1,169 @@
+++#!/bin/sh
+++#
+++# Copyright (c) 2006, 2008 Junio C Hamano
+++#
+++# The "pre-rebase" hook is run just before "git rebase" starts doing
+++# its job, and can prevent the command from running by exiting with
+++# non-zero status.
+++#
+++# The hook is called with the following parameters:
+++#
+++# $1 -- the upstream the series was forked from.
+++# $2 -- the branch being rebased (or empty when rebasing the current branch).
+++#
+++# This sample shows how to prevent topic branches that are already
+++# merged to 'next' branch from getting rebased, because allowing it
+++# would result in rebasing already published history.
+++
+++publish=next
+++basebranch="$1"
+++if test "$#" = 2
+++then
+++	topic="refs/heads/$2"
+++else
+++	topic=`git symbolic-ref HEAD` ||
+++	exit 0 ;# we do not interrupt rebasing detached HEAD
+++fi
+++
+++case "$topic" in
+++refs/heads/??/*)
+++	;;
+++*)
+++	exit 0 ;# we do not interrupt others.
+++	;;
+++esac
+++
+++# Now we are dealing with a topic branch being rebased
+++# on top of master.  Is it OK to rebase it?
+++
+++# Does the topic really exist?
+++git show-ref -q "$topic" || {
+++	echo >&2 "No such branch $topic"
+++	exit 1
+++}
+++
+++# Is topic fully merged to master?
+++not_in_master=`git rev-list --pretty=oneline ^master "$topic"`
+++if test -z "$not_in_master"
+++then
+++	echo >&2 "$topic is fully merged to master; better remove it."
+++	exit 1 ;# we could allow it, but there is no point.
+++fi
+++
+++# Is topic ever merged to next?  If so you should not be rebasing it.
+++only_next_1=`git rev-list ^master "^$topic" ${publish} | sort`
+++only_next_2=`git rev-list ^master           ${publish} | sort`
+++if test "$only_next_1" = "$only_next_2"
+++then
+++	not_in_topic=`git rev-list "^$topic" master`
+++	if test -z "$not_in_topic"
+++	then
+++		echo >&2 "$topic is already up to date with master"
+++		exit 1 ;# we could allow it, but there is no point.
+++	else
+++		exit 0
+++	fi
+++else
+++	not_in_next=`git rev-list --pretty=oneline ^${publish} "$topic"`
+++	/usr/bin/perl -e '
+++		my $topic = $ARGV[0];
+++		my $msg = "* $topic has commits already merged to public branch:\n";
+++		my (%not_in_next) = map {
+++			/^([0-9a-f]+) /;
+++			($1 => 1);
+++		} split(/\n/, $ARGV[1]);
+++		for my $elem (map {
+++				/^([0-9a-f]+) (.*)$/;
+++				[$1 => $2];
+++			} split(/\n/, $ARGV[2])) {
+++			if (!exists $not_in_next{$elem->[0]}) {
+++				if ($msg) {
+++					print STDERR $msg;
+++					undef $msg;
+++				}
+++				print STDERR " $elem->[1]\n";
+++			}
+++		}
+++	' "$topic" "$not_in_next" "$not_in_master"
+++	exit 1
+++fi
+++
+++<<\DOC_END
+++
+++This sample hook safeguards topic branches that have been
+++published from being rewound.
+++
+++The workflow assumed here is:
+++
+++ * Once a topic branch forks from "master", "master" is never
+++   merged into it again (either directly or indirectly).
+++
+++ * Once a topic branch is fully cooked and merged into "master",
+++   it is deleted.  If you need to build on top of it to correct
+++   earlier mistakes, a new topic branch is created by forking at
+++   the tip of the "master".  This is not strictly necessary, but
+++   it makes it easier to keep your history simple.
+++
+++ * Whenever you need to test or publish your changes to topic
+++   branches, merge them into "next" branch.
+++
+++The script, being an example, hardcodes the publish branch name
+++to be "next", but it is trivial to make it configurable via
+++$GIT_DIR/config mechanism.
+++
+++With this workflow, you would want to know:
+++
+++(1) ... if a topic branch has ever been merged to "next".  Young
+++    topic branches can have stupid mistakes you would rather
+++    clean up before publishing, and things that have not been
+++    merged into other branches can be easily rebased without
+++    affecting other people.  But once it is published, you would
+++    not want to rewind it.
+++
+++(2) ... if a topic branch has been fully merged to "master".
+++    Then you can delete it.  More importantly, you should not
+++    build on top of it -- other people may already want to
+++    change things related to the topic as patches against your
+++    "master", so if you need further changes, it is better to
+++    fork the topic (perhaps with the same name) afresh from the
+++    tip of "master".
+++
+++Let's look at this example:
+++
+++		   o---o---o---o---o---o---o---o---o---o "next"
+++		  /       /           /           /
+++		 /   a---a---b A     /           /
+++		/   /               /           /
+++	       /   /   c---c---c---c B         /
+++	      /   /   /             \         /
+++	     /   /   /   b---b C     \       /
+++	    /   /   /   /             \     /
+++    ---o---o---o---o---o---o---o---o---o---o---o "master"
+++
+++
+++A, B and C are topic branches.
+++
+++ * A has one fix since it was merged up to "next".
+++
+++ * B has finished.  It has been fully merged up to "master" and "next",
+++   and is ready to be deleted.
+++
+++ * C has not merged to "next" at all.
+++
+++We would want to allow C to be rebased, refuse A, and encourage
+++B to be deleted.
+++
+++To compute (1):
+++
+++	git rev-list ^master ^topic next
+++	git rev-list ^master        next
+++
+++	if these match, topic has not merged in next at all.
+++
+++To compute (2):
+++
+++	git rev-list master..topic
+++
+++	if this is empty, it is fully merged to "master".
+++
+++DOC_END
++diff --git a/./emu/.git/hooks/pre-receive.sample b/./emu/.git/hooks/pre-receive.sample
++new file mode 100755
++index 00000000..a1fd29ec
++--- /dev/null
+++++ b/./emu/.git/hooks/pre-receive.sample
++@@ -0,0 +1,24 @@
+++#!/bin/sh
+++#
+++# An example hook script to make use of push options.
+++# The example simply echoes all push options that start with 'echoback='
+++# and rejects all pushes when the "reject" push option is used.
+++#
+++# To enable this hook, rename this file to "pre-receive".
+++
+++if test -n "$GIT_PUSH_OPTION_COUNT"
+++then
+++	i=0
+++	while test "$i" -lt "$GIT_PUSH_OPTION_COUNT"
+++	do
+++		eval "value=\$GIT_PUSH_OPTION_$i"
+++		case "$value" in
+++		echoback=*)
+++			echo "echo from the pre-receive-hook: ${value#*=}" >&2
+++			;;
+++		reject)
+++			exit 1
+++		esac
+++		i=$((i + 1))
+++	done
+++fi
++diff --git a/./emu/.git/hooks/prepare-commit-msg.sample b/./emu/.git/hooks/prepare-commit-msg.sample
++new file mode 100755
++index 00000000..10fa14c5
++--- /dev/null
+++++ b/./emu/.git/hooks/prepare-commit-msg.sample
++@@ -0,0 +1,42 @@
+++#!/bin/sh
+++#
+++# An example hook script to prepare the commit log message.
+++# Called by "git commit" with the name of the file that has the
+++# commit message, followed by the description of the commit
+++# message's source.  The hook's purpose is to edit the commit
+++# message file.  If the hook fails with a non-zero status,
+++# the commit is aborted.
+++#
+++# To enable this hook, rename this file to "prepare-commit-msg".
+++
+++# This hook includes three examples. The first one removes the
+++# "# Please enter the commit message..." help message.
+++#
+++# The second includes the output of "git diff --name-status -r"
+++# into the message, just before the "git status" output.  It is
+++# commented because it doesn't cope with --amend or with squashed
+++# commits.
+++#
+++# The third example adds a Signed-off-by line to the message, that can
+++# still be edited.  This is rarely a good idea.
+++
+++COMMIT_MSG_FILE=$1
+++COMMIT_SOURCE=$2
+++SHA1=$3
+++
+++/usr/bin/perl -i.bak -ne 'print unless(m/^. Please enter the commit message/..m/^#$/)' "$COMMIT_MSG_FILE"
+++
+++# case "$COMMIT_SOURCE,$SHA1" in
+++#  ,|template,)
+++#    /usr/bin/perl -i.bak -pe '
+++#       print "\n" . `git diff --cached --name-status -r`
+++# 	 if /^#/ && $first++ == 0' "$COMMIT_MSG_FILE" ;;
+++#  *) ;;
+++# esac
+++
+++# SOB=$(git var GIT_COMMITTER_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
+++# git interpret-trailers --in-place --trailer "$SOB" "$COMMIT_MSG_FILE"
+++# if test -z "$COMMIT_SOURCE"
+++# then
+++#   /usr/bin/perl -i.bak -pe 'print "\n" if !$first_line++' "$COMMIT_MSG_FILE"
+++# fi
++diff --git a/./emu/.git/hooks/push-to-checkout.sample b/./emu/.git/hooks/push-to-checkout.sample
++new file mode 100755
++index 00000000..af5a0c00
++--- /dev/null
+++++ b/./emu/.git/hooks/push-to-checkout.sample
++@@ -0,0 +1,78 @@
+++#!/bin/sh
+++
+++# An example hook script to update a checked-out tree on a git push.
+++#
+++# This hook is invoked by git-receive-pack(1) when it reacts to git
+++# push and updates reference(s) in its repository, and when the push
+++# tries to update the branch that is currently checked out and the
+++# receive.denyCurrentBranch configuration variable is set to
+++# updateInstead.
+++#
+++# By default, such a push is refused if the working tree and the index
+++# of the remote repository has any difference from the currently
+++# checked out commit; when both the working tree and the index match
+++# the current commit, they are updated to match the newly pushed tip
+++# of the branch. This hook is to be used to override the default
+++# behaviour; however the code below reimplements the default behaviour
+++# as a starting point for convenient modification.
+++#
+++# The hook receives the commit with which the tip of the current
+++# branch is going to be updated:
+++commit=$1
+++
+++# It can exit with a non-zero status to refuse the push (when it does
+++# so, it must not modify the index or the working tree).
+++die () {
+++	echo >&2 "$*"
+++	exit 1
+++}
+++
+++# Or it can make any necessary changes to the working tree and to the
+++# index to bring them to the desired state when the tip of the current
+++# branch is updated to the new commit, and exit with a zero status.
+++#
+++# For example, the hook can simply run git read-tree -u -m HEAD "$1"
+++# in order to emulate git fetch that is run in the reverse direction
+++# with git push, as the two-tree form of git read-tree -u -m is
+++# essentially the same as git switch or git checkout that switches
+++# branches while keeping the local changes in the working tree that do
+++# not interfere with the difference between the branches.
+++
+++# The below is a more-or-less exact translation to shell of the C code
+++# for the default behaviour for git's push-to-checkout hook defined in
+++# the push_to_deploy() function in builtin/receive-pack.c.
+++#
+++# Note that the hook will be executed from the repository directory,
+++# not from the working tree, so if you want to perform operations on
+++# the working tree, you will have to adapt your code accordingly, e.g.
+++# by adding "cd .." or using relative paths.
+++
+++if ! git update-index -q --ignore-submodules --refresh
+++then
+++	die "Up-to-date check failed"
+++fi
+++
+++if ! git diff-files --quiet --ignore-submodules --
+++then
+++	die "Working directory has unstaged changes"
+++fi
+++
+++# This is a rough translation of:
+++#
+++#   head_has_history() ? "HEAD" : EMPTY_TREE_SHA1_HEX
+++if git cat-file -e HEAD 2>/dev/null
+++then
+++	head=HEAD
+++else
+++	head=$(git hash-object -t tree --stdin </dev/null)
+++fi
+++
+++if ! git diff-index --quiet --cached --ignore-submodules $head --
+++then
+++	die "Working directory has staged changes"
+++fi
+++
+++if ! git read-tree -u -m "$commit"
+++then
+++	die "Could not update working tree to new HEAD"
+++fi
++diff --git a/./emu/.git/hooks/sendemail-validate.sample b/./emu/.git/hooks/sendemail-validate.sample
++new file mode 100755
++index 00000000..640bcf87
++--- /dev/null
+++++ b/./emu/.git/hooks/sendemail-validate.sample
++@@ -0,0 +1,77 @@
+++#!/bin/sh
+++
+++# An example hook script to validate a patch (and/or patch series) before
+++# sending it via email.
+++#
+++# The hook should exit with non-zero status after issuing an appropriate
+++# message if it wants to prevent the email(s) from being sent.
+++#
+++# To enable this hook, rename this file to "sendemail-validate".
+++#
+++# By default, it will only check that the patch(es) can be applied on top of
+++# the default upstream branch without conflicts in a secondary worktree. After
+++# validation (successful or not) of the last patch of a series, the worktree
+++# will be deleted.
+++#
+++# The following config variables can be set to change the default remote and
+++# remote ref that are used to apply the patches against:
+++#
+++#   sendemail.validateRemote (default: origin)
+++#   sendemail.validateRemoteRef (default: HEAD)
+++#
+++# Replace the TODO placeholders with appropriate checks according to your
+++# needs.
+++
+++validate_cover_letter () {
+++	file="$1"
+++	# TODO: Replace with appropriate checks (e.g. spell checking).
+++	true
+++}
+++
+++validate_patch () {
+++	file="$1"
+++	# Ensure that the patch applies without conflicts.
+++	git am -3 "$file" || return
+++	# TODO: Replace with appropriate checks for this patch
+++	# (e.g. checkpatch.pl).
+++	true
+++}
+++
+++validate_series () {
+++	# TODO: Replace with appropriate checks for the whole series
+++	# (e.g. quick build, coding style checks, etc.).
+++	true
+++}
+++
+++# main -------------------------------------------------------------------------
+++
+++if test "$GIT_SENDEMAIL_FILE_COUNTER" = 1
+++then
+++	remote=$(git config --default origin --get sendemail.validateRemote) &&
+++	ref=$(git config --default HEAD --get sendemail.validateRemoteRef) &&
+++	worktree=$(mktemp --tmpdir -d sendemail-validate.XXXXXXX) &&
+++	git worktree add -fd --checkout "$worktree" "refs/remotes/$remote/$ref" &&
+++	git config --replace-all sendemail.validateWorktree "$worktree"
+++else
+++	worktree=$(git config --get sendemail.validateWorktree)
+++fi || {
+++	echo "sendemail-validate: error: failed to prepare worktree" >&2
+++	exit 1
+++}
+++
+++unset GIT_DIR GIT_WORK_TREE
+++cd "$worktree" &&
+++
+++if grep -q "^diff --git " "$1"
+++then
+++	validate_patch "$1"
+++else
+++	validate_cover_letter "$1"
+++fi &&
+++
+++if test "$GIT_SENDEMAIL_FILE_COUNTER" = "$GIT_SENDEMAIL_FILE_TOTAL"
+++then
+++	git config --unset-all sendemail.validateWorktree &&
+++	trap 'git worktree remove -ff "$worktree"' EXIT &&
+++	validate_series
+++fi
++diff --git a/./emu/.git/hooks/update.sample b/./emu/.git/hooks/update.sample
++new file mode 100755
++index 00000000..c4d426bc
++--- /dev/null
+++++ b/./emu/.git/hooks/update.sample
++@@ -0,0 +1,128 @@
+++#!/bin/sh
+++#
+++# An example hook script to block unannotated tags from entering.
+++# Called by "git receive-pack" with arguments: refname sha1-old sha1-new
+++#
+++# To enable this hook, rename this file to "update".
+++#
+++# Config
+++# ------
+++# hooks.allowunannotated
+++#   This boolean sets whether unannotated tags will be allowed into the
+++#   repository.  By default they won't be.
+++# hooks.allowdeletetag
+++#   This boolean sets whether deleting tags will be allowed in the
+++#   repository.  By default they won't be.
+++# hooks.allowmodifytag
+++#   This boolean sets whether a tag may be modified after creation. By default
+++#   it won't be.
+++# hooks.allowdeletebranch
+++#   This boolean sets whether deleting branches will be allowed in the
+++#   repository.  By default they won't be.
+++# hooks.denycreatebranch
+++#   This boolean sets whether remotely creating branches will be denied
+++#   in the repository.  By default this is allowed.
+++#
+++
+++# --- Command line
+++refname="$1"
+++oldrev="$2"
+++newrev="$3"
+++
+++# --- Safety check
+++if [ -z "$GIT_DIR" ]; then
+++	echo "Don't run this script from the command line." >&2
+++	echo " (if you want, you could supply GIT_DIR then run" >&2
+++	echo "  $0 <ref> <oldrev> <newrev>)" >&2
+++	exit 1
+++fi
+++
+++if [ -z "$refname" -o -z "$oldrev" -o -z "$newrev" ]; then
+++	echo "usage: $0 <ref> <oldrev> <newrev>" >&2
+++	exit 1
+++fi
+++
+++# --- Config
+++allowunannotated=$(git config --type=bool hooks.allowunannotated)
+++allowdeletebranch=$(git config --type=bool hooks.allowdeletebranch)
+++denycreatebranch=$(git config --type=bool hooks.denycreatebranch)
+++allowdeletetag=$(git config --type=bool hooks.allowdeletetag)
+++allowmodifytag=$(git config --type=bool hooks.allowmodifytag)
+++
+++# check for no description
+++projectdesc=$(sed -e '1q' "$GIT_DIR/description")
+++case "$projectdesc" in
+++"Unnamed repository"* | "")
+++	echo "*** Project description file hasn't been set" >&2
+++	exit 1
+++	;;
+++esac
+++
+++# --- Check types
+++# if $newrev is 0000...0000, it's a commit to delete a ref.
+++zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+++if [ "$newrev" = "$zero" ]; then
+++	newrev_type=delete
+++else
+++	newrev_type=$(git cat-file -t $newrev)
+++fi
+++
+++case "$refname","$newrev_type" in
+++	refs/tags/*,commit)
+++		# un-annotated tag
+++		short_refname=${refname##refs/tags/}
+++		if [ "$allowunannotated" != "true" ]; then
+++			echo "*** The un-annotated tag, $short_refname, is not allowed in this repository" >&2
+++			echo "*** Use 'git tag [ -a | -s ]' for tags you want to propagate." >&2
+++			exit 1
+++		fi
+++		;;
+++	refs/tags/*,delete)
+++		# delete tag
+++		if [ "$allowdeletetag" != "true" ]; then
+++			echo "*** Deleting a tag is not allowed in this repository" >&2
+++			exit 1
+++		fi
+++		;;
+++	refs/tags/*,tag)
+++		# annotated tag
+++		if [ "$allowmodifytag" != "true" ] && git rev-parse $refname > /dev/null 2>&1
+++		then
+++			echo "*** Tag '$refname' already exists." >&2
+++			echo "*** Modifying a tag is not allowed in this repository." >&2
+++			exit 1
+++		fi
+++		;;
+++	refs/heads/*,commit)
+++		# branch
+++		if [ "$oldrev" = "$zero" -a "$denycreatebranch" = "true" ]; then
+++			echo "*** Creating a branch is not allowed in this repository" >&2
+++			exit 1
+++		fi
+++		;;
+++	refs/heads/*,delete)
+++		# delete branch
+++		if [ "$allowdeletebranch" != "true" ]; then
+++			echo "*** Deleting a branch is not allowed in this repository" >&2
+++			exit 1
+++		fi
+++		;;
+++	refs/remotes/*,commit)
+++		# tracking branch
+++		;;
+++	refs/remotes/*,delete)
+++		# delete tracking branch
+++		if [ "$allowdeletebranch" != "true" ]; then
+++			echo "*** Deleting a tracking branch is not allowed in this repository" >&2
+++			exit 1
+++		fi
+++		;;
+++	*)
+++		# Anything else (is there anything else?)
+++		echo "*** Update hook: unknown type of update to ref $refname of type $newrev_type" >&2
+++		exit 1
+++		;;
+++esac
+++
+++# --- Finished
+++exit 0
++diff --git a/./emu/.git/index b/./emu/.git/index
++new file mode 100644
++index 00000000..3ae81d4d
++Binary files /dev/null and b/./emu/.git/index differ
++diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
++new file mode 100755
++index 00000000..a5196d1b
++--- /dev/null
+++++ b/./emu/.git/info/exclude
++@@ -0,0 +1,6 @@
+++# git ls-files --others --exclude-from=.git/info/exclude
+++# Lines that start with '#' are comments.
+++# For a project mostly in C, the following would be a good set of
+++# exclude patterns (uncomment them if you want to use them):
+++# *.[oa]
+++# *~
++diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
++new file mode 100644
++index 00000000..d8eb9622
++--- /dev/null
+++++ b/./emu/.git/logs/HEAD
++@@ -0,0 +1,2 @@
+++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
+++d8a55b72469f5e139507c1a307eba55f4f09752f d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	checkout: moving from master to master
++diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
++new file mode 100644
++index 00000000..6f01de4f
++--- /dev/null
+++++ b/./emu/.git/logs/refs/heads/master
++@@ -0,0 +1 @@
+++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	branch: Created from refs/remotes/origin/master
++diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
++new file mode 100644
++index 00000000..e80f3db5
++--- /dev/null
+++++ b/./emu/.git/logs/refs/remotes/origin/master
++@@ -0,0 +1 @@
+++0000000000000000000000000000000000000000 d8a55b72469f5e139507c1a307eba55f4f09752f runner <runner@runnervmwuk1x.s12m3wnbyrseheg5de33qeab5h.yx.internal.cloudapp.net> 1794416316 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
++diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx
++new file mode 100644
++index 00000000..ef72e09e
++Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.idx differ
++diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack
++new file mode 100644
++index 00000000..1a0d9436
++Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.pack differ
++diff --git a/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev
++new file mode 100644
++index 00000000..4cfd652f
++Binary files /dev/null and b/./emu/.git/objects/pack/pack-21703d0c9bf6a3ca8e5e8d2198ce035452e66015.rev diff
+\ No newline at end of file
+diff --git a/../oscam-base/globals.h b/./globals.h
+index 5a1c6315..d12fe5d7 100644
+--- a/../oscam-base/globals.h
++++ b/./globals.h
 @@ -368,9 +368,9 @@
  /* ===========================
   *			constants
@@ -1224,10 +3883,10 @@ index 5a1c631557775910ea85358d0b6c1a424c1b534f..d12fe5d7f6a3f2ea23d7c6ae29eda9a4
 +#endif
 +
  #endif
-diff --git a/module-cacheex.c b/module-cacheex.c
-index fe4835e7516e1db01d932b65aeb4731ab2f0654a..5623b727757c267ec409a62f2bccc9af3c989416 100644
---- a/module-cacheex.c
-+++ b/module-cacheex.c
+diff --git a/../oscam-base/module-cacheex.c b/./module-cacheex.c
+index fe4835e7..5623b727 100644
+--- a/../oscam-base/module-cacheex.c
++++ b/./module-cacheex.c
 @@ -921,7 +921,9 @@ static int32_t cacheex_add_to_cache_int(struct s_client *cl, ECM_REQUEST *er, in
  	}
  #endif
@@ -1250,10 +3909,10 @@ index fe4835e7516e1db01d932b65aeb4731ab2f0654a..5623b727757c267ec409a62f2bccc9af
  	{
  		cs_log_dbg(D_CACHEEX, "push received ecm with null odd/even byte from %s", csp ? "csp" : username(cl));
  		cl->cwcacheexerr++;
-diff --git a/module-cccam.c b/module-cccam.c
-index a68360b621bc8627410f2b3717818fa3c269bc1c..08249f7151cb42ed434cef9b45d2bb482b3aa2c2 100644
---- a/module-cccam.c
-+++ b/module-cccam.c
+diff --git a/../oscam-base/module-cccam.c b/./module-cccam.c
+index a68360b6..08249f71 100644
+--- a/../oscam-base/module-cccam.c
++++ b/./module-cccam.c
 @@ -1009,7 +1009,7 @@ int32_t cc_send_cli_data(struct s_client *cl)
  
  	memcpy(buf, rdr->r_usr, sizeof(rdr->r_usr));
@@ -1282,10 +3941,10 @@ index a68360b621bc8627410f2b3717818fa3c269bc1c..08249f7151cb42ed434cef9b45d2bb48
  			{
  				xcard = ncard; // remember card (D+ / 1810 fix) if request has no provider, but card has
  			}
-diff --git a/module-cw-cycle-check.c b/module-cw-cycle-check.c
-index 999b6bb8c93c5ee1e4d5a3993966fec858d0f7cb..9afb237c12f28ae2386d5ff7648f2f5beb237f76 100644
---- a/module-cw-cycle-check.c
-+++ b/module-cw-cycle-check.c
+diff --git a/../oscam-base/module-cw-cycle-check.c b/./module-cw-cycle-check.c
+index 999b6bb8..9afb237c 100644
+--- a/../oscam-base/module-cw-cycle-check.c
++++ b/./module-cw-cycle-check.c
 @@ -123,7 +123,9 @@ static uint8_t checkvalidCW(ECM_REQUEST *er)
  {
  	uint8_t ret = 1;
@@ -1297,10 +3956,10 @@ index 999b6bb8c93c5ee1e4d5a3993966fec858d0f7cb..9afb237c12f28ae2386d5ff7648f2f5b
  	{ er->rc = E_NOTFOUND; }
  
  	if(er->rc == E_NOTFOUND)
-diff --git a/module-dvbapi-azbox.c b/module-dvbapi-azbox.c
-index 7387f02d383a1b40360315f4f0a43641c8a1c1c9..321f19e8637a9fd938eff99205a9680310c2b35a 100644
---- a/module-dvbapi-azbox.c
-+++ b/module-dvbapi-azbox.c
+diff --git a/../oscam-base/module-dvbapi-azbox.c b/./module-dvbapi-azbox.c
+index 7387f02d..321f19e8 100644
+--- a/../oscam-base/module-dvbapi-azbox.c
++++ b/./module-dvbapi-azbox.c
 @@ -312,7 +312,9 @@ void azbox_send_dcw(struct s_client *client, ECM_REQUEST *er)
  	int32_t n;
  	for(n = 0; n < 2; n++)
@@ -1312,10 +3971,10 @@ index 7387f02d383a1b40360315f4f0a43641c8a1c1c9..321f19e8637a9fd938eff99205a96803
  		{
  			memcpy(demux[0].last_cw[0][n], er->cw + (n * 8), 8);
  			memcpy(openxcas_cw + (n * 8), er->cw + (n * 8), 8);
-diff --git a/module-dvbapi-mca.c b/module-dvbapi-mca.c
-index 8b4d44d59c15ed8d86aba53b890783f4d25dee4e..cc399e406f347585e762b67da1de80ebf09e13a8 100644
---- a/module-dvbapi-mca.c
-+++ b/module-dvbapi-mca.c
+diff --git a/../oscam-base/module-dvbapi-mca.c b/./module-dvbapi-mca.c
+index 8b4d44d5..cc399e40 100644
+--- a/../oscam-base/module-dvbapi-mca.c
++++ b/./module-dvbapi-mca.c
 @@ -601,8 +601,10 @@ void mca_send_dcw(struct s_client *client, ECM_REQUEST *er)
  	int32_t n;
  	for(n = 0; n < 2; n++)
@@ -1328,10 +3987,10 @@ index 8b4d44d59c15ed8d86aba53b890783f4d25dee4e..cc399e406f347585e762b67da1de80eb
  		{
  			memcpy(demux[0].last_cw[0][n], er->cw + (n * 8), 8);
  			memcpy(openxcas_cw + (n * 8), er->cw + (n * 8), 8);
-diff --git a/module-dvbapi-stapi.c b/module-dvbapi-stapi.c
-index e136091d22847a489b6bb8f5b7e9052dcb512e80..2264bfc2333460d873acfc2e8d331fd521585e0f 100644
---- a/module-dvbapi-stapi.c
-+++ b/module-dvbapi-stapi.c
+diff --git a/../oscam-base/module-dvbapi-stapi.c b/./module-dvbapi-stapi.c
+index e136091d..2264bfc2 100644
+--- a/../oscam-base/module-dvbapi-stapi.c
++++ b/./module-dvbapi-stapi.c
 @@ -730,8 +730,10 @@ int32_t stapi_write_cw(int32_t demux_id, uint8_t *cw, uint16_t *STREAMpids, int3
  
  	for(l = 0; l < 2; l++)
@@ -1344,10 +4003,10 @@ index e136091d22847a489b6bb8f5b7e9052dcb512e80..2264bfc2333460d873acfc2e8d331fd5
  		{
  			for(n = 0; n < PTINUM; n++)
  			{
-diff --git a/module-dvbapi-stapi5.c b/module-dvbapi-stapi5.c
-index 2adf45189af3ebc93e28041b300f09b4a142231e..76f0a6ffd8528a2b48d1cc02e961a3e52d606bfe 100644
---- a/module-dvbapi-stapi5.c
-+++ b/module-dvbapi-stapi5.c
+diff --git a/../oscam-base/module-dvbapi-stapi5.c b/./module-dvbapi-stapi5.c
+index 2adf4518..76f0a6ff 100644
+--- a/../oscam-base/module-dvbapi-stapi5.c
++++ b/./module-dvbapi-stapi5.c
 @@ -731,8 +731,10 @@ int32_t stapi_write_cw(int32_t demux_id, uint8_t *cw, uint16_t *STREAMpids, int3
  
  	for(l = 0; l < 2; l++)
@@ -1360,10 +4019,10 @@ index 2adf45189af3ebc93e28041b300f09b4a142231e..76f0a6ffd8528a2b48d1cc02e961a3e5
  		{
  			ErrorCode = oscam_sttkd_KeyWrite(tkd_desc_info[demux[demux_id].dev_index].key_hndl, l, cw + (l * 8));
  
-diff --git a/module-dvbapi.c b/module-dvbapi.c
-index f40f582524631a0fe401810b6c03f596c24ec4fb..2eed8d86cb4cdf247e76b15a3da56543164ffda1 100644
---- a/module-dvbapi.c
-+++ b/module-dvbapi.c
+diff --git a/../oscam-base/module-dvbapi.c b/./module-dvbapi.c
+index f40f5825..2eed8d86 100644
+--- a/../oscam-base/module-dvbapi.c
++++ b/./module-dvbapi.c
 @@ -1893,7 +1893,14 @@ void dvbapi_start_emm_filter(int32_t demux_id)
  
  			if(match)
@@ -1620,10 +4279,10 @@ index f40f582524631a0fe401810b6c03f596c24ec4fb..2eed8d86cb4cdf247e76b15a3da56543
  	{
  		return 5;
  	}
-diff --git a/module-dvbapi.h b/module-dvbapi.h
-index df2f20a4d0d99b5745617317d87c863efc4988a7..bbcc192ff1d49017a3f01ea43781e6ce9f471fa7 100644
---- a/module-dvbapi.h
-+++ b/module-dvbapi.h
+diff --git a/../oscam-base/module-dvbapi.h b/./module-dvbapi.h
+index df2f20a4..bbcc192f 100644
+--- a/../oscam-base/module-dvbapi.h
++++ b/./module-dvbapi.h
 @@ -336,6 +336,9 @@ typedef struct filter_s
  	uint32_t         SlotHandle[10];
  	uint32_t         BufferHandle[10];
@@ -1644,11 +4303,11 @@ index df2f20a4d0d99b5745617317d87c863efc4988a7..bbcc192ff1d49017a3f01ea43781e6ce
  } ECMPIDTYPE;
  
  typedef struct s_emmpid
-diff --git a/module-emulator-biss.c b/module-emulator-biss.c
+diff --git a/./module-emulator-biss.c b/./module-emulator-biss.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a6b0c9e6d9c54dc09607af3f8a7e03b681149d53
+index 00000000..a6b0c9e6
 --- /dev/null
-+++ b/module-emulator-biss.c
++++ b/./module-emulator-biss.c
 @@ -0,0 +1,883 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -2533,11 +5192,11 @@ index 0000000000000000000000000000000000000000..a6b0c9e6d9c54dc09607af3f8a7e03b6
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-biss.h b/module-emulator-biss.h
+diff --git a/./module-emulator-biss.h b/./module-emulator-biss.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..0f5900cc14fcc62b027fa7e55dc3806af6923643
+index 00000000..0f5900cc
 --- /dev/null
-+++ b/module-emulator-biss.h
++++ b/./module-emulator-biss.h
 @@ -0,0 +1,22 @@
 +#ifndef MODULE_EMULATOR_BISS_H
 +#define MODULE_EMULATOR_BISS_H
@@ -2561,11 +5220,11 @@ index 0000000000000000000000000000000000000000..0f5900cc14fcc62b027fa7e55dc3806a
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_BISS_H
-diff --git a/module-emulator-cryptoworks.c b/module-emulator-cryptoworks.c
+diff --git a/./module-emulator-cryptoworks.c b/./module-emulator-cryptoworks.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..df6509ac9eb2864aec2ed9c8ec400b7c451d94e5
+index 00000000..df6509ac
 --- /dev/null
-+++ b/module-emulator-cryptoworks.c
++++ b/./module-emulator-cryptoworks.c
 @@ -0,0 +1,688 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -3255,11 +5914,11 @@ index 0000000000000000000000000000000000000000..df6509ac9eb2864aec2ed9c8ec400b7c
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-cryptoworks.h b/module-emulator-cryptoworks.h
+diff --git a/./module-emulator-cryptoworks.h b/./module-emulator-cryptoworks.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..c2424e24cb48c05cfa0867da8695dc3fea6e9228
+index 00000000..c2424e24
 --- /dev/null
-+++ b/module-emulator-cryptoworks.h
++++ b/./module-emulator-cryptoworks.h
 @@ -0,0 +1,10 @@
 +#ifndef MODULE_EMULATOR_CRYPTOWORKS_H
 +#define MODULE_EMULATOR_CRYPTOWORKS_H
@@ -3271,11 +5930,11 @@ index 0000000000000000000000000000000000000000..c2424e24cb48c05cfa0867da8695dc3f
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_CRYPTOWORKS_H
-diff --git a/module-emulator-director.c b/module-emulator-director.c
+diff --git a/./module-emulator-director.c b/./module-emulator-director.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..c8c28b9cf1ed7699cff018bac0ab112797cefcf5
+index 00000000..c8c28b9c
 --- /dev/null
-+++ b/module-emulator-director.c
++++ b/./module-emulator-director.c
 @@ -0,0 +1,644 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -3921,11 +6580,11 @@ index 0000000000000000000000000000000000000000..c8c28b9cf1ed7699cff018bac0ab1127
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-director.h b/module-emulator-director.h
+diff --git a/./module-emulator-director.h b/./module-emulator-director.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..de430cf29f2201020543a20dfa624a953c07001c
+index 00000000..de430cf2
 --- /dev/null
-+++ b/module-emulator-director.h
++++ b/./module-emulator-director.h
 @@ -0,0 +1,11 @@
 +#ifndef MODULE_EMULATOR_DIRECTOR_H
 +#define MODULE_EMULATOR_DIRECTOR_H
@@ -3938,11 +6597,11 @@ index 0000000000000000000000000000000000000000..de430cf29f2201020543a20dfa624a95
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_DIRECTOR_H
-diff --git a/module-emulator-irdeto.c b/module-emulator-irdeto.c
+diff --git a/./module-emulator-irdeto.c b/./module-emulator-irdeto.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..c9df9708ce87553bdf8d3524cff37f1720c9c70c
+index 00000000..c9df9708
 --- /dev/null
-+++ b/module-emulator-irdeto.c
++++ b/./module-emulator-irdeto.c
 @@ -0,0 +1,602 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -4546,11 +7205,11 @@ index 0000000000000000000000000000000000000000..c9df9708ce87553bdf8d3524cff37f17
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-irdeto.h b/module-emulator-irdeto.h
+diff --git a/./module-emulator-irdeto.h b/./module-emulator-irdeto.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..e13af0a0b600f0b94e6fe0f79a0639626b5b2a55
+index 00000000..e13af0a0
 --- /dev/null
-+++ b/module-emulator-irdeto.h
++++ b/./module-emulator-irdeto.h
 @@ -0,0 +1,15 @@
 +#ifndef MODULE_EMULATOR_IRDETO_H
 +#define MODULE_EMULATOR_IRDETO_H
@@ -4567,11 +7226,11 @@ index 0000000000000000000000000000000000000000..e13af0a0b600f0b94e6fe0f79a063962
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_IRDETO_H
-diff --git a/module-emulator-nagravision.c b/module-emulator-nagravision.c
+diff --git a/./module-emulator-nagravision.c b/./module-emulator-nagravision.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a097871305658a9141d956ed4c6fd1fa194e8186
+index 00000000..a0978713
 --- /dev/null
-+++ b/module-emulator-nagravision.c
++++ b/./module-emulator-nagravision.c
 @@ -0,0 +1,376 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -4949,11 +7608,11 @@ index 0000000000000000000000000000000000000000..a097871305658a9141d956ed4c6fd1fa
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-nagravision.h b/module-emulator-nagravision.h
+diff --git a/./module-emulator-nagravision.h b/./module-emulator-nagravision.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..31810eb05481d3ca9cd2a0ad908d871efa1b51ed
+index 00000000..31810eb0
 --- /dev/null
-+++ b/module-emulator-nagravision.h
++++ b/./module-emulator-nagravision.h
 @@ -0,0 +1,10 @@
 +#ifndef MODULE_EMULATOR_NAGRAVISION_H
 +#define MODULE_EMULATOR_NAGRAVISION_H
@@ -4965,11 +7624,11 @@ index 0000000000000000000000000000000000000000..31810eb05481d3ca9cd2a0ad908d871e
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_NAGRAVISION_H
-diff --git a/module-emulator-omnicrypt.c b/module-emulator-omnicrypt.c
+diff --git a/./module-emulator-omnicrypt.c b/./module-emulator-omnicrypt.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..805926db8dbfc8b9f1a9b96cb474a9b620d9391a
+index 00000000..805926db
 --- /dev/null
-+++ b/module-emulator-omnicrypt.c
++++ b/./module-emulator-omnicrypt.c
 @@ -0,0 +1,72 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -5043,11 +7702,11 @@ index 0000000000000000000000000000000000000000..805926db8dbfc8b9f1a9b96cb474a9b6
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-omnicrypt.h b/module-emulator-omnicrypt.h
+diff --git a/./module-emulator-omnicrypt.h b/./module-emulator-omnicrypt.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..3af8915c40a21dfc6158b84bdf8f7fe976504d6b
+index 00000000..3af8915c
 --- /dev/null
-+++ b/module-emulator-omnicrypt.h
++++ b/./module-emulator-omnicrypt.h
 @@ -0,0 +1,10 @@
 +#ifndef MODULE_EMULATOR_OMNICRYPT_H
 +#define MODULE_EMULATOR_OMNICRYPT_H
@@ -5059,11 +7718,11 @@ index 0000000000000000000000000000000000000000..3af8915c40a21dfc6158b84bdf8f7fe9
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_OMNICRYPT_H
-diff --git a/module-emulator-osemu.c b/module-emulator-osemu.c
+diff --git a/./module-emulator-osemu.c b/./module-emulator-osemu.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a3f8db3fb233937fb4d0fae242228f7f5ca0315b
+index 00000000..a3f8db3f
 --- /dev/null
-+++ b/module-emulator-osemu.c
++++ b/./module-emulator-osemu.c
 @@ -0,0 +1,986 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -6051,11 +8710,11 @@ index 0000000000000000000000000000000000000000..a3f8db3fb233937fb4d0fae242228f7f
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-osemu.h b/module-emulator-osemu.h
+diff --git a/./module-emulator-osemu.h b/./module-emulator-osemu.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..a83dc64a44222727856d06edbddfcea2a75e457e
+index 00000000..a83dc64a
 --- /dev/null
-+++ b/module-emulator-osemu.h
++++ b/./module-emulator-osemu.h
 @@ -0,0 +1,96 @@
 +#ifndef MODULE_EMULATOR_OSEMU_H_
 +#define MODULE_EMULATOR_OSEMU_H_
@@ -6153,11 +8812,11 @@ index 0000000000000000000000000000000000000000..a83dc64a44222727856d06edbddfcea2
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_H_
-diff --git a/module-emulator-powervu.c b/module-emulator-powervu.c
+diff --git a/./module-emulator-powervu.c b/./module-emulator-powervu.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..810fcecfdd95279ae265b9f6e1cfd379b542bde6
+index 00000000..810fcecf
 --- /dev/null
-+++ b/module-emulator-powervu.c
++++ b/./module-emulator-powervu.c
 @@ -0,0 +1,2795 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -8954,11 +11613,11 @@ index 0000000000000000000000000000000000000000..810fcecfdd95279ae265b9f6e1cfd379
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-powervu.h b/module-emulator-powervu.h
+diff --git a/./module-emulator-powervu.h b/./module-emulator-powervu.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..b50d2088765fbd3fa9fd85f3cec6fbe76a8e0353
+index 00000000..b50d2088
 --- /dev/null
-+++ b/module-emulator-powervu.h
++++ b/./module-emulator-powervu.h
 @@ -0,0 +1,63 @@
 +#ifndef MODULE_EMULATOR_POWERVU_H
 +#define MODULE_EMULATOR_POWERVU_H
@@ -9023,11 +11682,11 @@ index 0000000000000000000000000000000000000000..b50d2088765fbd3fa9fd85f3cec6fbe7
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_POWERVU_H
-diff --git a/module-emulator-viaccess.c b/module-emulator-viaccess.c
+diff --git a/./module-emulator-viaccess.c b/./module-emulator-viaccess.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..b5fea6519f3b8bc8480188c945f0da5beaf6b4d2
+index 00000000..b5fea651
 --- /dev/null
-+++ b/module-emulator-viaccess.c
++++ b/./module-emulator-viaccess.c
 @@ -0,0 +1,1183 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -10212,11 +12871,11 @@ index 0000000000000000000000000000000000000000..b5fea6519f3b8bc8480188c945f0da5b
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-emulator-viaccess.h b/module-emulator-viaccess.h
+diff --git a/./module-emulator-viaccess.h b/./module-emulator-viaccess.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..6f4afcab9309bf05bb59fa1b4ff4b001dc311cb2
+index 00000000..6f4afcab
 --- /dev/null
-+++ b/module-emulator-viaccess.h
++++ b/./module-emulator-viaccess.h
 @@ -0,0 +1,11 @@
 +#ifndef MODULE_EMULATOR_VIACCESS_H
 +#define MODULE_EMULATOR_VIACCESS_H
@@ -10229,11 +12888,11 @@ index 0000000000000000000000000000000000000000..6f4afcab9309bf05bb59fa1b4ff4b001
 +#endif // WITH_EMU
 +
 +#endif // MODULE_EMULATOR_VIACCESS_H
-diff --git a/module-emulator.c b/module-emulator.c
+diff --git a/./module-emulator.c b/./module-emulator.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..865e66870239ecc9720996d251c5398923104a69
+index 00000000..865e6687
 --- /dev/null
-+++ b/module-emulator.c
++++ b/./module-emulator.c
 @@ -0,0 +1,894 @@
 +#define MODULE_LOG_PREFIX "emu"
 +
@@ -11129,10 +13788,10 @@ index 0000000000000000000000000000000000000000..865e66870239ecc9720996d251c53989
 +}
 +
 +#endif // WITH_EMU
-diff --git a/module-newcamd-des.h b/module-newcamd-des.h
-index 7b0481408e03a5e77f6502edc8c586d8bc566738..29f96e4ee978216644454d574ab8cdc21a28c0ce 100644
---- a/module-newcamd-des.h
-+++ b/module-newcamd-des.h
+diff --git a/../oscam-base/module-newcamd-des.h b/./module-newcamd-des.h
+index 7b048140..29f96e4e 100644
+--- a/../oscam-base/module-newcamd-des.h
++++ b/./module-newcamd-des.h
 @@ -6,6 +6,9 @@
  #define DES_RIGHT 4
  #define DES_HASH  8
@@ -11143,10 +13802,10 @@ index 7b0481408e03a5e77f6502edc8c586d8bc566738..29f96e4ee978216644454d574ab8cdc2
  void nc_des(uint8_t key[], uint8_t mode, uint8_t data[]);
  int nc_des_encrypt(uint8_t *buffer, int len, uint8_t *deskey);
  int nc_des_decrypt(uint8_t *buffer, int len, uint8_t *deskey);
-diff --git a/module-newcamd.c b/module-newcamd.c
-index 0c3fd9e920d379f5366abb1e734b13109ab08461..a92471b58aed800f64a6c3e157efad0f7fb0edc6 100644
---- a/module-newcamd.c
-+++ b/module-newcamd.c
+diff --git a/../oscam-base/module-newcamd.c b/./module-newcamd.c
+index 0c3fd9e9..a92471b5 100644
+--- a/../oscam-base/module-newcamd.c
++++ b/./module-newcamd.c
 @@ -1118,6 +1118,13 @@ static int8_t newcamd_auth_client(IN_ADDR_T ip, uint8_t *deskey)
  			// set userfilter for au enabled clients
  			if(aureader)
@@ -11170,10 +13829,10 @@ index 0c3fd9e920d379f5366abb1e734b13109ab08461..a92471b58aed800f64a6c3e157efad0f
  					{
  						for(k = 0; k < aureader->nprov; k++)
  						{
-diff --git a/module-stat.c b/module-stat.c
-index 324c43bc92c95f1eb1769cad270e9b5a69837f53..284f47e0b218b2fb673f4e4a90691104b03f9e19 100644
---- a/module-stat.c
-+++ b/module-stat.c
+diff --git a/../oscam-base/module-stat.c b/./module-stat.c
+index 324c43bc..284f47e0 100644
+--- a/../oscam-base/module-stat.c
++++ b/./module-stat.c
 @@ -901,7 +901,7 @@ void check_lb_auto_betatunnel_mode(ECM_REQUEST *er)
  
  uint16_t get_rdr_caid(struct s_reader *rdr)
@@ -11192,10 +13851,10 @@ index 324c43bc92c95f1eb1769cad270e9b5a69837f53..284f47e0b218b2fb673f4e4a90691104
  			{
  				prv = ea;
  				continue; // proxy can convert or reject
-diff --git a/module-streamrelay.c b/module-streamrelay.c
-index b313a914e55caaff09dec2f1e1e07ffa8908c485..17fb28f26cba8fe994c90cb50261765b47505476 100644
---- a/module-streamrelay.c
-+++ b/module-streamrelay.c
+diff --git a/../oscam-base/module-streamrelay.c b/./module-streamrelay.c
+index b313a914..17fb28f2 100644
+--- a/../oscam-base/module-streamrelay.c
++++ b/./module-streamrelay.c
 @@ -15,6 +15,12 @@
  #include "oscam-string.h"
  #include "oscam-time.h"
@@ -12328,10 +14987,10 @@ index b313a914e55caaff09dec2f1e1e07ffa8908c485..17fb28f26cba8fe994c90cb50261765b
  void stop_stream_server(void)
  {
  	int32_t i;
-diff --git a/module-streamrelay.h b/module-streamrelay.h
-index f43ff5579f3bfd2fc00506f6e1cf42af5d1c8bf7..2f0e1b164291502d04732bb8d5666421ba92a431 100644
---- a/module-streamrelay.h
-+++ b/module-streamrelay.h
+diff --git a/../oscam-base/module-streamrelay.h b/./module-streamrelay.h
+index f43ff557..2f0e1b16 100644
+--- a/../oscam-base/module-streamrelay.h
++++ b/./module-streamrelay.h
 @@ -10,26 +10,47 @@
  #define DVB_BUFFER_WAIT_CSA 188*(DVB_MAX_TS_PACKETS-128)
  #define DVB_BUFFER_SIZE DVB_BUFFER_SIZE_CSA
@@ -12441,10 +15100,10 @@ index f43ff5579f3bfd2fc00506f6e1cf42af5d1c8bf7..2f0e1b164291502d04732bb8d5666421
  #endif // MODULE_STREAMRELAY
  
  #endif // MODULE_STREAMRELAY_H_
-diff --git a/module-webif-lib.c b/module-webif-lib.c
-index 6bb4f3dd681075ff84dd1845811cea37a3b7f3fc..253adba0d4544bb659cf80253e7c579e9cbcab0b 100644
---- a/module-webif-lib.c
-+++ b/module-webif-lib.c
+diff --git a/../oscam-base/module-webif-lib.c b/./module-webif-lib.c
+index 6bb4f3dd..253adba0 100644
+--- a/../oscam-base/module-webif-lib.c
++++ b/./module-webif-lib.c
 @@ -691,17 +691,15 @@ int8_t get_stats_linux(const pid_t pid, struct pstat* result)
  
  	// read processes from /proc
@@ -12469,10 +15128,10 @@ index 6bb4f3dd681075ff84dd1845811cea37a3b7f3fc..253adba0d4544bb659cf80253e7c579e
  
  	// read cpu/meminfo from sysinfo()
  	struct sysinfo info;
-diff --git a/module-webif-tpl.c b/module-webif-tpl.c
-index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d5d50de81 100644
---- a/module-webif-tpl.c
-+++ b/module-webif-tpl.c
+diff --git a/../oscam-base/module-webif-tpl.c b/./module-webif-tpl.c
+index 7bdc6da3..bd13862c 100644
+--- a/../oscam-base/module-webif-tpl.c
++++ b/./module-webif-tpl.c
 @@ -456,6 +456,7 @@ char *tpl_getUnparsedTpl(const char *name, int8_t removeHeader, const char *subd
  											check_conf(WITH_SSL, ptr2);
  											check_conf(WITH_STAPI, ptr2);
@@ -12481,10 +15140,10 @@ index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d
  										} // for
  										if(ok == 0)
  										{
-diff --git a/module-webif.c b/module-webif.c
-index 8ee8e727d36fd1318cbee3bbd877252414927a5a..a2ee37fca4b633fb22612469d13d11c573da551c 100644
---- a/module-webif.c
-+++ b/module-webif.c
+diff --git a/../oscam-base/module-webif.c b/./module-webif.c
+index 8ee8e727..a2ee37fc 100644
+--- a/../oscam-base/module-webif.c
++++ b/./module-webif.c
 @@ -201,8 +201,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
  #define MNU_GBX_FSTAINF     27
  #define MNU_GBX_FEXPINF     28
@@ -13255,10 +15914,10 @@ index 8ee8e727d36fd1318cbee3bbd877252414927a5a..a2ee37fca4b633fb22612469d13d11c5
  	}
  
  	return NULL;
-diff --git a/oscam-chk.c b/oscam-chk.c
-index 78d031ea3c409e6ef6076a69ec091617d80ef20c..0396bf71b43f2582d805bff050d3310f59c185bb 100644
---- a/oscam-chk.c
-+++ b/oscam-chk.c
+diff --git a/../oscam-base/oscam-chk.c b/./oscam-chk.c
+index 78d031ea..0396bf71 100644
+--- a/../oscam-base/oscam-chk.c
++++ b/./oscam-chk.c
 @@ -898,7 +898,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
  		return 0;
  	}
@@ -13295,10 +15954,10 @@ index 78d031ea3c409e6ef6076a69ec091617d80ef20c..0396bf71b43f2582d805bff050d3310f
  	{
  		return 1; // reader caid is not real caid
  	}
-diff --git a/oscam-config-global.c b/oscam-config-global.c
-index 1d6fd8db6471749568ca26fcbd49df5c6ca87d8c..1126e236138fc05491dca009a42c8a201a7573f4 100644
---- a/oscam-config-global.c
-+++ b/oscam-config-global.c
+diff --git a/../oscam-base/oscam-config-global.c b/./oscam-config-global.c
+index 1d6fd8db..1126e236 100644
+--- a/../oscam-base/oscam-config-global.c
++++ b/./oscam-config-global.c
 @@ -967,6 +967,10 @@ static const struct config_list streamrelay_opts[] =
  	DEF_OPT_STR("stream_source_auth_password"    , OFS(stream_source_auth_password),  NULL),
  	DEF_OPT_UINT32("stream_relay_buffer_time"    , OFS(stream_relay_buffer_time),     0),
@@ -13310,10 +15969,10 @@ index 1d6fd8db6471749568ca26fcbd49df5c6ca87d8c..1126e236138fc05491dca009a42c8a20
  	DEF_OPT_INT8("stream_display_client"         , OFS(stream_display_client),        0),
  	DEF_OPT_INT8("stream_reuse_client"           , OFS(stream_reuse_client),          0),
  #ifdef WEBIF
-diff --git a/oscam-config-reader.c b/oscam-config-reader.c
-index 02880e1395326e73c0044292a32de7ac08708105..ef8a60b40eadee0c0d55be1fa2f282cf85ebdee6 100644
---- a/oscam-config-reader.c
-+++ b/oscam-config-reader.c
+diff --git a/../oscam-base/oscam-config-reader.c b/./oscam-config-reader.c
+index 02880e13..ef8a60b4 100644
+--- a/../oscam-base/oscam-config-reader.c
++++ b/./oscam-config-reader.c
 @@ -114,6 +114,7 @@ static void protocol_fn(const char *token, char *value, void *setting, FILE *f)
  			{ "newcamd525", R_NEWCAMD },
  			{ "newcamd524", R_NEWCAMD },
@@ -13360,10 +16019,10 @@ index 02880e1395326e73c0044292a32de7ac08708105..ef8a60b40eadee0c0d55be1fa2f282cf
  		"cccreconnect",
  		0
  	};
-diff --git a/oscam-config.h b/oscam-config.h
-index b0179dd8481a173880a17d86c358749f381398b5..e66a1aa1c60c0fef6de078e9fa0738430589ddcc 100644
---- a/oscam-config.h
-+++ b/oscam-config.h
+diff --git a/../oscam-base/oscam-config.h b/./oscam-config.h
+index b0179dd8..e66a1aa1 100644
+--- a/../oscam-base/oscam-config.h
++++ b/./oscam-config.h
 @@ -64,6 +64,7 @@ enum ftab_fn
  	FTAB_LOCALCARDS            = 0x20,
  	FTAB_IGNCHKSMCAID          = 0x40,
@@ -13372,10 +16031,10 @@ index b0179dd8481a173880a17d86c358749f381398b5..e66a1aa1c60c0fef6de078e9fa073843
  	FTAB_CCCGBXRESHARE         = 0x200
  };
  
-diff --git a/oscam-ecm.c b/oscam-ecm.c
-index 6b9c6c527f6ad8e6a0a68da0ae29d73474f3dbb3..d49033484a0b6e96dd32248c0ea00f533f7a87b4 100644
---- a/oscam-ecm.c
-+++ b/oscam-ecm.c
+diff --git a/../oscam-base/oscam-ecm.c b/./oscam-ecm.c
+index 6b9c6c52..d4903348 100644
+--- a/../oscam-base/oscam-ecm.c
++++ b/./oscam-ecm.c
 @@ -2418,6 +2418,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
  		return 0;
  	}
@@ -13418,10 +16077,10 @@ index 6b9c6c527f6ad8e6a0a68da0ae29d73474f3dbb3..d49033484a0b6e96dd32248c0ea00f53
  	{
  		cs_log_dbg(D_TRACE, "warning: ecm with null odd/even byte from %s", (check_client(er->client) ? er->client->account->usr : "-"));
  		er->rc = E_INVALID;
-diff --git a/oscam-emm.c b/oscam-emm.c
-index 486d62c370b8b0b8e0306b7aa94335ac36e07c00..1bf94e5203d3c401724e3097ae434c86ec42b395 100644
---- a/oscam-emm.c
-+++ b/oscam-emm.c
+diff --git a/../oscam-base/oscam-emm.c b/./oscam-emm.c
+index 486d62c3..1bf94e52 100644
+--- a/../oscam-base/oscam-emm.c
++++ b/./oscam-emm.c
 @@ -40,6 +40,7 @@ static int8_t cs_emmlen_is_blocked(struct s_reader *rdr, int16_t len)
  static int8_t do_simple_emm_filter(struct s_reader *rdr, const struct s_cardsystem *csystem, EMM_PACKET *ep, int8_t cl_dvbapi)
  {
@@ -13455,10 +16114,10 @@ index 486d62c370b8b0b8e0306b7aa94335ac36e07c00..1bf94e5203d3c401724e3097ae434c86
  	if(prid == provid)
  	{
  		rdr_log_dbg(reader, D_EMM, "reader auprovid = %06X matching with emm provid = %06X -> SEND!", prid, provid);
-diff --git a/oscam-simples.c b/oscam-simples.c
-index 576804c9c23db29752256eaa40ec28a2084e271d..6e1c71370ddc72268cbd2e50c7a06359b748d767 100644
---- a/oscam-simples.c
-+++ b/oscam-simples.c
+diff --git a/../oscam-base/oscam-simples.c b/./oscam-simples.c
+index 576804c9..6e1c7137 100644
+--- a/../oscam-base/oscam-simples.c
++++ b/./oscam-simples.c
 @@ -468,6 +468,8 @@ const char *get_cardsystem_desc_by_caid(uint16_t caid)
  	if(caid_is_viaccess(caid)) { return "viaccess"; }
  	if(caid_is_irdeto(caid)) { return "irdeto"; }
@@ -13476,10 +16135,10 @@ index 576804c9c23db29752256eaa40ec28a2084e271d..6e1c71370ddc72268cbd2e50c7a06359
  	if(caid == 0x4ABF) { return "dgcrypt"; }
  	return "unknown";
  }
-diff --git a/oscam.c b/oscam.c
-index 78ec882eea4eb6a165bd227899c4a227ee19fdae..318d2bff414ecef0b69c9d019200dbfd74d22835 100644
---- a/oscam.c
-+++ b/oscam.c
+diff --git a/../oscam-base/oscam.c b/./oscam.c
+index 78ec882e..318d2bff 100644
+--- a/../oscam-base/oscam.c
++++ b/./oscam.c
 @@ -44,6 +44,10 @@
  #include "reader-common.h"
  #include "module-gbox.h"
@@ -13520,10 +16179,10 @@ index 78ec882eea4eb6a165bd227899c4a227ee19fdae..318d2bff414ecef0b69c9d019200dbfd
  	cfg.account = init_userdb();
  	init_signal();
  	init_provid();
-diff --git a/reader-common.c b/reader-common.c
-index bc036210ef15d5785527e73be997ff7455e97b39..8bc328391c85e7de8dac2724ec71414615be94d2 100644
---- a/reader-common.c
-+++ b/reader-common.c
+diff --git a/../oscam-base/reader-common.c b/./reader-common.c
+index bc036210..8bc32839 100644
+--- a/../oscam-base/reader-common.c
++++ b/./reader-common.c
 @@ -15,6 +15,7 @@
  #include "reader-common.h"
  //#include "csctapi/atr.h"
@@ -13551,10 +16210,10 @@ index bc036210ef15d5785527e73be997ff7455e97b39..8bc328391c85e7de8dac2724ec714146
  	for(i = 0; cardsystems[i]; i++)
  	{
  		NULLFREE(reader->csystem_data);
-diff --git a/readers.h b/readers.h
-index eec350e9daec7516d86ba75af5749bb3bf0a6813..316c2bea3371b0305dd12367303901d2d2ab3ff5 100644
---- a/readers.h
-+++ b/readers.h
+diff --git a/../oscam-base/readers.h b/./readers.h
+index eec350e9..316c2bea 100644
+--- a/../oscam-base/readers.h
++++ b/./readers.h
 @@ -17,5 +17,6 @@ extern const struct s_cardsystem reader_tongfang;
  extern const struct s_cardsystem reader_bulcrypt;
  extern const struct s_cardsystem reader_griffin;
@@ -13562,10 +16221,10 @@ index eec350e9daec7516d86ba75af5749bb3bf0a6813..316c2bea3371b0305dd12367303901d2
 +extern const struct s_cardsystem reader_emu;
  
  #endif
-diff --git a/tests.c b/tests.c
-index 0a96878bfa530652274bb126be426e3d3e969579..fc1085815cd4326c4304f1c2afea5d6b29c68f5d 100644
---- a/tests.c
-+++ b/tests.c
+diff --git a/../oscam-base/tests.c b/./tests.c
+index 0a96878b..fc108581 100644
+--- a/../oscam-base/tests.c
++++ b/./tests.c
 @@ -259,8 +259,8 @@ static int run_md5_tests(void)
  	return failures;
  }
@@ -13750,10 +16409,10 @@ index 0a96878bfa530652274bb126be426e3d3e969579..fc1085815cd4326c4304f1c2afea5d6b
  #ifdef WITH_LIB_MDC2
  	failures += run_mdc2_tests();
  #endif
-diff --git a/webif/config/streamrelay.html b/webif/config/streamrelay.html
-index f79d5a1c6cb2a0592f79eafb6dc5c16a7419b642..3804d00f5f18e8c5fa522cca09629318fec02afe 100644
---- a/webif/config/streamrelay.html
-+++ b/webif/config/streamrelay.html
+diff --git a/../oscam-base/webif/config/streamrelay.html b/./webif/config/streamrelay.html
+index f79d5a1c..3804d00f 100644
+--- a/../oscam-base/webif/config/streamrelay.html
++++ b/./webif/config/streamrelay.html
 @@ -27,6 +27,7 @@
  			<TR><TD><A>Source Stream Password:</A></TD><TD><input name="stream_source_auth_password" type="text" value="##STREAM_SOURCE_AUTH_PASSWORD##"></TD></TR>
  			<TR><TD><A>Relay Buffer Time:</A></TD><TD><input name="stream_relay_buffer_time" class="short" type="text" maxlength="5" value="##STREAM_RELAY_BUFFER_TIME##"><label> ms (delay for stream processing)</label></TD></TR>
@@ -13762,11 +16421,11 @@ index f79d5a1c6cb2a0592f79eafb6dc5c16a7419b642..3804d00f5f18e8c5fa522cca09629318
  			<TR><TD><A>Relay Client Display Options:</A></TD>
  				<TD CLASS="invisible">
  					<TABLE>
-diff --git a/webif/config/streamrelay_emusettings.html b/webif/config/streamrelay_emusettings.html
+diff --git a/./webif/config/streamrelay_emusettings.html b/./webif/config/streamrelay_emusettings.html
 new file mode 100644
-index 0000000000000000000000000000000000000000..dcb0618b4afc1e96a025e3bbc585b87b96f58be2
+index 00000000..dcb0618b
 --- /dev/null
-+++ b/webif/config/streamrelay_emusettings.html
++++ b/./webif/config/streamrelay_emusettings.html
 @@ -0,0 +1,9 @@
 +			<TR><TD><A>Process EMM from stream (emu):</A></TD>
 +				<TD>
@@ -13777,10 +16436,10 @@ index 0000000000000000000000000000000000000000..dcb0618b4afc1e96a025e3bbc585b87b
 +				</TD>
 +			</TR>
 +			<TR><TD><A>ECM fix delay (emu):</A></TD><TD><input name="stream_ecm_delay" class="short" type="text" maxlength="5" value="##STREAM_ECM_DELAY##"><label> ms (delay for PowerVU processing)</label></TD></TR>
-diff --git a/webif/files/menu.html b/webif/files/menu.html
-index 4dc6f02e73f5fbb9ac0fd26d68d1d34f4474ea26..2e4e6b62d114f2636649d9b86c284c0c4274a321 100644
---- a/webif/files/menu.html
-+++ b/webif/files/menu.html
+diff --git a/../oscam-base/webif/files/menu.html b/./webif/files/menu.html
+index 4dc6f02e..2e4e6b62 100644
+--- a/../oscam-base/webif/files/menu.html
++++ b/./webif/files/menu.html
 @@ -10,7 +10,7 @@
  		<LI CLASS="##CMENUACTIVE7##"><A HREF="files.html?file=logfile">logfile</A></LI>
  		<LI CLASS="##CMENUACTIVE8##"><A HREF="files.html?file=userfile">userfile</A></LI>
@@ -13798,17 +16457,17 @@ index 4dc6f02e73f5fbb9ac0fd26d68d1d34f4474ea26..2e4e6b62d114f2636649d9b86c284c0c
  			</UL>
  		</LI>
  	</UL>
-diff --git a/webif/files/menu_softcamkey.html b/webif/files/menu_softcamkey.html
+diff --git a/./webif/files/menu_softcamkey.html b/./webif/files/menu_softcamkey.html
 new file mode 100644
-index 0000000000000000000000000000000000000000..cf718779f520b28570ce587e5bf091f35f43a26b
+index 00000000..cf718779
 --- /dev/null
-+++ b/webif/files/menu_softcamkey.html
++++ b/./webif/files/menu_softcamkey.html
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
-diff --git a/webif/pages_index.txt b/webif/pages_index.txt
-index 46434100caf38ddd6c9df9ed2ca4eb7106d86f25..654fc69262e7f0afe087bced81b489012e00a888 100644
---- a/webif/pages_index.txt
-+++ b/webif/pages_index.txt
+diff --git a/../oscam-base/webif/pages_index.txt b/./webif/pages_index.txt
+index 46434100..654fc692 100644
+--- a/../oscam-base/webif/pages_index.txt
++++ b/./webif/pages_index.txt
 @@ -1,10 +1,10 @@
  # This file contains index of the templates.
 -# The format is simple "TEMPLATE_NAME  FILENAME  DEPENDENCY1,DEPENDENCYx"
@@ -13869,21 +16528,21 @@ index 46434100caf38ddd6c9df9ed2ca4eb7106d86f25..654fc69262e7f0afe087bced81b48901
  READERCONFIGCS378XBIT         readerconfig/readerconfig_cs378xbit.html                    MODULE_CAMD35_TCP
  READERCONFIGGBOXBIT           readerconfig/readerconfig_gboxbit.html                      MODULE_GBOX
  READERINFOGBOXREMM            readerconfig/readerinfo_gbox_remm.html                      MODULE_GBOX
-diff --git a/webif/readerconfig/readerconfig_cccambit.html b/webif/readerconfig/readerconfig_cccambit.html
-index 9b4678aabe7e7df48a469359dceb53a1aba72038..63d9e7bd59cc1e1302317e19dd5bf58e48e3ceed 100644
---- a/webif/readerconfig/readerconfig_cccambit.html
-+++ b/webif/readerconfig/readerconfig_cccambit.html
+diff --git a/../oscam-base/webif/readerconfig/readerconfig_cccambit.html b/./webif/readerconfig/readerconfig_cccambit.html
+index 9b4678aa..63d9e7bd 100644
+--- a/../oscam-base/webif/readerconfig/readerconfig_cccambit.html
++++ b/./webif/readerconfig/readerconfig_cccambit.html
 @@ -22,4 +22,5 @@
  			<TR><TD><A>Maxhop:</A></TD><TD><input name="cccmaxhops" class="short" type="text" maxlength="2" value="##CCCMAXHOPS##"></TD></TR>
  			<TR><TD><A>Mindown:</A></TD><TD><input name="cccmindown" class="short" type="text" maxlength="2" value="##CCCMINDOWN##"></TD></TR>
  			<TR><TD><A>Reshare:</A></TD><TD><input name="cccreshare" class="short" type="text" maxlength="2" value="##CCCRESHARE##">				&nbsp;Global CCCam Reshare:<SPAN CLASS="global_conf" TITLE="This value is used if Reshare = -1"><A HREF="config.html?part=cccam">##RESHARE##</A></SPAN></TD></TR>
 +			<TR><TD><A>Want Emu:</A></TD><TD><input name="cccwantemu" type="hidden" value="0"><input name="cccwantemu" type="checkbox" value="1" ##CCCWANTEMUCHECKED##><label></label></TD></TR>
  			<TR><TD><A>Keep alive:</A></TD><TD><input name="ccckeepalive" type="hidden" value="0"><input name="ccckeepalive" type="checkbox" value="1" ##KEEPALIVECHECKED##><label></label></TD></TR>
-diff --git a/webif/readerconfig/readerconfig_emubit.html b/webif/readerconfig/readerconfig_emubit.html
+diff --git a/./webif/readerconfig/readerconfig_emubit.html b/./webif/readerconfig/readerconfig_emubit.html
 new file mode 100644
-index 0000000000000000000000000000000000000000..8c130b7c8663db21926b078da575bf42f4329ab3
+index 00000000..8c130b7c
 --- /dev/null
-+++ b/webif/readerconfig/readerconfig_emubit.html
++++ b/./webif/readerconfig/readerconfig_emubit.html
 @@ -0,0 +1,2 @@
 +			<TR><TD><A>AU providers:</A></TD><TD><textarea name="emu_auproviders" rows="3" class="bt">##EMUAUPROVIDERS##</textarea></TD></TR>
 +			<TR><TD><A>[BISS] Enable date-coded keys:</A></TD><TD><input name="emu_datecodedenabled" type="hidden" value="0"><input name="emu_datecodedenabled" type="checkbox" value="1" ##EMUDATECODEDENABLED##><label></label></TD></TR>
