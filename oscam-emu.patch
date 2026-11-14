@@ -1,8 +1,8 @@
-patch version: 2.26.11-11975-802 (aec284d2)
-patch date: 2026-11-11 18:50:15 UTC (+00:00)
+patch version: 2.26.11-11980-802 (72427f1b)
+patch date: 2026-11-14 19:05:49 UTC (+00:00)
 ---
 diff --git a/../oscam-base/CMakeLists.txt b/./CMakeLists.txt
-index 8f3148ab..ccc85569 100644
+index e7004fa6..ccc85569 100644
 --- a/../oscam-base/CMakeLists.txt
 +++ b/./CMakeLists.txt
 @@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
@@ -48,7 +48,7 @@ index 8f3148ab..ccc85569 100644
  if (BUILD_TESTS)
  	# Test binary stays plain: no sign/upx — see Makefile rationale.
  	add_custom_target (run-tests COMMAND ${CMAKE_COMMAND} -E echo "Running ${exe_name}..." COMMAND ./${exe_name} DEPENDS ${exe_name} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-@@ -1019,6 +1022,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
+@@ -1019,18 +1022,46 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
  
  #--------------------------------------------------------------------------------
  
@@ -73,7 +73,29 @@ index 8f3148ab..ccc85569 100644
  #----------------------- installation -----------------------------
  
  file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-@@ -1137,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
+ file (GLOB doc_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/txt/*.txt")
+ file (GLOB man1_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/man/*.1")
+ file (GLOB man5_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/man/*.5")
++file (GLOB example_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.ac"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.cert"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.conf"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.guess"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.ird"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.server"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.services"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.srvid"
++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.user")
+ 
+ install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${exe_name}${CMAKE_EXECUTABLE_SUFFIX} DESTINATION bin COMPONENT bin)
+ install (FILES ${config_files} DESTINATION etc COMPONENT config)
+ install (FILES ${doc_files} DESTINATION share/doc/oscam COMPONENT doc)
+ install (FILES ${man1_files} DESTINATION share/man/man1 COMPONENT doc)
+ install (FILES ${man5_files} DESTINATION share/man/man5 COMPONENT doc)
++install (FILES ${example_files} DESTINATION share/doc/oscam/example COMPONENT doc)
+ 
+ #----------------------- we can use CPack to build pacakges --------------------------
+ 
+@@ -1127,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
  	endif (LIBDVBCSADIR)
  endif (HAVE_LIBDVBCSA)
  
@@ -85,6 +107,563 @@ index 8f3148ab..ccc85569 100644
 +endif (WITH_EMU)
 +
  message (STATUS "")
+diff --git a/./Distribution/doc/example/oscam.ac b/./Distribution/doc/example/oscam.ac
+new file mode 100644
+index 00000000..d8cc74db
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.ac
+@@ -0,0 +1,10 @@
++#
++# anti-cascading table
++#
++# format:
++#
++# <CAID>:<provider ID>=<seconds>
++#
++
++0500:000000=10
++*=7
+diff --git a/./Distribution/doc/example/oscam.cacheex b/./Distribution/doc/example/oscam.cacheex
+new file mode 100644
+index 00000000..e2b32715
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.cacheex
+@@ -0,0 +1,12 @@
++#
++# ECM length matching table
++#
++# format:
++#
++#  matching:
++#   m:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...=
++#     [CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
++#
++
++m:1234:::::93=5678:::::93  # matching CAID 1234 and CAID 5678 with
++                           # ECM length 93
+\ No newline at end of file
+diff --git a/./Distribution/doc/example/oscam.cert b/./Distribution/doc/example/oscam.cert
+new file mode 100644
+index 00000000..652dbdbc
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.cert
+@@ -0,0 +1,9 @@
++#
++# Issuer Public Keys (IPK)
++#
++# format:
++#
++# CAID:reserved:KEY
++#
++
++0100:00000000:000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F
+diff --git a/./Distribution/doc/example/oscam.conf b/./Distribution/doc/example/oscam.conf
+new file mode 100644
+index 00000000..45bfd4d7
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.conf
+@@ -0,0 +1,72 @@
++#
++# main configuration
++#
++
++[global]
++nice          = -1
++WaitForCards  = 1
++
++# logging
++
++logfile       = /var/log/oscam/oscam.log
++usrfile       = /var/log/oscam/oscamuser.log
++cwlogdir      = /var/log/oscam/cw
++
++# monitor
++
++[monitor]
++port          = 988
++aulow	      = 120
++monlevel      = 1
++
++# web interface
++
++[webif]
++httpport      = 8888
++httpuser      = myusername
++httppwd       = mypassword
++httpallowed   = 127.0.0.1,192.168.0.0-192.168.255.255,::1
++httpmaxrequestsize = 102400
++
++# anti-cascading
++
++[anticasc]
++enabled       = 1
++numusers      = 1
++sampletime    = 2
++samples       = 5
++penalty       = 1
++aclogfile     = /var/log/oscam/aclog.log
++denysamples   = 9
++
++# protocols
++
++[newcamd]
++key           = 000102030405060708090A0B0C0D
++port          = 10000@0100:FFFFFF;10001@0200:FFF000,FFFF00;10002@0300:FFFFFF
++
++[radegast]
++port          = 20000
++user          = user1
++allowed       = 192.168.0.0-192.168.255.255
++
++[cs378x]
++port          = 30000@0100:FFFFFF;30001@0200:FFF000,FFFF00;30002@0300:FFFFFF
++
++[cccam]
++port          = 40000
++version       = 1.2.3
++build         = 1234
++reshare       = 2
++
++[gbox]
++hostname      = host.example.com
++port          = 50000
++my_password   = AB1122C1
++
++[serial]
++device        = user2@/dev/ttyS0?delay=1&timeout=300;user3@192.160.0.10,2006?delay=1&timeout=5000
++
++[dvbapi]
++enabled	      = 1
++user          = user1
+diff --git a/./Distribution/doc/example/oscam.dvbapi b/./Distribution/doc/example/oscam.dvbapi
+new file mode 100644
+index 00000000..129ac9cb
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.dvbapi
+@@ -0,0 +1,41 @@
++#
++# dvbapi configuration
++#
++# format:
++#
++#  priority:
++#   P: CAID[:][provider ID][:][service ID][:][ECM PID] [continue]
++#
++#  ignore:
++#   I: CAID[:][provider ID][:][service ID][:][ECM PID]
++#
++#  wait:
++#   D: CAID[:][provider ID][:][service ID][:][ECM PID] delay
++#
++#  map:
++#   M: CAID[:][provider ID][:][service ID][:][ECM PID] target CAID[:][target provider ID]
++#
++#  length:
++#   L: CAID[:][provider ID][:][service ID][:][ECM PID] length
++#
++
++P: 0100:123456       # prioritise CAID 0100 with provider 123456
++
++P: :1234             # prioritise ECM with provider ID 1234 on
++                     # on any CAID and service
++
++P: 0200              # prioritise CAID 0200
++
++P: 0300::9ABC        # prioritise CAID 0300 on service 9ABC only
++
++M: 0400 0500:123456  # map CAID 0400 to provider ID 123456 with
++                     # CAID 0500
++
++D: 0600 200          # wait 200 ms before writing CW for CAID 0600
++
++I: :654321           # ignore provider ID 654321 for every CAID and
++                     # service
++
++I: 0                 # ignore every CAID that was not handled before
++
++L: 0700 8e           # ECM length for CAID 0700 to 8e (hexadecimal)
+\ No newline at end of file
+diff --git a/./Distribution/doc/example/oscam.guess b/./Distribution/doc/example/oscam.guess
+new file mode 100644
+index 00000000..8c2a179d
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.guess
+@@ -0,0 +1,9 @@
++#
++# CAID guessing table
++#
++# format:
++#
++# <len>:<caid>
++#
++
++12:3456
+diff --git a/./Distribution/doc/example/oscam.ird b/./Distribution/doc/example/oscam.ird
+new file mode 100644
+index 00000000..253e9280
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.ird
+@@ -0,0 +1,9 @@
++#
++# Irdeto guessing table
++#
++# format:
++#
++# <byte3>:<byte4-7>:<CAID>:<SID>
++#
++
++12:0000000A:12AB:CD01
+diff --git a/./Distribution/doc/example/oscam.provid b/./Distribution/doc/example/oscam.provid
+new file mode 100644
+index 00000000..2100f7ae
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.provid
+@@ -0,0 +1,12 @@
++#
++# provider table
++#
++# format:
++#
++# <caid>:<provid>|<provider>|<satellite>|<language>
++#
++
++0100:012345|MyPay-TV1|Astra 19.2E|German
++0200:543210|MyPay-TV2|Hot Bird 13.0E|English
++0300:112233|MyPay-TV3|Hot Bird 13.0E|Italian
++0400:223344|MyPay-TV4|Atra 28.2E|English
+diff --git a/./Distribution/doc/example/oscam.server b/./Distribution/doc/example/oscam.server
+new file mode 100644
+index 00000000..7efb0e3c
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.server
+@@ -0,0 +1,169 @@
++#
++# reader configuration
++#
++
++# serial reader
++
++[reader]
++label    = reader1
++protocol = mouse
++detect   = CD
++device   = /dev/ttyS0
++group    = 1
++emmcache = 1,3,2
++services = services1
++caid     = 0100
++
++# USB serial reader
++
++[reader]
++label    = reader2
++protocol = mouse
++detect   = CD
++device   = /dev/ttyUSB0
++aeskey   = 000102030405060708090A0B0C0D0E0F
++group    = 2
++emmcache = 1,3,2
++services = services2
++caid     = 0200
++
++# remote newcamd reader with fallback for group 1
++
++[reader]
++label    = remote1
++protocol = newcamd
++key      = 0102030405060708091011121314
++device   = 192.168.0.2,66666
++user     = user1
++password = password1
++group    = 1
++fallback = 1
++
++# remote camd 3.78x reader with fallback for group 2
++
++[reader]
++label    = remote2
++protocol = cs378x
++device   = 192.168.0.3,23456
++user     = user2
++password = password2
++group    = 2
++fallback = 1
++
++# remote gbox reader
++
++[reader]
++label        = remote3
++protocol     = gbox
++device       = 192.168.0.5,45678
++password     = AF1BC100
++user         = gbox_client
++group        = 3
++services     = services1
++
++# remote CCcam reader
++
++[reader]
++label      = remote4
++protocol   = cccam
++device     = 192.168.0.5,45678
++user       = user4
++password   = password4
++group      = 4
++caid       = 0400
++cccversion = 1.2.34
++cccbuild   = 5678
++
++# remote radegast reader
++
++[reader]
++label    = remote5
++protocol = radegast
++device   = 192.168.0.6,56789
++group    = 5
++caid     = 0500
++
++# PCSC reader
++
++[reader]
++label    = mypcscreader
++protocol = pcsc
++device   = 0
++aeskey   = 0102030405060708090a0b0c0d0e0f10
++group    = 6
++caid     = 0600
++
++# Smargo Smartreader+ (Tripple Reader as well) using kernel drivers (recommended)
++
++[reader]
++label    = mysmargo
++protocol = smargo
++device   = /dev/ttyUSB1
++aeskey   = 0102030405060708090a0b0c0d0e0f10
++group    = 7
++caid     = 0700
++
++# Smargo Smartreader+ using libusb
++
++[reader]
++label    = mysmartreader
++protocol = smartreader
++device   = 001:002
++group    = 8
++caid     = 0800
++
++# internal reader
++
++[reader]
++label    = myinternalreader
++protocol = internal
++device   = /dev/sci0
++group    = 9
++caid     = 0900
++
++# AD-Teknik AB Multiprogrammer 3.5 serial
++
++[reader]
++label    = reader9
++protocol = mp35
++detect   = CD
++device   = /dev/ttyS1
++group    = 10
++emmcache = 1,3,2
++services = services9
++caid     = 1000
++
++# AD-Teknik AB Multiprogrammer 3.6 USB
++
++[reader]
++label    = reader10
++protocol = mp35
++detect   = CD
++device   = /dev/ttyUSB1
++group    = 11
++emmcache = 1,3,2
++services = services10
++caid     = 1100
++
++# AD-Teknik AB USB Phoenix at 6.00 mhz
++
++[reader]
++label    = reader12
++protocol = mp35
++detect   = CD
++device   = /dev/ttyUSB2
++mhz      = 600
++group    = 12
++emmcache = 1,3,2
++services = services11
++caid     = 1200
++
++# sc8in1 reader
++
++[reader]
++label    = reader12
++protocol = sc8in1
++device   = /dev/ttyUSB3:1
++group    = 13
++emmcache = 1,3,2
++caid     = 1300
+diff --git a/./Distribution/doc/example/oscam.services b/./Distribution/doc/example/oscam.services
+new file mode 100644
+index 00000000..6eb23d38
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.services
+@@ -0,0 +1,19 @@
++#
++# definition of services
++#
++# format:
++#
++# [name]
++# caid=CAID[,CAID]...
++# provid = provider ID[,provider ID]...
++# srvid = service ID[,service ID]...
++#
++
++[services1]
++caid=0100
++provid=000001,ABCDEF
++srvid=0001,0002,000A,000B
++
++[services2]
++caid=0200
++srvid=0003,0004,000C,000D
+diff --git a/./Distribution/doc/example/oscam.srvid b/./Distribution/doc/example/oscam.srvid
+new file mode 100644
+index 00000000..970b3370
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.srvid
+@@ -0,0 +1,6 @@
++#
++# service ID configuration file for web interface and monitor
++#
++
++1111,2222:000A|provider A|Name C|TV|package E
++3333,4444,5555:000B|provider B|Name D|Radio|package F
+diff --git a/./Distribution/doc/example/oscam.tiers b/./Distribution/doc/example/oscam.tiers
+new file mode 100644
+index 00000000..667654e4
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.tiers
+@@ -0,0 +1,7 @@
++#
++# TIERS
++#
++
++0001,0002,0003:000a|my TIER 1
++0004:000b|my TIER 2
++0005:000b|my TIER 3
+diff --git a/./Distribution/doc/example/oscam.user b/./Distribution/doc/example/oscam.user
+new file mode 100644
+index 00000000..5704ee4b
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.user
+@@ -0,0 +1,71 @@
++#
++# user configuration
++#
++
++# user for group 1 with Betacrypt tunnel, no monitoring, only one connection possible, AU enabled
++
++[account]
++user       = user1
++pwd        = password1
++monlevel   = 0
++uniq       = 1
++group      = 1
++au         = reader1
++services   = services1
++betatunnel = 0300.FFFF:0100,0400.FFFF:0100
++ident 	   = 0100:000000
++caid       = 0100
++
++# user for group 2 with monitor access, AU enabled
++
++[account]
++user       = user2
++pwd        = password2
++monlevel   = 1
++uniq       = 0
++group      = 2
++au         = reader2
++services   = services2
++ident 	   = 0200:000000
++caid       = 0200
++
++# user for group 2 without monitor access, AU disabled, account disabled
++
++[account]
++user       = user3
++pwd        = password3
++disabled   = 1
++group      = 2
++services   = services2
++ident 	   = 0200:000000
++caid       = 0200
++
++# user for group 3 without monitor access, only one connection possible, AU disabled, multiple idents
++
++[account]
++user       = user4
++pwd        = password4
++monlevel   = 0
++uniq       = 1
++group      = 3
++ident 	   = 0300:000000,FFFFFF;0400:FFFFFF
++caid       = 0300
++
++# user for group 5 with anti-cascading, only 1 logging allowed, send fake CWs as penalty
++
++[account]
++user       = user5
++pwd        = password5
++group      = 5
++services   = services5
++ident 	   = 0500:000000
++caid       = 0500
++numusers   = 1
++penalty    = 1
++
++# user for gbox reader
++
++[account]
++user       = gbox_client
++pwd        =
++group      = 3
+diff --git a/./Distribution/doc/example/oscam.whitelist b/./Distribution/doc/example/oscam.whitelist
+new file mode 100644
+index 00000000..b0455273
+--- /dev/null
++++ b/./Distribution/doc/example/oscam.whitelist
+@@ -0,0 +1,25 @@
++#
++# whitelist table
++#
++# format:
++#
++#  whitelist:
++#   w:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
++#
++#  whitelist, not proceed with any other ECM length whitelisting when matching:
++#   l:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
++#
++#  ignore:
++#   i:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
++#
++
++w:0100       # whitelisting for CAID 0100
++
++i:0200:1234  # ignore CAID 0200 with service ID 1234
++
++i:::::2345   # ignore CHID 2345
++
++w:           # allow all others (blacklist)
++
++l:0300       # whitelisting for CAID 0300 not proceeding
++             # if matching
 diff --git a/../oscam-base/Distribution/doc/man/oscam.server.5 b/./Distribution/doc/man/oscam.server.5
 index 56d1925c..27fff61b 100644
 --- a/../oscam-base/Distribution/doc/man/oscam.server.5
@@ -218,7 +797,7 @@ index 03c70f7d..9b99c3c4 100644
        readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
   card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
 diff --git a/../oscam-base/README.md b/./README.md
-index 32e2e616..a818d140 100644
+index db5d4d0c..a818d140 100644
 --- a/../oscam-base/README.md
 +++ b/./README.md
 @@ -1,79 +1,294 @@
@@ -365,13 +944,13 @@ index 32e2e616..a818d140 100644
 -## Help and Support
 +### 3. Build-Optionen anzeigen
  
--- Man pages and configuration examples are available in the
+-- Man pages and text documentation are available in the
 -  `Distribution/doc` directory of the source tree.
 -- For bug reports and feature requests, please use the
 -  [GitLab issue tracker](https://git.streamboard.tv/common/oscam/-/issues).
 -- For community help and general discussion (mainly German and English),
 -  visit the [support forum](https://board.streamboard.tv/forum/).
--- For configuration guides, FAQs, and detailed documentation, see the
+-- For configuration guides and examples, FAQs, and detailed documentation, see the
 -  [OSCam wiki](https://git.streamboard.tv/common/oscam/-/wikis/home).
 +```bash
 +make help
@@ -776,11 +1355,11 @@ index 4cda2edd..6cd27dae 100644
  #endif
 diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
 new file mode 100644
-index 00000000..ddcd349b
+index 00000000..31cb54b5
 --- /dev/null
 +++ b/./emu/.git/FETCH_HEAD
 @@ -0,0 +1 @@
-+0d11479fe3f892693142d1701cd51dedc0fa4f7e		branch 'master' of https://github.com/speedy005/oscam-emu-patch
++689b9e240dcc7484c3331a2986e059c06736c446		branch 'master' of https://github.com/speedy005/oscam-emu-patch
 diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
 new file mode 100644
 index 00000000..cb089cd8
@@ -1825,7 +2404,7 @@ index 00000000..c4d426bc
 +exit 0
 diff --git a/./emu/.git/index b/./emu/.git/index
 new file mode 100644
-index 00000000..a3725354
+index 00000000..8d0ef44c
 Binary files /dev/null and b/./emu/.git/index differ
 diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
 new file mode 100755
@@ -1841,60 +2420,60 @@ index 00000000..a5196d1b
 +# *~
 diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
 new file mode 100644
-index 00000000..128bfd4d
+index 00000000..307021c7
 --- /dev/null
 +++ b/./emu/.git/logs/HEAD
 @@ -0,0 +1,2 @@
-+0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
-+0d11479fe3f892693142d1701cd51dedc0fa4f7e 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	checkout: moving from master to master
++0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	branch: Created from refs/remotes/origin/master
++689b9e240dcc7484c3331a2986e059c06736c446 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	checkout: moving from master to master
 diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
 new file mode 100644
-index 00000000..db6c3050
+index 00000000..893f048b
 --- /dev/null
 +++ b/./emu/.git/logs/refs/heads/master
 @@ -0,0 +1 @@
-+0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
++0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	branch: Created from refs/remotes/origin/master
 diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
 new file mode 100644
-index 00000000..e1108572
+index 00000000..fddce776
 --- /dev/null
 +++ b/./emu/.git/logs/refs/remotes/origin/master
 @@ -0,0 +1 @@
-+0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
-diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx
++0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
+diff --git a/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.idx b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.idx
 new file mode 100644
-index 00000000..0450f350
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx differ
-diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack
+index 00000000..6020dbd0
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.idx differ
+diff --git a/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.pack b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.pack
 new file mode 100644
-index 00000000..396899a0
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack differ
-diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev
+index 00000000..386fe8fe
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.pack differ
+diff --git a/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.rev b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.rev
 new file mode 100644
-index 00000000..35493d1b
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev differ
+index 00000000..c98c3447
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.rev differ
 diff --git a/./emu/.git/refs/heads/master b/./emu/.git/refs/heads/master
 new file mode 100644
-index 00000000..7c9b2f94
+index 00000000..15936529
 --- /dev/null
 +++ b/./emu/.git/refs/heads/master
 @@ -0,0 +1 @@
-+0d11479fe3f892693142d1701cd51dedc0fa4f7e
++689b9e240dcc7484c3331a2986e059c06736c446
 diff --git a/./emu/.git/refs/remotes/origin/master b/./emu/.git/refs/remotes/origin/master
 new file mode 100644
-index 00000000..7c9b2f94
+index 00000000..15936529
 --- /dev/null
 +++ b/./emu/.git/refs/remotes/origin/master
 @@ -0,0 +1 @@
-+0d11479fe3f892693142d1701cd51dedc0fa4f7e
++689b9e240dcc7484c3331a2986e059c06736c446
 diff --git a/./emu/oscam-emu.patch b/./emu/oscam-emu.patch
 new file mode 100644
-index 00000000..830d5853
+index 00000000..68e30edb
 --- /dev/null
 +++ b/./emu/oscam-emu.patch
-@@ -0,0 +1,1872 @@
+@@ -0,0 +1,2431 @@
 +diff --git a/../oscam-base/CMakeLists.txt b/./CMakeLists.txt
-+index 8f3148ab..ccc85569 100644
++index e7004fa6..ccc85569 100644
 +--- a/../oscam-base/CMakeLists.txt
 ++++ b/./CMakeLists.txt
 +@@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
@@ -1940,7 +2519,7 @@ index 00000000..830d5853
 + if (BUILD_TESTS)
 + 	# Test binary stays plain: no sign/upx — see Makefile rationale.
 + 	add_custom_target (run-tests COMMAND ${CMAKE_COMMAND} -E echo "Running ${exe_name}..." COMMAND ./${exe_name} DEPENDS ${exe_name} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-+@@ -1019,6 +1022,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
++@@ -1019,18 +1022,46 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
 + 
 + #--------------------------------------------------------------------------------
 + 
@@ -1965,7 +2544,29 @@ index 00000000..830d5853
 + #----------------------- installation -----------------------------
 + 
 + file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-+@@ -1137,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
++ file (GLOB doc_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/txt/*.txt")
++ file (GLOB man1_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/man/*.1")
++ file (GLOB man5_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/man/*.5")
+++file (GLOB example_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.ac"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.cert"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.conf"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.guess"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.ird"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.server"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.services"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.srvid"
+++						 "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/doc/example/oscam.user")
++ 
++ install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${exe_name}${CMAKE_EXECUTABLE_SUFFIX} DESTINATION bin COMPONENT bin)
++ install (FILES ${config_files} DESTINATION etc COMPONENT config)
++ install (FILES ${doc_files} DESTINATION share/doc/oscam COMPONENT doc)
++ install (FILES ${man1_files} DESTINATION share/man/man1 COMPONENT doc)
++ install (FILES ${man5_files} DESTINATION share/man/man5 COMPONENT doc)
+++install (FILES ${example_files} DESTINATION share/doc/oscam/example COMPONENT doc)
++ 
++ #----------------------- we can use CPack to build pacakges --------------------------
++ 
++@@ -1127,4 +1158,11 @@ if (HAVE_LIBDVBCSA)
 + 	endif (LIBDVBCSADIR)
 + endif (HAVE_LIBDVBCSA)
 + 
@@ -1977,6 +2578,563 @@ index 00000000..830d5853
 ++endif (WITH_EMU)
 ++
 + message (STATUS "")
++diff --git a/./Distribution/doc/example/oscam.ac b/./Distribution/doc/example/oscam.ac
++new file mode 100644
++index 00000000..d8cc74db
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.ac
++@@ -0,0 +1,10 @@
+++#
+++# anti-cascading table
+++#
+++# format:
+++#
+++# <CAID>:<provider ID>=<seconds>
+++#
+++
+++0500:000000=10
+++*=7
++diff --git a/./Distribution/doc/example/oscam.cacheex b/./Distribution/doc/example/oscam.cacheex
++new file mode 100644
++index 00000000..e2b32715
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.cacheex
++@@ -0,0 +1,12 @@
+++#
+++# ECM length matching table
+++#
+++# format:
+++#
+++#  matching:
+++#   m:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...=
+++#     [CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
+++#
+++
+++m:1234:::::93=5678:::::93  # matching CAID 1234 and CAID 5678 with
+++                           # ECM length 93
++\ No newline at end of file
++diff --git a/./Distribution/doc/example/oscam.cert b/./Distribution/doc/example/oscam.cert
++new file mode 100644
++index 00000000..652dbdbc
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.cert
++@@ -0,0 +1,9 @@
+++#
+++# Issuer Public Keys (IPK)
+++#
+++# format:
+++#
+++# CAID:reserved:KEY
+++#
+++
+++0100:00000000:000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F
++diff --git a/./Distribution/doc/example/oscam.conf b/./Distribution/doc/example/oscam.conf
++new file mode 100644
++index 00000000..45bfd4d7
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.conf
++@@ -0,0 +1,72 @@
+++#
+++# main configuration
+++#
+++
+++[global]
+++nice          = -1
+++WaitForCards  = 1
+++
+++# logging
+++
+++logfile       = /var/log/oscam/oscam.log
+++usrfile       = /var/log/oscam/oscamuser.log
+++cwlogdir      = /var/log/oscam/cw
+++
+++# monitor
+++
+++[monitor]
+++port          = 988
+++aulow	      = 120
+++monlevel      = 1
+++
+++# web interface
+++
+++[webif]
+++httpport      = 8888
+++httpuser      = myusername
+++httppwd       = mypassword
+++httpallowed   = 127.0.0.1,192.168.0.0-192.168.255.255,::1
+++httpmaxrequestsize = 102400
+++
+++# anti-cascading
+++
+++[anticasc]
+++enabled       = 1
+++numusers      = 1
+++sampletime    = 2
+++samples       = 5
+++penalty       = 1
+++aclogfile     = /var/log/oscam/aclog.log
+++denysamples   = 9
+++
+++# protocols
+++
+++[newcamd]
+++key           = 000102030405060708090A0B0C0D
+++port          = 10000@0100:FFFFFF;10001@0200:FFF000,FFFF00;10002@0300:FFFFFF
+++
+++[radegast]
+++port          = 20000
+++user          = user1
+++allowed       = 192.168.0.0-192.168.255.255
+++
+++[cs378x]
+++port          = 30000@0100:FFFFFF;30001@0200:FFF000,FFFF00;30002@0300:FFFFFF
+++
+++[cccam]
+++port          = 40000
+++version       = 1.2.3
+++build         = 1234
+++reshare       = 2
+++
+++[gbox]
+++hostname      = host.example.com
+++port          = 50000
+++my_password   = AB1122C1
+++
+++[serial]
+++device        = user2@/dev/ttyS0?delay=1&timeout=300;user3@192.160.0.10,2006?delay=1&timeout=5000
+++
+++[dvbapi]
+++enabled	      = 1
+++user          = user1
++diff --git a/./Distribution/doc/example/oscam.dvbapi b/./Distribution/doc/example/oscam.dvbapi
++new file mode 100644
++index 00000000..129ac9cb
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.dvbapi
++@@ -0,0 +1,41 @@
+++#
+++# dvbapi configuration
+++#
+++# format:
+++#
+++#  priority:
+++#   P: CAID[:][provider ID][:][service ID][:][ECM PID] [continue]
+++#
+++#  ignore:
+++#   I: CAID[:][provider ID][:][service ID][:][ECM PID]
+++#
+++#  wait:
+++#   D: CAID[:][provider ID][:][service ID][:][ECM PID] delay
+++#
+++#  map:
+++#   M: CAID[:][provider ID][:][service ID][:][ECM PID] target CAID[:][target provider ID]
+++#
+++#  length:
+++#   L: CAID[:][provider ID][:][service ID][:][ECM PID] length
+++#
+++
+++P: 0100:123456       # prioritise CAID 0100 with provider 123456
+++
+++P: :1234             # prioritise ECM with provider ID 1234 on
+++                     # on any CAID and service
+++
+++P: 0200              # prioritise CAID 0200
+++
+++P: 0300::9ABC        # prioritise CAID 0300 on service 9ABC only
+++
+++M: 0400 0500:123456  # map CAID 0400 to provider ID 123456 with
+++                     # CAID 0500
+++
+++D: 0600 200          # wait 200 ms before writing CW for CAID 0600
+++
+++I: :654321           # ignore provider ID 654321 for every CAID and
+++                     # service
+++
+++I: 0                 # ignore every CAID that was not handled before
+++
+++L: 0700 8e           # ECM length for CAID 0700 to 8e (hexadecimal)
++\ No newline at end of file
++diff --git a/./Distribution/doc/example/oscam.guess b/./Distribution/doc/example/oscam.guess
++new file mode 100644
++index 00000000..8c2a179d
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.guess
++@@ -0,0 +1,9 @@
+++#
+++# CAID guessing table
+++#
+++# format:
+++#
+++# <len>:<caid>
+++#
+++
+++12:3456
++diff --git a/./Distribution/doc/example/oscam.ird b/./Distribution/doc/example/oscam.ird
++new file mode 100644
++index 00000000..253e9280
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.ird
++@@ -0,0 +1,9 @@
+++#
+++# Irdeto guessing table
+++#
+++# format:
+++#
+++# <byte3>:<byte4-7>:<CAID>:<SID>
+++#
+++
+++12:0000000A:12AB:CD01
++diff --git a/./Distribution/doc/example/oscam.provid b/./Distribution/doc/example/oscam.provid
++new file mode 100644
++index 00000000..2100f7ae
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.provid
++@@ -0,0 +1,12 @@
+++#
+++# provider table
+++#
+++# format:
+++#
+++# <caid>:<provid>|<provider>|<satellite>|<language>
+++#
+++
+++0100:012345|MyPay-TV1|Astra 19.2E|German
+++0200:543210|MyPay-TV2|Hot Bird 13.0E|English
+++0300:112233|MyPay-TV3|Hot Bird 13.0E|Italian
+++0400:223344|MyPay-TV4|Atra 28.2E|English
++diff --git a/./Distribution/doc/example/oscam.server b/./Distribution/doc/example/oscam.server
++new file mode 100644
++index 00000000..7efb0e3c
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.server
++@@ -0,0 +1,169 @@
+++#
+++# reader configuration
+++#
+++
+++# serial reader
+++
+++[reader]
+++label    = reader1
+++protocol = mouse
+++detect   = CD
+++device   = /dev/ttyS0
+++group    = 1
+++emmcache = 1,3,2
+++services = services1
+++caid     = 0100
+++
+++# USB serial reader
+++
+++[reader]
+++label    = reader2
+++protocol = mouse
+++detect   = CD
+++device   = /dev/ttyUSB0
+++aeskey   = 000102030405060708090A0B0C0D0E0F
+++group    = 2
+++emmcache = 1,3,2
+++services = services2
+++caid     = 0200
+++
+++# remote newcamd reader with fallback for group 1
+++
+++[reader]
+++label    = remote1
+++protocol = newcamd
+++key      = 0102030405060708091011121314
+++device   = 192.168.0.2,66666
+++user     = user1
+++password = password1
+++group    = 1
+++fallback = 1
+++
+++# remote camd 3.78x reader with fallback for group 2
+++
+++[reader]
+++label    = remote2
+++protocol = cs378x
+++device   = 192.168.0.3,23456
+++user     = user2
+++password = password2
+++group    = 2
+++fallback = 1
+++
+++# remote gbox reader
+++
+++[reader]
+++label        = remote3
+++protocol     = gbox
+++device       = 192.168.0.5,45678
+++password     = AF1BC100
+++user         = gbox_client
+++group        = 3
+++services     = services1
+++
+++# remote CCcam reader
+++
+++[reader]
+++label      = remote4
+++protocol   = cccam
+++device     = 192.168.0.5,45678
+++user       = user4
+++password   = password4
+++group      = 4
+++caid       = 0400
+++cccversion = 1.2.34
+++cccbuild   = 5678
+++
+++# remote radegast reader
+++
+++[reader]
+++label    = remote5
+++protocol = radegast
+++device   = 192.168.0.6,56789
+++group    = 5
+++caid     = 0500
+++
+++# PCSC reader
+++
+++[reader]
+++label    = mypcscreader
+++protocol = pcsc
+++device   = 0
+++aeskey   = 0102030405060708090a0b0c0d0e0f10
+++group    = 6
+++caid     = 0600
+++
+++# Smargo Smartreader+ (Tripple Reader as well) using kernel drivers (recommended)
+++
+++[reader]
+++label    = mysmargo
+++protocol = smargo
+++device   = /dev/ttyUSB1
+++aeskey   = 0102030405060708090a0b0c0d0e0f10
+++group    = 7
+++caid     = 0700
+++
+++# Smargo Smartreader+ using libusb
+++
+++[reader]
+++label    = mysmartreader
+++protocol = smartreader
+++device   = 001:002
+++group    = 8
+++caid     = 0800
+++
+++# internal reader
+++
+++[reader]
+++label    = myinternalreader
+++protocol = internal
+++device   = /dev/sci0
+++group    = 9
+++caid     = 0900
+++
+++# AD-Teknik AB Multiprogrammer 3.5 serial
+++
+++[reader]
+++label    = reader9
+++protocol = mp35
+++detect   = CD
+++device   = /dev/ttyS1
+++group    = 10
+++emmcache = 1,3,2
+++services = services9
+++caid     = 1000
+++
+++# AD-Teknik AB Multiprogrammer 3.6 USB
+++
+++[reader]
+++label    = reader10
+++protocol = mp35
+++detect   = CD
+++device   = /dev/ttyUSB1
+++group    = 11
+++emmcache = 1,3,2
+++services = services10
+++caid     = 1100
+++
+++# AD-Teknik AB USB Phoenix at 6.00 mhz
+++
+++[reader]
+++label    = reader12
+++protocol = mp35
+++detect   = CD
+++device   = /dev/ttyUSB2
+++mhz      = 600
+++group    = 12
+++emmcache = 1,3,2
+++services = services11
+++caid     = 1200
+++
+++# sc8in1 reader
+++
+++[reader]
+++label    = reader12
+++protocol = sc8in1
+++device   = /dev/ttyUSB3:1
+++group    = 13
+++emmcache = 1,3,2
+++caid     = 1300
++diff --git a/./Distribution/doc/example/oscam.services b/./Distribution/doc/example/oscam.services
++new file mode 100644
++index 00000000..6eb23d38
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.services
++@@ -0,0 +1,19 @@
+++#
+++# definition of services
+++#
+++# format:
+++#
+++# [name]
+++# caid=CAID[,CAID]...
+++# provid = provider ID[,provider ID]...
+++# srvid = service ID[,service ID]...
+++#
+++
+++[services1]
+++caid=0100
+++provid=000001,ABCDEF
+++srvid=0001,0002,000A,000B
+++
+++[services2]
+++caid=0200
+++srvid=0003,0004,000C,000D
++diff --git a/./Distribution/doc/example/oscam.srvid b/./Distribution/doc/example/oscam.srvid
++new file mode 100644
++index 00000000..970b3370
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.srvid
++@@ -0,0 +1,6 @@
+++#
+++# service ID configuration file for web interface and monitor
+++#
+++
+++1111,2222:000A|provider A|Name C|TV|package E
+++3333,4444,5555:000B|provider B|Name D|Radio|package F
++diff --git a/./Distribution/doc/example/oscam.tiers b/./Distribution/doc/example/oscam.tiers
++new file mode 100644
++index 00000000..667654e4
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.tiers
++@@ -0,0 +1,7 @@
+++#
+++# TIERS
+++#
+++
+++0001,0002,0003:000a|my TIER 1
+++0004:000b|my TIER 2
+++0005:000b|my TIER 3
++diff --git a/./Distribution/doc/example/oscam.user b/./Distribution/doc/example/oscam.user
++new file mode 100644
++index 00000000..5704ee4b
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.user
++@@ -0,0 +1,71 @@
+++#
+++# user configuration
+++#
+++
+++# user for group 1 with Betacrypt tunnel, no monitoring, only one connection possible, AU enabled
+++
+++[account]
+++user       = user1
+++pwd        = password1
+++monlevel   = 0
+++uniq       = 1
+++group      = 1
+++au         = reader1
+++services   = services1
+++betatunnel = 0300.FFFF:0100,0400.FFFF:0100
+++ident 	   = 0100:000000
+++caid       = 0100
+++
+++# user for group 2 with monitor access, AU enabled
+++
+++[account]
+++user       = user2
+++pwd        = password2
+++monlevel   = 1
+++uniq       = 0
+++group      = 2
+++au         = reader2
+++services   = services2
+++ident 	   = 0200:000000
+++caid       = 0200
+++
+++# user for group 2 without monitor access, AU disabled, account disabled
+++
+++[account]
+++user       = user3
+++pwd        = password3
+++disabled   = 1
+++group      = 2
+++services   = services2
+++ident 	   = 0200:000000
+++caid       = 0200
+++
+++# user for group 3 without monitor access, only one connection possible, AU disabled, multiple idents
+++
+++[account]
+++user       = user4
+++pwd        = password4
+++monlevel   = 0
+++uniq       = 1
+++group      = 3
+++ident 	   = 0300:000000,FFFFFF;0400:FFFFFF
+++caid       = 0300
+++
+++# user for group 5 with anti-cascading, only 1 logging allowed, send fake CWs as penalty
+++
+++[account]
+++user       = user5
+++pwd        = password5
+++group      = 5
+++services   = services5
+++ident 	   = 0500:000000
+++caid       = 0500
+++numusers   = 1
+++penalty    = 1
+++
+++# user for gbox reader
+++
+++[account]
+++user       = gbox_client
+++pwd        =
+++group      = 3
++diff --git a/./Distribution/doc/example/oscam.whitelist b/./Distribution/doc/example/oscam.whitelist
++new file mode 100644
++index 00000000..b0455273
++--- /dev/null
+++++ b/./Distribution/doc/example/oscam.whitelist
++@@ -0,0 +1,25 @@
+++#
+++# whitelist table
+++#
+++# format:
+++#
+++#  whitelist:
+++#   w:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
+++#
+++#  whitelist, not proceed with any other ECM length whitelisting when matching:
+++#   l:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
+++#
+++#  ignore:
+++#   i:[CAID][:][provider ID][:][service ID][:][ECM PID][:][CHID][:][ECM length 1][,ECM length 2]...
+++#
+++
+++w:0100       # whitelisting for CAID 0100
+++
+++i:0200:1234  # ignore CAID 0200 with service ID 1234
+++
+++i:::::2345   # ignore CHID 2345
+++
+++w:           # allow all others (blacklist)
+++
+++l:0300       # whitelisting for CAID 0300 not proceeding
+++             # if matching
 +diff --git a/../oscam-base/Distribution/doc/man/oscam.server.5 b/./Distribution/doc/man/oscam.server.5
 +index 56d1925c..27fff61b 100644
 +--- a/../oscam-base/Distribution/doc/man/oscam.server.5
@@ -2110,7 +3268,7 @@ index 00000000..830d5853
 +       readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
 +  card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
 +diff --git a/../oscam-base/README.md b/./README.md
-+index 32e2e616..a818d140 100644
++index db5d4d0c..a818d140 100644
 +--- a/../oscam-base/README.md
 ++++ b/./README.md
 +@@ -1,79 +1,294 @@
@@ -2257,13 +3415,13 @@ index 00000000..830d5853
 +-## Help and Support
 ++### 3. Build-Optionen anzeigen
 + 
-+-- Man pages and configuration examples are available in the
++-- Man pages and text documentation are available in the
 +-  `Distribution/doc` directory of the source tree.
 +-- For bug reports and feature requests, please use the
 +-  [GitLab issue tracker](https://git.streamboard.tv/common/oscam/-/issues).
 +-- For community help and general discussion (mainly German and English),
 +-  visit the [support forum](https://board.streamboard.tv/forum/).
-+-- For configuration guides, FAQs, and detailed documentation, see the
++-- For configuration guides and examples, FAQs, and detailed documentation, see the
 +-  [OSCam wiki](https://git.streamboard.tv/common/oscam/-/wikis/home).
 ++```bash
 ++make help
@@ -2668,11 +3826,11 @@ index 00000000..830d5853
 + #endif
 +diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
 +new file mode 100644
-+index 00000000..ddcd349b
++index 00000000..31cb54b5
 +--- /dev/null
 ++++ b/./emu/.git/FETCH_HEAD
 +@@ -0,0 +1 @@
-++0d11479fe3f892693142d1701cd51dedc0fa4f7e		branch 'master' of https://github.com/speedy005/oscam-emu-patch
+++689b9e240dcc7484c3331a2986e059c06736c446		branch 'master' of https://github.com/speedy005/oscam-emu-patch
 +diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
 +new file mode 100644
 +index 00000000..cb089cd8
@@ -3717,7 +4875,7 @@ index 00000000..830d5853
 ++exit 0
 +diff --git a/./emu/.git/index b/./emu/.git/index
 +new file mode 100644
-+index 00000000..a3725354
++index 00000000..8d0ef44c
 +Binary files /dev/null and b/./emu/.git/index differ
 +diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
 +new file mode 100755
@@ -3733,41 +4891,21 @@ index 00000000..830d5853
 ++# *~
 +diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
 +new file mode 100644
-+index 00000000..128bfd4d
++index 00000000..307021c7
 +--- /dev/null
 ++++ b/./emu/.git/logs/HEAD
 +@@ -0,0 +1,2 @@
-++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
-++0d11479fe3f892693142d1701cd51dedc0fa4f7e 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	checkout: moving from master to master
+++0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	branch: Created from refs/remotes/origin/master
+++689b9e240dcc7484c3331a2986e059c06736c446 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	checkout: moving from master to master
 +diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
 +new file mode 100644
-+index 00000000..db6c3050
++index 00000000..893f048b
 +--- /dev/null
 ++++ b/./emu/.git/logs/refs/heads/master
-+@@ -0,0 +1 @@
-++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	branch: Created from refs/remotes/origin/master
-+diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
-+new file mode 100644
-+index 00000000..e1108572
-+--- /dev/null
-++++ b/./emu/.git/logs/refs/remotes/origin/master
-+@@ -0,0 +1 @@
-++0000000000000000000000000000000000000000 0d11479fe3f892693142d1701cd51dedc0fa4f7e runner <runner@runnervmwuk1x.ovgwafzskgce5kl1gcs2ansmda.ex.internal.cloudapp.net> 1794423014 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
-+diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx
-+new file mode 100644
-+index 00000000..0450f350
-+Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.idx differ
-+diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack
-+new file mode 100644
-+index 00000000..396899a0
-+Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.pack differ
-+diff --git a/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev
-+new file mode 100644
-+index 00000000..35493d1b
-+Binary files /dev/null and b/./emu/.git/objects/pack/pack-7e5e3a7be2e76d4b608d241351007691f6bc0423.rev diff
++@@ -0,0 +1 
 \ No newline at end of file
 diff --git a/../oscam-base/globals.h b/./globals.h
-index 5a1c6315..d12fe5d7 100644
+index 49599025..69f8ac76 100644
 --- a/../oscam-base/globals.h
 +++ b/./globals.h
 @@ -368,9 +368,9 @@
@@ -3780,7 +4918,7 @@ index 5a1c6315..d12fe5d7 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.11-11975"
+ #define CS_VERSION				"2.26.11-11980"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -15141,10 +16279,23 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/../oscam-base/module-webif.c b/./module-webif.c
-index 8ee8e727..f98b56ff 100644
+index 23e8d48e..f98b56ff 100644
 --- a/../oscam-base/module-webif.c
 +++ b/./module-webif.c
-@@ -201,8 +201,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
+@@ -54,11 +54,9 @@ int32_t ssl_active = 0;
+ char noncekey[33];
+ pthread_key_t getkeepalive;
+ static pthread_key_t getip;
+-static CS_MUTEX_LOCK http_lock;
+-#ifdef WITH_SSL
+ pthread_key_t getssl;
++static CS_MUTEX_LOCK http_lock;
+ CS_MUTEX_LOCK *lock_cs;
+-#endif
+ 
+ static uint8_t useLocal = 1;
+ #define PRINTF_LOCAL_D useLocal ? "%'d" : "%d"
+@@ -203,8 +201,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
  #define MNU_GBX_FSTAINF     27
  #define MNU_GBX_FEXPINF     28
  #define MNU_GBX_INFOLOG     29
@@ -15155,7 +16306,61 @@ index 8ee8e727..f98b56ff 100644
  
  static void set_status_info_var(struct templatevars *vars, char *varname, int no_data, char *fmt, double value)
  {
-@@ -1388,6 +1389,11 @@ static char *send_oscam_config_streamrelay(struct templatevars *vars, struct uri
+@@ -426,32 +425,32 @@ static void set_ecm_info(struct templatevars * vars)
+ 	struct s_reader *rdr;
+ 	while((rdr = ll_iter_next(&itr)))
+ 	{
+-		totalrdrok += rdr->webif_ecmsok;
+-		totalrdrnok += rdr->webif_ecmsnok;
+-		totalrdrtout += rdr->webif_ecmstout;
++		if (rdr->webif_ecmsok) { totalrdrok += rdr->webif_ecmsok; }
++		if (rdr->webif_ecmsnok) { totalrdrnok += rdr->webif_ecmsnok; }
++		if (rdr->webif_ecmstout) { totalrdrtout += rdr->webif_ecmstout; }
+ 
+-		flen += rdr->webif_ecmsfilteredlen;
+-		fhead += rdr->webif_ecmsfilteredhead;
++		if (rdr->webif_ecmsfilteredlen) { flen += rdr->webif_ecmsfilteredlen; }
++		if (rdr->webif_ecmsfilteredhead) { fhead += rdr->webif_ecmsfilteredhead; }
+ 
+-		teruk += rdr->webif_emmerror[0];
+-		teruq += rdr->webif_emmerror[1];
+-		ters += rdr->webif_emmerror[2];
+-		terg += rdr->webif_emmerror[3];
++		if (rdr->webif_emmerror[0]) { teruk += rdr->webif_emmerror[0]; }
++		if (rdr->webif_emmerror[1]) { teruq += rdr->webif_emmerror[1]; }
++		if (rdr->webif_emmerror[2]) { ters += rdr->webif_emmerror[2]; }
++		if (rdr->webif_emmerror[3]) { terg += rdr->webif_emmerror[3]; }
+ 
+-		twruk += rdr->webif_emmwritten[0];
+-		twruq += rdr->webif_emmwritten[1];
+-		twrs += rdr->webif_emmwritten[2];
+-		twrg += rdr->webif_emmwritten[3];
++		if (rdr->webif_emmwritten[0]) { twruk += rdr->webif_emmwritten[0]; }
++		if (rdr->webif_emmwritten[1]) { twruq += rdr->webif_emmwritten[1]; }
++		if (rdr->webif_emmwritten[2]) { twrs += rdr->webif_emmwritten[2]; }
++		if (rdr->webif_emmwritten[3]) { twrg += rdr->webif_emmwritten[3]; }
+ 
+-		tskuk += rdr->webif_emmskipped[0];
+-		tskuq += rdr->webif_emmskipped[1];
+-		tsks += rdr->webif_emmskipped[2];
+-		tskg += rdr->webif_emmskipped[3];
++		if (rdr->webif_emmskipped[0]) { tskuk += rdr->webif_emmskipped[0]; }
++		if (rdr->webif_emmskipped[1]) { tskuq += rdr->webif_emmskipped[1]; }
++		if (rdr->webif_emmskipped[2]) { tsks += rdr->webif_emmskipped[2]; }
++		if (rdr->webif_emmskipped[3]) { tskg += rdr->webif_emmskipped[3]; }
+ 
+-		tbluk += rdr->webif_emmblocked[0];
+-		tbluq += rdr->webif_emmblocked[1];
+-		tbls += rdr->webif_emmblocked[2];
+-		tblg += rdr->webif_emmblocked[3];
++		if (rdr->webif_emmblocked[0]) { tbluk += rdr->webif_emmblocked[0]; }
++		if (rdr->webif_emmblocked[1]) { tbluq += rdr->webif_emmblocked[1]; }
++		if (rdr->webif_emmblocked[2]) { tbls += rdr->webif_emmblocked[2]; }
++		if (rdr->webif_emmblocked[3]) { tblg += rdr->webif_emmblocked[3]; }
+ 	}
+ 	cs_readunlock(__func__, &readerlist_lock);
+ 
+@@ -1390,6 +1389,11 @@ static char *send_oscam_config_streamrelay(struct templatevars *vars, struct uri
  
  	tpl_printf(vars, TPLADD, "STREAM_RELAY_BUFFER_TIME", "%d", cfg.stream_relay_buffer_time);
  	tpl_printf(vars, TPLADD, "STREAM_RELAY_RECONNECT_COUNT", "%d", cfg.stream_relay_reconnect_count);
@@ -15167,7 +16372,7 @@ index 8ee8e727..f98b56ff 100644
  
  	tpl_printf(vars, TPLADD, "TMP", "STREAMCONFIGCLIENTSELECTED%d", cfg.stream_display_client);
  	tpl_addVar(vars, TPLADD, tpl_getVar(vars, "TMP"), "selected");
-@@ -2510,7 +2516,7 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -2512,7 +2516,7 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  		chk_reader("services", servicelabels, rdr);
  		chk_reader("lb_whitelist_services", servicelabelslb, rdr);
  
@@ -15176,7 +16381,7 @@ index 8ee8e727..f98b56ff 100644
  		{
  			if(rdr)
  				{
-@@ -3307,6 +3313,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3309,6 +3313,8 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_printf(vars, TPLADD, "RESHARE",      "%d", cfg.cc_reshare);
  	tpl_printf(vars, TPLADD, "CCCRECONNECT", "%d", rdr->cc_reconnect);
  
@@ -15185,7 +16390,7 @@ index 8ee8e727..f98b56ff 100644
  	if(rdr->cc_keepalive)
  		{ tpl_addVar(vars, TPLADD, "KEEPALIVECHECKED", "checked"); }
  #endif
-@@ -3344,6 +3352,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3346,6 +3352,23 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	tpl_addVar(vars, TPLADD, "USERSCRIPT", rdr->userscript);
  #endif
  
@@ -15209,7 +16414,7 @@ index 8ee8e727..f98b56ff 100644
  	tpl_addVar(vars, TPLADD, "PROTOCOL", reader_get_type_desc(rdr, 0));
  
  	// Show only parameters which needed for the reader
-@@ -3365,6 +3390,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
+@@ -3367,6 +3390,9 @@ static char *send_oscam_reader_config(struct templatevars *vars, struct uriparam
  	case R_CAMD35 :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCAMD35BIT"));
  		break;
@@ -15219,7 +16424,7 @@ index 8ee8e727..f98b56ff 100644
  	case R_CS378X :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCS378XBIT"));
  		break;
-@@ -5404,9 +5432,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
+@@ -5406,9 +5432,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
  
  					tpl_addVar(vars, TPLAPPEND, "LOGHISTORY", "<BR><BR>New Structure:<BR>");
  					char tbuffer[83];
@@ -15254,7 +16459,7 @@ index 8ee8e727..f98b56ff 100644
  						localtime_r(&item->start, &start_t);
  						localtime_r(&item->end, &end_t);
  
-@@ -5903,6 +5956,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+@@ -5905,6 +5956,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
  						filtered = (type == cl->typ) || (type == 'x' && (cl->typ == 'p' || cl->typ == 'r') && (cl->reader && cl->reader->cacheex.mode));
  #else
  						filtered = (type == cl->typ);
@@ -15264,7 +16469,7 @@ index 8ee8e727..f98b56ff 100644
  #endif
  					}
  				}
-@@ -7513,6 +7569,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -7515,6 +7569,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -15274,7 +16479,7 @@ index 8ee8e727..f98b56ff 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7985,7 +8044,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7987,7 +8044,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -15287,7 +16492,7 @@ index 8ee8e727..f98b56ff 100644
  		}
  
  		if(csystem)
-@@ -9222,7 +9285,6 @@ static int8_t check_request(char *result, int32_t readen)
+@@ -9224,7 +9285,6 @@ static int8_t check_request(char *result, int32_t readen)
  	return 0;
  }
  
@@ -15295,7 +16500,7 @@ index 8ee8e727..f98b56ff 100644
  static int32_t webif_remaining_ms(const struct timespec *deadline)
  {
  	struct timespec now;
-@@ -9286,7 +9348,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+@@ -9288,7 +9348,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
  	int32_t fd;
  	int8_t allocation_failed = 0;
  	struct timespec deadline;
@@ -15307,7 +16512,7 @@ index 8ee8e727..f98b56ff 100644
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
-@@ -9459,47 +9525,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9461,47 +9525,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		char *method, *path, *protocol, *str1, *saveptr1 = NULL, *authheader = NULL, *extraheader = NULL, *filebuf = NULL;
  		char *pch, *tmp, *buf, *nameInUrl, subdir[32];
  		/* List of possible pages */
@@ -15392,7 +16597,7 @@ index 8ee8e727..f98b56ff 100644
  		uint32_t etagheader = 0;
  		struct uriparams params;
  		params.paramcount = 0;
-@@ -9583,9 +9649,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9585,9 +9649,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/* Map page to our static page definitions */
@@ -15404,7 +16609,7 @@ index 8ee8e727..f98b56ff 100644
  		}
  
  		parseParams(&params, pch);
-@@ -9692,15 +9758,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9694,15 +9758,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/*build page*/
@@ -15423,7 +16628,7 @@ index 8ee8e727..f98b56ff 100644
  		{
  			send_file(f, "JQ", subdir, modifiedheader, etagheader, extraheader);
  		}
-@@ -9759,12 +9825,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9761,12 +9825,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				tpl_printf(vars, TPLADD, "POLLREFRESHTIME", "%d", cfg.poll_refresh);
  			}
  			if	(	cfg.http_refresh > 0 &&
@@ -15440,7 +16645,7 @@ index 8ee8e727..f98b56ff 100644
  				tpl_addVar(vars, TPLADD, "REFRESH", tpl_getTpl(vars, "REFRESH"));
  			}
  #ifdef WEBIF_JQUERY
-@@ -9791,8 +9857,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9793,8 +9857,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			tpl_addVar(vars, TPLADD, "RUNAS", urlencode(vars, username(first_client)));
  
  			time_t now = time((time_t *)0);
@@ -15451,7 +16656,7 @@ index 8ee8e727..f98b56ff 100644
  			{
  				char tbuffer [30];
  				strftime(tbuffer, 30, "%Y-%m-%dT%H:%M:%S%z", &st);
-@@ -9829,105 +9895,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9831,105 +9895,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			char *result = NULL;
  
  			// WebIf allows modifying many things. Thus, all pages except images/css/static are expected to be non-threadsafe!
@@ -15591,7 +16796,7 @@ index 8ee8e727..f98b56ff 100644
  				result = send_oscam_wiki_status(vars, &params);
  				break;
  #endif
-@@ -9935,20 +10004,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9937,20 +10004,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				result = send_oscam_status(vars, &params, 0);
  				break;
  			}
@@ -15617,7 +16822,7 @@ index 8ee8e727..f98b56ff 100644
  					{ send_headers(f, 200, "OK", extraheader, "application/json", 0, cs_strlen(result), NULL, 0); }
  #endif
  				else
-@@ -10049,15 +10118,14 @@ static void *serve_process(void *conn)
+@@ -10051,15 +10118,14 @@ static void *serve_process(void *conn)
  		{
  			process_request(f, in);
  			fflush(f);
@@ -16185,6 +17390,61 @@ index 00000000..cf718779
 +++ b/./webif/files/menu_softcamkey.html
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
+diff --git a/../oscam-base/webif/include/jscript.js b/./webif/include/jscript.js
+index aa940068..bfddfac3 100644
+--- a/../oscam-base/webif/include/jscript.js
++++ b/./webif/include/jscript.js
+@@ -49,7 +49,7 @@ function cleaninsert(deleteinsert) {
+ 	var tmp_array = existing_inserts.slice();
+ 	existing_inserts.length = 0;
+ 	var i2 = 0;
+-	for (var i = 0; i < tmp_array.length; i++) {
++	for (i = 0; i < tmp_array.length; i++) {
+ 		if (tmp_array[i] != deleteinsert){
+ 			existing_inserts[i2] = tmp_array[i];
+ 			i2++;
+@@ -65,8 +65,10 @@ var beep = (function () {
+ 						window.msAudioContext);
+ 	if (contextClass) {
+ 		var ctx = new contextClass();
+-		return function (duration, freq, vol, finishedCallback) {
++		return function (duration, type, freq, vol, finishedCallback) {
+ 			duration = +duration;
++			// Only 0-4 are valid types.
++			type = (type % 5) || 0;
+ 
+ 			if (typeof finishedCallback != "function") {
+ 				finishedCallback = function () {};
+@@ -74,9 +76,11 @@ var beep = (function () {
+ 
+ 			var osc = ctx.createOscillator();
+ 			var gainNode = ctx.createGain();
++			osc.type = type;
+ 			osc.connect(gainNode);
+ 			gainNode.connect(ctx.destination);
+ 			gainNode.gain.value = vol;
++			osc.type = type;
+ 			osc.frequency.value = freq; // value in hertz
+ 			osc.detune.value = 100; // value in cents
+ 			osc.start(0);
+@@ -87,7 +91,7 @@ var beep = (function () {
+ 			}, duration);
+ 		};
+ 	} else {
+-		return function (duration, freq, vol, finishedCallback) {return;};
++		return function (duration, type, freq, vol, finishedCallback) {return;};
+ 	}
+ })();
+ 
+@@ -965,7 +969,7 @@ function updateLogpage(data) {
+ 					}
+ 					$("#livelogdata").append(newline);
+ 					if (newcolor.beep == 1) {
+-						beep(50, 1000, 0.2);
++						beep(50, 4, 1000, 0.2);
+ 					}
+ 				} else {
+ 					hiddenline = 1;
 diff --git a/../oscam-base/webif/pages_index.txt b/./webif/pages_index.txt
 index 46434100..654fc692 100644
 --- a/../oscam-base/webif/pages_index.txt
