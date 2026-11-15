@@ -1,5 +1,5 @@
-patch version: 2.26.11-11980-802 (72427f1b)
-patch date: 2026-11-14 19:05:49 UTC (+00:00)
+patch version: 2.26.11-11985-802 (e428c774)
+patch date: 2026-11-15 09:19:40 UTC (+00:00)
 ---
 diff --git a/../oscam-base/CMakeLists.txt b/./CMakeLists.txt
 index e7004fa6..ccc85569 100644
@@ -1355,11 +1355,11 @@ index 4cda2edd..6cd27dae 100644
  #endif
 diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
 new file mode 100644
-index 00000000..31cb54b5
+index 00000000..e0569712
 --- /dev/null
 +++ b/./emu/.git/FETCH_HEAD
 @@ -0,0 +1 @@
-+689b9e240dcc7484c3331a2986e059c06736c446		branch 'master' of https://github.com/speedy005/oscam-emu-patch
++687303ebbf7cf87e73f8a696991990892e6dbde6		branch 'master' of https://github.com/speedy005/oscam-emu-patch
 diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
 new file mode 100644
 index 00000000..cb089cd8
@@ -2404,7 +2404,7 @@ index 00000000..c4d426bc
 +exit 0
 diff --git a/./emu/.git/index b/./emu/.git/index
 new file mode 100644
-index 00000000..8d0ef44c
+index 00000000..eb590998
 Binary files /dev/null and b/./emu/.git/index differ
 diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
 new file mode 100755
@@ -2420,55 +2420,55 @@ index 00000000..a5196d1b
 +# *~
 diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
 new file mode 100644
-index 00000000..307021c7
+index 00000000..3cea3b07
 --- /dev/null
 +++ b/./emu/.git/logs/HEAD
 @@ -0,0 +1,2 @@
-+0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	branch: Created from refs/remotes/origin/master
-+689b9e240dcc7484c3331a2986e059c06736c446 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	checkout: moving from master to master
++0000000000000000000000000000000000000000 687303ebbf7cf87e73f8a696991990892e6dbde6 runner <runner@runnervmccnms.eto505wr3emezeuxx02mmhyhpg.xx.internal.cloudapp.net> 1794734379 +0000	branch: Created from refs/remotes/origin/master
++687303ebbf7cf87e73f8a696991990892e6dbde6 687303ebbf7cf87e73f8a696991990892e6dbde6 runner <runner@runnervmccnms.eto505wr3emezeuxx02mmhyhpg.xx.internal.cloudapp.net> 1794734379 +0000	checkout: moving from master to master
 diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
 new file mode 100644
-index 00000000..893f048b
+index 00000000..1aed20ab
 --- /dev/null
 +++ b/./emu/.git/logs/refs/heads/master
 @@ -0,0 +1 @@
-+0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	branch: Created from refs/remotes/origin/master
++0000000000000000000000000000000000000000 687303ebbf7cf87e73f8a696991990892e6dbde6 runner <runner@runnervmccnms.eto505wr3emezeuxx02mmhyhpg.xx.internal.cloudapp.net> 1794734379 +0000	branch: Created from refs/remotes/origin/master
 diff --git a/./emu/.git/logs/refs/remotes/origin/master b/./emu/.git/logs/refs/remotes/origin/master
 new file mode 100644
-index 00000000..fddce776
+index 00000000..3532f40e
 --- /dev/null
 +++ b/./emu/.git/logs/refs/remotes/origin/master
 @@ -0,0 +1 @@
-+0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
-diff --git a/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.idx b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.idx
++0000000000000000000000000000000000000000 687303ebbf7cf87e73f8a696991990892e6dbde6 runner <runner@runnervmccnms.eto505wr3emezeuxx02mmhyhpg.xx.internal.cloudapp.net> 1794734379 +0000	fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*: storing head
+diff --git a/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.idx b/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.idx
 new file mode 100644
-index 00000000..6020dbd0
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.idx differ
-diff --git a/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.pack b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.pack
+index 00000000..2b2c189b
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.idx differ
+diff --git a/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.pack b/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.pack
 new file mode 100644
-index 00000000..386fe8fe
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.pack differ
-diff --git a/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.rev b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.rev
+index 00000000..80eefaad
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.pack differ
+diff --git a/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.rev b/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.rev
 new file mode 100644
-index 00000000..c98c3447
-Binary files /dev/null and b/./emu/.git/objects/pack/pack-8c381fc2231d719e76415e2786821397dec4ae83.rev differ
+index 00000000..a7264b25
+Binary files /dev/null and b/./emu/.git/objects/pack/pack-f0c20b3aa3894d5d6e2a086c9ff798545af3acee.rev differ
 diff --git a/./emu/.git/refs/heads/master b/./emu/.git/refs/heads/master
 new file mode 100644
-index 00000000..15936529
+index 00000000..c30e1317
 --- /dev/null
 +++ b/./emu/.git/refs/heads/master
 @@ -0,0 +1 @@
-+689b9e240dcc7484c3331a2986e059c06736c446
++687303ebbf7cf87e73f8a696991990892e6dbde6
 diff --git a/./emu/.git/refs/remotes/origin/master b/./emu/.git/refs/remotes/origin/master
 new file mode 100644
-index 00000000..15936529
+index 00000000..c30e1317
 --- /dev/null
 +++ b/./emu/.git/refs/remotes/origin/master
 @@ -0,0 +1 @@
-+689b9e240dcc7484c3331a2986e059c06736c446
++687303ebbf7cf87e73f8a696991990892e6dbde6
 diff --git a/./emu/oscam-emu.patch b/./emu/oscam-emu.patch
 new file mode 100644
-index 00000000..68e30edb
+index 00000000..73378ca2
 --- /dev/null
 +++ b/./emu/oscam-emu.patch
 @@ -0,0 +1,2431 @@
@@ -3826,11 +3826,11 @@ index 00000000..68e30edb
 + #endif
 +diff --git a/./emu/.git/FETCH_HEAD b/./emu/.git/FETCH_HEAD
 +new file mode 100644
-+index 00000000..31cb54b5
++index 00000000..e0569712
 +--- /dev/null
 ++++ b/./emu/.git/FETCH_HEAD
 +@@ -0,0 +1 @@
-++689b9e240dcc7484c3331a2986e059c06736c446		branch 'master' of https://github.com/speedy005/oscam-emu-patch
+++687303ebbf7cf87e73f8a696991990892e6dbde6		branch 'master' of https://github.com/speedy005/oscam-emu-patch
 +diff --git a/./emu/.git/HEAD b/./emu/.git/HEAD
 +new file mode 100644
 +index 00000000..cb089cd8
@@ -4875,7 +4875,7 @@ index 00000000..68e30edb
 ++exit 0
 +diff --git a/./emu/.git/index b/./emu/.git/index
 +new file mode 100644
-+index 00000000..8d0ef44c
++index 00000000..eb590998
 +Binary files /dev/null and b/./emu/.git/index differ
 +diff --git a/./emu/.git/info/exclude b/./emu/.git/info/exclude
 +new file mode 100755
@@ -4891,21 +4891,21 @@ index 00000000..68e30edb
 ++# *~
 +diff --git a/./emu/.git/logs/HEAD b/./emu/.git/logs/HEAD
 +new file mode 100644
-+index 00000000..307021c7
++index 00000000..3cea3b07
 +--- /dev/null
 ++++ b/./emu/.git/logs/HEAD
 +@@ -0,0 +1,2 @@
-++0000000000000000000000000000000000000000 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	branch: Created from refs/remotes/origin/master
-++689b9e240dcc7484c3331a2986e059c06736c446 689b9e240dcc7484c3331a2986e059c06736c446 runner <runner@runnervmccnms.ejejb00dmvmu3df34gioazw1jd.xx.internal.cloudapp.net> 1794683148 +0000	checkout: moving from master to master
+++0000000000000000000000000000000000000000 687303ebbf7cf87e73f8a696991990892e6dbde6 runner <runner@runnervmccnms.eto505wr3emezeuxx02mmhyhpg.xx.internal.cloudapp.net> 1794734379 +0000	branch: Created from refs/remotes/origin/master
+++687303ebbf7cf87e73f8a696991990892e6dbde6 687303ebbf7cf87e73f8a696991990892e6dbde6 runner <runner@runnervmccnms.eto505wr3emezeuxx02mmhyhpg.xx.internal.cloudapp.net> 1794734379 +0000	checkout: moving from master to master
 +diff --git a/./emu/.git/logs/refs/heads/master b/./emu/.git/logs/refs/heads/master
 +new file mode 100644
-+index 00000000..893f048b
++index 00000000..1aed20ab
 +--- /dev/null
 ++++ b/./emu/.git/logs/refs/heads/master
 +@@ -0,0 +1 
 \ No newline at end of file
 diff --git a/../oscam-base/globals.h b/./globals.h
-index 49599025..69f8ac76 100644
+index a0609f43..b9a9472a 100644
 --- a/../oscam-base/globals.h
 +++ b/./globals.h
 @@ -368,9 +368,9 @@
@@ -4918,7 +4918,7 @@ index 49599025..69f8ac76 100644
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.11-11980"
+ #define CS_VERSION				"2.26.11-11985"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -16279,7 +16279,7 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/../oscam-base/module-webif.c b/./module-webif.c
-index 23e8d48e..f98b56ff 100644
+index b8f1939e..f98b56ff 100644
 --- a/../oscam-base/module-webif.c
 +++ b/./module-webif.c
 @@ -54,11 +54,9 @@ int32_t ssl_active = 0;
@@ -16424,7 +16424,36 @@ index 23e8d48e..f98b56ff 100644
  	case R_CS378X :
  		tpl_addVar(vars, TPLAPPEND, "READERDEPENDINGCONFIG", tpl_getTpl(vars, "READERCONFIGCS378XBIT"));
  		break;
-@@ -5406,9 +5432,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
+@@ -5068,7 +5094,7 @@ static char *send_oscam_user_config(struct templatevars *vars, struct uriparams
+ 			if(apicall == 1){
+ 				tpl_addVar(vars, TPLAPPEND, "APIUSERCONFIGS", tpl_getTpl(vars, "APIUSERCONFIGLISTBIT"));
+ 			} else if (apicall == 2){
+-				tpl_printf(vars, TPLADD, "JSONDELIMITER", "%s", (clientcount > 0)?",":"");
++				tpl_printf(vars, TPLADD, "JSONDELIMITER", "%s", (total_users > 1)?",":"");
+ 				tpl_addVar(vars, TPLAPPEND, "APIUSERCONFIGS", tpl_getTpl(vars, "JSONUSERBIT"));
+ 			}
+ 			++clientcount;
+@@ -5089,7 +5115,18 @@ static char *send_oscam_user_config(struct templatevars *vars, struct uriparams
+ 	if(!apicall)
+ 		{ return tpl_getTpl(vars, "USERCONFIGLIST"); }
+ 	else
+-		{ return tpl_getTpl(vars, (apicall==1)?"APIUSERCONFIGLIST":"JSONUSER"); }
++	{
++		if(!filter || clientcount > 0)
++		{
++			return tpl_getTpl(vars, (apicall==1)?"APIUSERCONFIGLIST":"JSONUSER");
++		}
++		else
++		{
++			tpl_printf(vars, TPLADD, "APIERRORMESSAGE", "Invalid client %s", xml_encode(vars, filter));
++			return tpl_getTpl(vars, "APIERROR");
++		}
++	}
++
+ }
+ 
+ #define ENTITLEMENT_PAGE_SIZE 500
+@@ -5395,9 +5432,34 @@ static char *send_oscam_entitlement(struct templatevars *vars, struct uriparams
  
  					tpl_addVar(vars, TPLAPPEND, "LOGHISTORY", "<BR><BR>New Structure:<BR>");
  					char tbuffer[83];
@@ -16459,7 +16488,7 @@ index 23e8d48e..f98b56ff 100644
  						localtime_r(&item->start, &start_t);
  						localtime_r(&item->end, &end_t);
  
-@@ -5905,6 +5956,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+@@ -5894,6 +5956,9 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
  						filtered = (type == cl->typ) || (type == 'x' && (cl->typ == 'p' || cl->typ == 'r') && (cl->reader && cl->reader->cacheex.mode));
  #else
  						filtered = (type == cl->typ);
@@ -16469,7 +16498,16 @@ index 23e8d48e..f98b56ff 100644
  #endif
  					}
  				}
-@@ -7515,6 +7569,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
+@@ -6606,8 +6671,6 @@ static char *send_oscam_status(struct templatevars * vars, struct uriparams * pa
+ 
+ 					if(apicall == 2)
+ 					{
+-						tpl_addVar(vars, TPLADD, "JSONDELIMITER", delimiter?",":"");
+-						// Keep the previous placeholder available to external status templates.
+ 						tpl_addVar(vars, TPLADD, "JSONARRAYDELIMITER", delimiter?",":"");
+ 						tpl_addVar(vars, TPLAPPEND, "JSONSTATUSBITS", tpl_getTpl(vars, "JSONSTATUSBIT"));
+ 						delimiter++;
+@@ -7506,6 +7569,9 @@ static char *send_oscam_files(struct templatevars * vars, struct uriparams * par
  		{ "stats.info",      MNU_GBX_FSTAINF,   FTYPE_GBOX },     // id 27
  		{ "expired.info",    MNU_GBX_FEXPINF,   FTYPE_GBOX },     // id 28
  		{ "info.log",        MNU_GBX_INFOLOG,   FTYPE_GBOX },     // id 29
@@ -16479,7 +16517,7 @@ index 23e8d48e..f98b56ff 100644
  #endif
  		{ NULL, 0, 0 },
  	};
-@@ -7987,7 +8044,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
+@@ -7978,7 +8044,11 @@ static char *send_oscam_EMM_running(struct templatevars * vars, struct uriparams
  		else if(!proxy && rdr->csystem_active)     // local active reader
  		{
  			csystem = rdr->csystem;
@@ -16492,7 +16530,7 @@ index 23e8d48e..f98b56ff 100644
  		}
  
  		if(csystem)
-@@ -9224,7 +9285,6 @@ static int8_t check_request(char *result, int32_t readen)
+@@ -9215,7 +9285,6 @@ static int8_t check_request(char *result, int32_t readen)
  	return 0;
  }
  
@@ -16500,7 +16538,7 @@ index 23e8d48e..f98b56ff 100644
  static int32_t webif_remaining_ms(const struct timespec *deadline)
  {
  	struct timespec now;
-@@ -9288,7 +9348,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
+@@ -9279,7 +9348,11 @@ static int32_t readRequest(FILE * f, IN_ADDR_T in, char **result, int8_t forcePl
  	int32_t fd;
  	int8_t allocation_failed = 0;
  	struct timespec deadline;
@@ -16512,7 +16550,7 @@ index 23e8d48e..f98b56ff 100644
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
-@@ -9461,47 +9525,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9452,47 +9525,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		char *method, *path, *protocol, *str1, *saveptr1 = NULL, *authheader = NULL, *extraheader = NULL, *filebuf = NULL;
  		char *pch, *tmp, *buf, *nameInUrl, subdir[32];
  		/* List of possible pages */
@@ -16597,7 +16635,7 @@ index 23e8d48e..f98b56ff 100644
  		uint32_t etagheader = 0;
  		struct uriparams params;
  		params.paramcount = 0;
-@@ -9585,9 +9649,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9576,9 +9649,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/* Map page to our static page definitions */
@@ -16609,7 +16647,7 @@ index 23e8d48e..f98b56ff 100644
  		}
  
  		parseParams(&params, pch);
-@@ -9694,15 +9758,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9685,15 +9758,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/*build page*/
@@ -16628,7 +16666,7 @@ index 23e8d48e..f98b56ff 100644
  		{
  			send_file(f, "JQ", subdir, modifiedheader, etagheader, extraheader);
  		}
-@@ -9761,12 +9825,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9752,12 +9825,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				tpl_printf(vars, TPLADD, "POLLREFRESHTIME", "%d", cfg.poll_refresh);
  			}
  			if	(	cfg.http_refresh > 0 &&
@@ -16645,7 +16683,7 @@ index 23e8d48e..f98b56ff 100644
  				tpl_addVar(vars, TPLADD, "REFRESH", tpl_getTpl(vars, "REFRESH"));
  			}
  #ifdef WEBIF_JQUERY
-@@ -9793,8 +9857,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9784,8 +9857,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			tpl_addVar(vars, TPLADD, "RUNAS", urlencode(vars, username(first_client)));
  
  			time_t now = time((time_t *)0);
@@ -16656,7 +16694,7 @@ index 23e8d48e..f98b56ff 100644
  			{
  				char tbuffer [30];
  				strftime(tbuffer, 30, "%Y-%m-%dT%H:%M:%S%z", &st);
-@@ -9831,105 +9895,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9822,105 +9895,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			char *result = NULL;
  
  			// WebIf allows modifying many things. Thus, all pages except images/css/static are expected to be non-threadsafe!
@@ -16796,7 +16834,7 @@ index 23e8d48e..f98b56ff 100644
  				result = send_oscam_wiki_status(vars, &params);
  				break;
  #endif
-@@ -9937,20 +10004,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9928,20 +10004,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				result = send_oscam_status(vars, &params, 0);
  				break;
  			}
@@ -16822,7 +16860,7 @@ index 23e8d48e..f98b56ff 100644
  					{ send_headers(f, 200, "OK", extraheader, "application/json", 0, cs_strlen(result), NULL, 0); }
  #endif
  				else
-@@ -10051,15 +10118,14 @@ static void *serve_process(void *conn)
+@@ -10042,15 +10118,14 @@ static void *serve_process(void *conn)
  		{
  			process_request(f, in);
  			fflush(f);
@@ -16840,6 +16878,19 @@ index 23e8d48e..f98b56ff 100644
  	}
  
  	return NULL;
+diff --git a/../oscam-base/oscam-cache.c b/./oscam-cache.c
+index aab53ac5..bb1a0b63 100644
+--- a/../oscam-base/oscam-cache.c
++++ b/./oscam-cache.c
+@@ -444,7 +444,7 @@ static void cacheex_cache_add(ECM_REQUEST *er, ECMHASH *result, CW *cw, bool add
+ 		if (er->cacheex_src->account)
+ 			er->cacheex_src->account->cwcacheexerrcw++;
+ 
+-		if (((D_CACHEEX | D_CSP) & cs_dblevel)) // avoid useless operations if debug is not enabled
++		if (((0x0200| 0x0800) & cs_dblevel)) // avoid useless operations if debug is not enabled
+ 		{
+ 			char cw1[16*3+2], cw2[16*3+2];
+ 			cs_hexdump(0, er->cw, 16, cw1, sizeof(cw1));
 diff --git a/../oscam-base/oscam-chk.c b/./oscam-chk.c
 index 78d031ea..0396bf71 100644
 --- a/../oscam-base/oscam-chk.c
@@ -17335,6 +17386,29 @@ index 0a96878b..fc108581 100644
  #ifdef WITH_LIB_MDC2
  	failures += run_mdc2_tests();
  #endif
+diff --git a/../oscam-base/webif/api.json/status.json b/./webif/api.json/status.json
+index 78b90636..d1e22d8a 100644
+--- a/../oscam-base/webif/api.json/status.json
++++ b/./webif/api.json/status.json
+@@ -15,5 +15,7 @@
+ 	"pcc":"##PCC##",
+ 	"pca":"##PCA##",
+ 	"pco":"##PCO##",
+-	"client":[##JSONSTATUSBITS##]}
++	"client":[
++	                          ##JSONSTATUSBITS##
++								]}
+ ##TPLJSONFOOTER##
+diff --git a/../oscam-base/webif/api.json/status_statusbits.json b/./webif/api.json/status_statusbits.json
+index 398e004e..12de6e92 100644
+--- a/../oscam-base/webif/api.json/status_statusbits.json
++++ b/./webif/api.json/status_statusbits.json
+@@ -1,4 +1,4 @@
+-##JSONDELIMITER##{
++##JSONARRAYDELIMITER##{
+ "thid": "##CSIDX##",
+ "type": "##CLIENTTYPE##",
+ "name_enc": "##USERENC##",
 diff --git a/../oscam-base/webif/config/streamrelay.html b/./webif/config/streamrelay.html
 index f79d5a1c..3804d00f 100644
 --- a/../oscam-base/webif/config/streamrelay.html
@@ -17391,9 +17465,20 @@ index 00000000..cf718779
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
 diff --git a/../oscam-base/webif/include/jscript.js b/./webif/include/jscript.js
-index aa940068..bfddfac3 100644
+index 77cdaae4..bfddfac3 100644
 --- a/../oscam-base/webif/include/jscript.js
 +++ b/./webif/include/jscript.js
+@@ -31,8 +31,8 @@ function initDoc() {
+ /* Function for add new reader/user in readers.html/userconfig.html */
+ function addinsert() {
+ 	cdpause();
+-	$("#searchTable").fadeOut('fast', function() {
+-		$("#newinsert").fadeIn('fast');
++	$("#searchTable").fadeOut('slow', function() {
++		$("#newinsert").fadeIn('slow');
+ 	});
+ }
+ 
 @@ -49,7 +49,7 @@ function cleaninsert(deleteinsert) {
  	var tmp_array = existing_inserts.slice();
  	existing_inserts.length = 0;
@@ -17436,7 +17521,55 @@ index aa940068..bfddfac3 100644
  	}
  })();
  
-@@ -965,7 +969,7 @@ function updateLogpage(data) {
+@@ -298,10 +302,10 @@ $(function () {
+ 	$("#showhidesettings").click(function () {
+ 		if ($("#showhidesettings").val() == 'Show Settings') {
+ 			$("#showhidesettings").val('Hide Settings');
+-			$("#regexdata").fadeIn('fast');
++			$("#regexdata").fadeIn('slow');
+ 		} else {
+ 			$("#showhidesettings").val('Show Settings');
+-			$("#regexdata").fadeOut('fast');
++			$("#regexdata").fadeOut('slow');
+ 		}
+ 	});
+ 
+@@ -569,7 +573,9 @@ function updateUserpage(data) {
+ 						$(uid + " > td.usercol6").text('');
+ 
+ 						// just to be sure that class of image is set
+-						$(uid + " > td.usercol6 > img").attr('class', 'usericon');
++						if ($(uid + " > td.usercol6 > img").length) {
++							$(uid + " > td.usercol6 > img").attr('class', 'usericon');
++						}
+ 
+ 						newimage = $('<img class="usericon" src="image?i=IC_' + item.user.lca + '">');
+ 						newimage.hide();
+@@ -724,7 +730,9 @@ function updateUserpage(data) {
+ 				// last status was online so cleanup offline
+ 				$(uid).attr('class', item.user.classname);
+ 				if (!is_nopoll('usercol1')) {
+-					$(uid + " td.usercol1 > span.span_notifier").remove();
++					if ($(uid + " td.usercol1 > span.span_notifier").length) {
++						$(uid + " td.usercol1 > span.span_notifier").remove();
++					}
+ 				}
+ 				if (!is_nopoll('usercol2')) {
+ 					$(uid + " td.usercol2")
+@@ -863,7 +871,11 @@ function setDebuglevel(debug, maxdebug) {
+ 		$("#debugfrom").text(' Switch Debug from ' + cs_dblevel + ' to ');
+ 		for (var i = 0; i < maxlevel; i++) {
+ 			lvl = 1 << i;
+-			$("#debug" + lvl).attr('sendval', cs_dblevel ^ lvl);
++			if (cs_dblevel & lvl) {
++				$("#debug" + lvl).attr('sendval', cs_dblevel - lvl);
++			} else {
++				$("#debug" + lvl).attr('sendval', cs_dblevel + lvl);
++			}
+ 			$("#debug" + lvl).attr('class', (cs_dblevel & lvl) ? 'debugls' : 'debugl');
+ 		}
+ 		lastdebuglevel = cs_dblevel;
+@@ -957,7 +969,7 @@ function updateLogpage(data) {
  					}
  					$("#livelogdata").append(newline);
  					if (newcolor.beep == 1) {
@@ -17445,6 +17578,105 @@ index aa940068..bfddfac3 100644
  					}
  				} else {
  					hiddenline = 1;
+@@ -1279,7 +1291,9 @@ function updateStatuspage(data) {
+ 					$(uid + " > td.statuscol13 > a").attr('title', item.request.chname + item.request.chprovider);
+ 
+ 					// just to be sure that class of image is set
+-					$(uid + " > td.statuscol13 > a > img").attr('class', 'statususericon');
++					if ($(uid + " > td.statuscol13 > a > img").length) {
++						$(uid + " > td.statuscol13 > a > img").attr('class', 'statususericon');
++					}
+ 
+ 					newimage = $('<img class="statususericon" src="image?i=IC_' + item.request.picon + '">');
+ 					newimage.hide();
+@@ -1531,7 +1545,9 @@ function setPollerr(error) {
+ 	if (error && !$("#pollerr").length) {
+ 		$("body").append('<div id="pollerr" style="top:5px;left:5px;background-color:red;color:yellow;">POLLERR</div>');
+ 	} else {
+-		$("#pollerr").fadeOut('slow').remove();
++		if ($("#pollerr").length) {
++			$("#pollerr").fadeOut('slow').remove();
++		}
+ 	}
+ }
+ 
+@@ -1936,18 +1952,18 @@ function decodeVideoguardEMM(text, target, addHideButton) {
+ 
+ 				var bin = parseInt(b[2] + b[3], 16);
+ 				var time = {};
+-				time.s = ((bin & 0x1F) * 2);
++				time.s = ((bin & parseInt('11111', 2)) * 2);
+ 				bin = bin >>> 5;
+-				time.m = (bin & 0x3F);
++				time.m = (bin & parseInt('111111', 2));
+ 				bin = bin >>> 6;
+-				time.h = (bin & 0x1F);
++				time.h = (bin & parseInt('11111', 2));
+ 				bin = bin >>> 5;
+ 
+ 				bin = parseInt(b[0] + b[1], 16);
+ 				var date = {};
+-				date.d = (bin & 0xFF);
++				date.d = (bin & parseInt('11111111', 2));
+ 				bin = bin >>> 8;
+-				date.m = (bin & 0xFF);
++				date.m = (bin & parseInt('11111111', 2));
+ 				bin = bin >>> 8;
+ 
+ 				date.y = parseInt(date.m / 12) + 2004;
+@@ -2305,24 +2321,27 @@ function decodeVideoguardEMM(text, target, addHideButton) {
+ 	};
+ 	e.extend(true, e.fn.colorPicker, {
+ 		toHex: function (e) {
+-			var hex = e.match(/^#?([0-9A-F]{3}|[0-9A-F]{6})$/i);
+-			if (hex && hex[0] === e) {
+-				return "#" + hex[1]
+-			}
+-			var rgb = e.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
+-			if (!rgb || rgb[0] !== e) {
+-				return false
+-			}
+-			var channels = [parseInt(rgb[1], 10), parseInt(rgb[2], 10), parseInt(rgb[3], 10)],
+-				hexColor = "#";
+-			for (var channel = 0; channel < channels.length; channel++) {
+-				if (channels[channel] > 255) {
+-					return false
++			if (e.match(/[0-9A-F]{6}|[0-9A-F]{3}$/i)) {
++				return e.charAt(0) === "#" ? e : "#" + e
++			} else if (e.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/)) {
++				var t = [parseInt(RegExp.$1, 10), parseInt(RegExp.$2, 10), parseInt(RegExp.$3, 10)],
++					n = function (e) {
++						if (e.length < 2) {
++							for (var t = 0, n = 2 - e.length; t < n; t++) {
++								e = "0" + e
++							}
++						}
++						return e
++					};
++				if (t.length === 3) {
++					var r = n(t[0].toString(16)),
++						i = n(t[1].toString(16)),
++						s = n(t[2].toString(16));
++					return "#" + r + i + s
+ 				}
+-				var hexChannel = channels[channel].toString(16);
+-				hexColor += hexChannel.length < 2 ? "0" + hexChannel : hexChannel;
++			} else {
++				return false
+ 			}
+-			return hexColor
+ 		},
+ 		checkMouse: function (r, i) {
+ 			var s = n,
+@@ -2435,7 +2454,7 @@ function decodeVideoguardEMM(text, target, addHideButton) {
+ 						var o = typeof s !== "undefined" ? s : r.text();
+ 						a.push([o, n])
+ 					});
+-					a.sort(function (e, t) {
++					a.sort(function (e, t, s) {
+ 						return f(e[0], t[0], o)
+ 					});
+ 					if (o != s.ASC) a.reverse();
 diff --git a/../oscam-base/webif/pages_index.txt b/./webif/pages_index.txt
 index 46434100..654fc692 100644
 --- a/../oscam-base/webif/pages_index.txt
