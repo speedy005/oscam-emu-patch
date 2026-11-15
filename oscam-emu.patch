@@ -1,10 +1,10 @@
-patch version: 2.26.11-11985-802 (9a50258d)
+patch version: 2.26.11-11986-802 (d9137cf0)
 patch date: 2026-11-15
 patch modified by speedy005 (15/11/2026)
-patch base commit: 9a50258d88efce1714768efad955595338339c6d
-patch target commit: e428c774ba7e5bf4f97ccd0a4719454b4aee3f70
+patch base commit: d9137cf0638b1a3bf01540a82861d0d79eb0cb0c
+patch target commit: ef24c1c59198aac0b047d03f6d1e55f7980fa5d2
 patch streamboard url: https://git.streamboard.tv/common/oscam.git
-patch emu repository url: https://github.com/speedy005/Oscam-emu
+patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
 
 diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
@@ -1687,7 +1687,7 @@ index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecae
  
  #endif
 diff --git a/globals.h b/globals.h
-index a0609f4345b37d3fbd058fc332a22963074fa6a2..b9a9472a84840c5a6df1539ef5a61a1a5094ad39 100644
+index 5f444a32b51aaeb7b2fa1850263b2de718288257..2239f6b2dfcb3dbc05634b1a654b232e5cd5de40 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -1700,7 +1700,7 @@ index a0609f4345b37d3fbd058fc332a22963074fa6a2..b9a9472a84840c5a6df1539ef5a61a1a
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.11-11985"
+ #define CS_VERSION				"2.26.11-11986"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -13061,7 +13061,7 @@ index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc01e6438d4 100644
+index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..7c61d7bdffea0ef04241c85ce26c9a5170bdcdb6 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -54,11 +54,9 @@ int32_t ssl_active = 0;
@@ -13332,7 +13332,18 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
-@@ -9452,47 +9525,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9415,10 +9488,6 @@ enum webif_page
+ 	WEBIF_PAGE_COUNT
+ };
+ 
+-static bool is_api_page(enum webif_page page)
+-{
+-	return page == WEBIF_PAGE_API_HTML || page == WEBIF_PAGE_API_XML || page == WEBIF_PAGE_API_JSON;
+-}
+ 
+ static int32_t process_request(FILE * f, IN_ADDR_T in)
+ {
+@@ -9452,47 +9521,47 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		char *method, *path, *protocol, *str1, *saveptr1 = NULL, *authheader = NULL, *extraheader = NULL, *filebuf = NULL;
  		char *pch, *tmp, *buf, *nameInUrl, subdir[32];
  		/* List of possible pages */
@@ -13417,7 +13428,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  		uint32_t etagheader = 0;
  		struct uriparams params;
  		params.paramcount = 0;
-@@ -9576,9 +9649,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9576,9 +9645,9 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/* Map page to our static page definitions */
@@ -13429,7 +13440,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  		}
  
  		parseParams(&params, pch);
-@@ -9685,15 +9758,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9685,15 +9754,15 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  		}
  
  		/*build page*/
@@ -13448,7 +13459,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  		{
  			send_file(f, "JQ", subdir, modifiedheader, etagheader, extraheader);
  		}
-@@ -9752,12 +9825,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9752,12 +9821,12 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				tpl_printf(vars, TPLADD, "POLLREFRESHTIME", "%d", cfg.poll_refresh);
  			}
  			if	(	cfg.http_refresh > 0 &&
@@ -13465,7 +13476,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  				tpl_addVar(vars, TPLADD, "REFRESH", tpl_getTpl(vars, "REFRESH"));
  			}
  #ifdef WEBIF_JQUERY
-@@ -9784,8 +9857,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9784,8 +9853,8 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			tpl_addVar(vars, TPLADD, "RUNAS", urlencode(vars, username(first_client)));
  
  			time_t now = time((time_t *)0);
@@ -13476,7 +13487,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  			{
  				char tbuffer [30];
  				strftime(tbuffer, 30, "%Y-%m-%dT%H:%M:%S%z", &st);
-@@ -9822,105 +9895,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9822,105 +9891,108 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  			char *result = NULL;
  
  			// WebIf allows modifying many things. Thus, all pages except images/css/static are expected to be non-threadsafe!
@@ -13616,7 +13627,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  				result = send_oscam_wiki_status(vars, &params);
  				break;
  #endif
-@@ -9928,20 +10004,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
+@@ -9928,20 +10000,20 @@ static int32_t process_request(FILE * f, IN_ADDR_T in)
  				result = send_oscam_status(vars, &params, 0);
  				break;
  			}
@@ -13642,7 +13653,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..f98b56ffb790e5943c9e2da0ca90cdc0
  					{ send_headers(f, 200, "OK", extraheader, "application/json", 0, cs_strlen(result), NULL, 0); }
  #endif
  				else
-@@ -10042,15 +10118,14 @@ static void *serve_process(void *conn)
+@@ -10042,15 +10114,14 @@ static void *serve_process(void *conn)
  		{
  			process_request(f, in);
  			fflush(f);
@@ -13895,7 +13906,7 @@ index 576804c9c23db29752256eaa40ec28a2084e271d..6e1c71370ddc72268cbd2e50c7a06359
  	return "unknown";
  }
 diff --git a/oscam.c b/oscam.c
-index 78ec882eea4eb6a165bd227899c4a227ee19fdae..318d2bff414ecef0b69c9d019200dbfd74d22835 100644
+index 4dc38edb8fc3fecca1a89932ff7dadece0118a2b..318d2bff414ecef0b69c9d019200dbfd74d22835 100644
 --- a/oscam.c
 +++ b/oscam.c
 @@ -44,6 +44,10 @@
@@ -13918,7 +13929,75 @@ index 78ec882eea4eb6a165bd227899c4a227ee19fdae..318d2bff414ecef0b69c9d019200dbfd
  
  	fprintf(fp, "\n");
  	write_conf(MODULE_CAMD33, "camd 3.3x");
-@@ -1683,6 +1689,9 @@ const struct s_cardreader *cardreaders[] =
+@@ -609,6 +615,19 @@ static void set_signal_handler(int32_t sig, int32_t flags, void (*sighandler))
+ 	}
+ }
+ 
++static void cs_master_alarm(void)
++{
++	cs_log("PANIC: master deadlock!");
++	fprintf(stderr, "PANIC: master deadlock!");
++	fflush(stderr);
++}
++
++static void cs_sigpipe(void)
++{
++	if(cs_dblevel & D_ALL_DUMP)
++		{ cs_log("Got sigpipe signal -> captured"); }
++}
++
+ static void cs_dummy(void)
+ {
+ 	return;
+@@ -746,8 +765,8 @@ static void cs_reload_config(void)
+ 	SAFE_MUTEX_UNLOCK(&mutex);
+ }
+ 
+-/* Ignore signals before daemonizing or starting the supervisor, when normal
+-   handlers cannot be used yet. */
++/* Sets signal handlers to ignore for early startup of OSCam because for example log
++   could cause SIGPIPE errors and the normal signal handlers can't be used at this point. */
+ static void init_signal_pre(void)
+ {
+ 	set_signal_handler(SIGPIPE , 1, SIG_IGN);
+@@ -766,9 +785,8 @@ static void init_signal(void)
+ 	set_signal_handler(SIGTERM, 3, cs_exit);
+ 
+ 	set_signal_handler(SIGWINCH, 1, SIG_IGN);
+-	/* Empty handlers avoid unsafe logging and reset to defaults in exec'd helpers. */
+-	set_signal_handler(SIGPIPE, 0, cs_dummy);
+-	set_signal_handler(SIGALRM, 0, cs_dummy);
++	set_signal_handler(SIGPIPE, 0, cs_sigpipe);
++	set_signal_handler(SIGALRM, 0, cs_master_alarm);
+ 	set_signal_handler(SIGHUP, 1, cs_reload_config);
+ 	set_signal_handler(SIGUSR1, 1, cs_debug_level);
+ 	set_signal_handler(SIGUSR2, 1, cs_card_info);
+@@ -795,6 +813,7 @@ void cs_exit(int32_t sig)
+ 		{ cs_dumpstack(sig); }
+ 
+ 	set_signal_handler(SIGHUP , 1, SIG_IGN);
++	set_signal_handler(SIGPIPE, 1, SIG_IGN);
+ 
+ 	struct s_client *cl = cur_client();
+ 	if(!cl)
+@@ -808,6 +827,7 @@ void cs_exit(int32_t sig)
+ 		free_client(cl);
+ 
+ 		// Restore signals before exiting thread
++		set_signal_handler(SIGPIPE, 0, cs_sigpipe);
+ 		set_signal_handler(SIGHUP, 1, cs_reload_config);
+ 
+ 		pthread_exit(NULL);
+@@ -1484,7 +1504,7 @@ static void restart_daemon(void)
+ 		set_signal_handler(SIGHUP , 0, fwd_sig);
+ 		set_signal_handler(SIGUSR1, 0, fwd_sig);
+ 		set_signal_handler(SIGUSR2, 0, fwd_sig);
+-		set_signal_handler(SIGALRM , 0, SIG_IGN);
++		set_signal_handler(SIGALRM , 0, fwd_sig);
+ 		set_signal_handler(SIGWINCH, 1, SIG_IGN);
+ 		set_signal_handler(SIGPIPE , 0, SIG_IGN);
+ 		set_signal_handler(OSCAM_SIGNAL_WAKEUP, 0, SIG_IGN);
+@@ -1669,6 +1689,9 @@ const struct s_cardreader *cardreaders[] =
  #ifdef CARDREADER_STINGER
  	&cardreader_stinger,
  #endif
@@ -13928,7 +14007,24 @@ index 78ec882eea4eb6a165bd227899c4a227ee19fdae..318d2bff414ecef0b69c9d019200dbfd
  
  	NULL
  };
-@@ -1862,6 +1871,9 @@ int32_t main(int32_t argc, char *argv[])
+@@ -1788,8 +1811,6 @@ int32_t main(int32_t argc, char *argv[])
+ 
+ 	parse_cmdline_params(argc, argv);
+ 
+-	init_signal_pre();
+-
+ 	if(bg && do_daemon(1, 0))
+ 	{
+ 		printf("Error starting in background (errno=%d: %s)", errno, strerror(errno));
+@@ -1807,6 +1828,7 @@ int32_t main(int32_t argc, char *argv[])
+ 	cfg.max_pending = max_pending;
+ 
+ 	if(cs_confdir[cs_strlen(cs_confdir) - 1] != '/') { cs_strncat(cs_confdir, "/", sizeof(cs_confdir)); }
++	init_signal_pre(); // because log could cause SIGPIPE errors, init a signal handler first
+ 	init_first_client();
+ 	cs_lock_create(__func__, &system_lock, "system_lock", 5000);
+ 	cs_lock_create(__func__, &config_lock, "config_lock", 10000);
+@@ -1849,6 +1871,9 @@ int32_t main(int32_t argc, char *argv[])
  
  	init_sidtab();
  	init_readerdb();
