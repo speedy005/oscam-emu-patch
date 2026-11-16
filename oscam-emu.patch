@@ -2,7 +2,7 @@ patch version: 2.26.11-11987-802 (e29367c1)
 patch date: 2026-11-16
 patch modified by speedy005 (16/11/2026)
 patch base commit: e29367c1f0db1504e14f2d19840f0a9f27bbc12d
-patch target commit: 432c36fd091607423950e967afd220f88522a57d
+patch target commit: ab55675819f8a5e600c219636f311edea194f82f
 patch streamboard url: https://git.streamboard.tv/common/oscam.git
 patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
