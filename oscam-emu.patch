@@ -1,5 +1,11 @@
-patch version:  ()
-patch date: 2026-11-16 09:55:04 UTC (+00:00)
+patch version: 2.26.11-11986-802 (d9137cf0)
+patch date: 2026-11-16
+patch modified by speedy005 (16/11/2026)
+patch base commit: d9137cf0638b1a3bf01540a82861d0d79eb0cb0c
+patch target commit: 64f44152f181ca67ce5ab032d4fb4ac96cce98d6
+patch streamboard url: https://git.streamboard.tv/common/oscam.git
+patch emu repository url: https://github.com/speedy005/Oscam-emu.git
+patch emu branch: master
 ---
 diff --git a/.gitattributes b/.gitattributes
 new file mode 100644
