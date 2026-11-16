@@ -1,8 +1,8 @@
-patch version: 2.26.11-11986-802 (d9137cf0)
+patch version: 2.26.11-11987-802 (e29367c1)
 patch date: 2026-11-16
 patch modified by speedy005 (16/11/2026)
-patch base commit: d9137cf0638b1a3bf01540a82861d0d79eb0cb0c
-patch target commit: 64f44152f181ca67ce5ab032d4fb4ac96cce98d6
+patch base commit: e29367c1f0db1504e14f2d19840f0a9f27bbc12d
+patch target commit: b9773eb5f4f5ed7b6a8fbf3c7cd6c32c4a3273e8
 patch streamboard url: https://git.streamboard.tv/common/oscam.git
 patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
@@ -16,7 +16,7 @@ index 00000000..dfe07704
 +# Auto detect text files and perform LF normalization
 +* text=auto
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e7004fa6..534e662c 100644
+index 5c0efd4e..534e662c 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
@@ -42,7 +42,36 @@ index e7004fa6..534e662c 100644
  execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --show-valid OUTPUT_VARIABLE config_vars_string OUTPUT_STRIP_TRAILING_WHITESPACE)
  string(REGEX MATCHALL "[A-Z0-9_]+" config_vars ${config_vars_string})
  
-@@ -1019,6 +1035,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
+@@ -750,16 +766,19 @@ if (OSCamOperatingSystem MATCHES "Mac OS X")
+ else (OSCamOperatingSystem MATCHES "Mac OS X")
+ 	target_link_libraries (${exe_name} -Wl,--start-group ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt -Wl,--end-group minilzo)
+ endif (OSCamOperatingSystem MATCHES "Mac OS X")
+-# Older libc versions provide clock_gettime in librt (also needed without WebIF).
+-include (CheckFunctionExists)
+-check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
+-if (NOT HAVE_CLOCK_GETTIME)
+-	include (CheckLibraryExists)
+-	check_library_exists (rt clock_gettime "" HAVE_CLOCK_GETTIME_IN_RT)
+-	if (HAVE_CLOCK_GETTIME_IN_RT)
+-		target_link_libraries (${exe_name} rt)
++execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --enabled WEBIF OUTPUT_VARIABLE CONFIG_WEBIF OUTPUT_STRIP_TRAILING_WHITESPACE)
++if (CONFIG_WEBIF MATCHES "Y")
++	# Older libc versions provide clock_gettime in librt.
++	include (CheckFunctionExists)
++	check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
++	if (NOT HAVE_CLOCK_GETTIME)
++		include (CheckLibraryExists)
++		check_library_exists (rt clock_gettime "" HAVE_CLOCK_GETTIME_IN_RT)
++		if (HAVE_CLOCK_GETTIME_IN_RT)
++			target_link_libraries (${exe_name} rt)
++		endif ()
+ 	endif ()
+-endif ()
++endif (CONFIG_WEBIF MATCHES "Y")
+ if (BUILD_TESTS)
+ 	# Test binary stays plain: no sign/upx — see Makefile rationale.
+ 	add_custom_target (run-tests COMMAND ${CMAKE_COMMAND} -E echo "Running ${exe_name}..." COMMAND ./${exe_name} DEPENDS ${exe_name} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+@@ -1016,6 +1035,24 @@ endif( HAVE_LIBRT OR HAVE_LIBRT_STATIC)
  
  #--------------------------------------------------------------------------------
  
@@ -67,7 +96,7 @@ index e7004fa6..534e662c 100644
  #----------------------- installation -----------------------------
  
  file (GLOB config_files "${CMAKE_CURRENT_SOURCE_DIR}/Distribution/oscam.*")
-@@ -1127,4 +1161,11 @@ if (HAVE_LIBDVBCSA)
+@@ -1124,4 +1161,11 @@ if (HAVE_LIBDVBCSA)
  	endif (LIBDVBCSADIR)
  endif (HAVE_LIBDVBCSA)
  
@@ -110,7 +139,7 @@ index a43c9db6..4b5d2a76 100644
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
 diff --git a/Makefile b/Makefile
-index 279b4794..8d86ff4e 100644
+index 71546d11..8d86ff4e 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -28,6 +28,9 @@ ifeq ($(uname_S),Darwin)
@@ -156,6 +185,29 @@ index 279b4794..8d86ff4e 100644
  SRC-$(CONFIG_CS_CACHEEX) += module-csp.c
  SRC-$(CONFIG_CW_CYCLE_CHECK) += module-cw-cycle-check.c
  SRC-$(CONFIG_WITH_AZBOX) += module-dvbapi-azbox.c
+@@ -406,13 +435,15 @@ SRC-$(CONFIG_WEBIF) += module-webif.c
+ SRC-$(CONFIG_WEBIF) += webif/pages.c
+ SRC-$(CONFIG_WEBIF_WIKI) += webif/pages_wiki.c
+ 
+-# Older libc versions provide clock_gettime in librt (also needed without WebIF).
+-CLOCK_TEST = printf '%s\n' \
+-	'int main(void) { struct timespec ts; return clock_gettime(CLOCK_MONOTONIC, &ts); }' | \
+-	$(CC) $(CFLAGS) -D_GNU_SOURCE -include time.h -x c -o /dev/null -
+-CLOCK_LIB := $(shell $(CLOCK_TEST) >/dev/null 2>&1 || \
+-	{ $(CLOCK_TEST) -lrt >/dev/null 2>&1 && echo -lrt; })
+-override LIBS += $(CLOCK_LIB)
++ifeq ($(CONFIG_WEBIF),y)
++	# Older libc versions provide clock_gettime in librt.
++	CLOCK_TEST = printf '%s\n' \
++		'int main(void) { struct timespec ts; return clock_gettime(CLOCK_MONOTONIC, &ts); }' | \
++		$(CC) $(CFLAGS) -D_GNU_SOURCE -include time.h -x c -o /dev/null -
++	CLOCK_LIB := $(shell $(CLOCK_TEST) >/dev/null 2>&1 || \
++		{ $(CLOCK_TEST) -lrt >/dev/null 2>&1 && echo -lrt; })
++	override LIBS += $(CLOCK_LIB)
++endif
+ SRC-$(CONFIG_WITH_CARDREADER) += reader-common.c
+ SRC-$(CONFIG_READER_BULCRYPT) += reader-bulcrypt.c
+ SRC-$(CONFIG_READER_CONAX) += reader-conax.c
 diff --git a/README.config b/README.config
 index 03c70f7d..9b99c3c4 100644
 --- a/README.config
@@ -477,7 +529,7 @@ diff --git a/devtools/extract_config.sh b/devtools/extract_config.sh
 old mode 100755
 new mode 100644
 diff --git a/globals.h b/globals.h
-index 5f444a32..03678600 100644
+index d738f1f8..dbd0311c 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -485,12 +537,12 @@ index 5f444a32..03678600 100644
   *			constants
   * =========================== */
 -#define SCM_URL					"https://git.streamboard.tv/common/oscam"
-+#define SCM_URL					"https://github.com/oscam-mirror/oscam-emu"
++#define SCM_URL					"https://github.com/speedy005/Oscam-emu"
  #define WIKI_URL				"https://git.streamboard.tv/common/oscam/-/wikis"
 -#define BOARD_URL				"https://board.streamboard.tv"
-+#define BOARD_URL				"https://github.com/oscam-mirror/oscam-emu/discussions"
++#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.11-11986"
+ #define CS_VERSION				"2.26.11-11987"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -11823,7 +11875,7 @@ index 7bdc6da3..bd13862c 100644
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index b8f1939e..d472bdd0 100644
+index b8f1939e..51f3639b 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -203,8 +203,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
@@ -11973,11 +12025,11 @@ index b8f1939e..d472bdd0 100644
  	int32_t fd;
  	int8_t allocation_failed = 0;
  	struct timespec deadline;
-+#ifdef WITH_EMU
++	#ifdef WITH_EMU
 +	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 204800;
-+#else
++	#else
  	const int32_t max_request_size = cfg.http_max_request_size > 0 ? cfg.http_max_request_size : 102400;
-+#endif
++	#endif
  	char buf2[1024];
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
@@ -12181,6 +12233,284 @@ index 486d62c3..1bf94e52 100644
  	if(prid == provid)
  	{
  		rdr_log_dbg(reader, D_EMM, "reader auprovid = %06X matching with emm provid = %06X -> SEND!", prid, provid);
+diff --git a/oscam-garbage.c b/oscam-garbage.c
+index 75a35f22..68387679 100644
+--- a/oscam-garbage.c
++++ b/oscam-garbage.c
+@@ -6,8 +6,7 @@
+ #include "oscam-string.h"
+ #include "oscam-time.h"
+ 
+-#define HASH_BUCKETS 256
+-#define BUCKET_MASK (HASH_BUCKETS - 1)
++#define HASH_BUCKETS 250
+ 
+ struct cs_garbage
+ {
+@@ -20,62 +19,13 @@ struct cs_garbage
+ 	struct cs_garbage *next;
+ };
+ 
++static int32_t counter = 0;
++static pthread_mutex_t add_lock;
+ static struct cs_garbage *garbage_first[HASH_BUCKETS];
+ static CS_MUTEX_LOCK garbage_lock[HASH_BUCKETS];
+ static pthread_t garbage_thread;
+-static uint32_t garbage_counter;
+ static int32_t garbage_collector_active;
+-static int32_t garbage_adders_inflight;
+ static int32_t garbage_debug;
+-static pthread_mutex_t garbage_state_lock = PTHREAD_MUTEX_INITIALIZER;
+-static pthread_cond_t garbage_state_cond = PTHREAD_COND_INITIALIZER;
+-
+-static time_t garbage_time(void)
+-{
+-	struct timespec now;
+-	return clock_gettime(CLOCK_MONOTONIC, &now) == 0 ? now.tv_sec : (time_t)-1;
+-}
+-
+-static int32_t garbage_collector_is_active(void)
+-{
+-	int32_t active;
+-	SAFE_MUTEX_LOCK(&garbage_state_lock);
+-	active = garbage_collector_active;
+-	SAFE_MUTEX_UNLOCK(&garbage_state_lock);
+-	return active;
+-}
+-
+-static void garbage_collector_set_active(int32_t active)
+-{
+-	SAFE_MUTEX_LOCK(&garbage_state_lock);
+-	garbage_collector_active = active;
+-	SAFE_MUTEX_UNLOCK(&garbage_state_lock);
+-}
+-
+-static int32_t garbage_add_ref(uint32_t *bucket)
+-{
+-	int32_t active;
+-	SAFE_MUTEX_LOCK(&garbage_state_lock);
+-	active = garbage_collector_active;
+-	if(active)
+-	{
+-		garbage_adders_inflight++;
+-		*bucket = garbage_counter++ & BUCKET_MASK;
+-	}
+-	SAFE_MUTEX_UNLOCK(&garbage_state_lock);
+-	return active;
+-}
+-
+-static void garbage_add_unref(void)
+-{
+-	SAFE_MUTEX_LOCK(&garbage_state_lock);
+-	garbage_adders_inflight--;
+-	if(!garbage_collector_active && garbage_adders_inflight == 0)
+-	{
+-		SAFE_COND_SIGNAL(&garbage_state_cond);
+-	}
+-	SAFE_MUTEX_UNLOCK(&garbage_state_lock);
+-}
+ 
+ #ifdef WITH_DEBUG
+ void add_garbage_debug(void *data, char *file, uint32_t line)
+@@ -87,27 +37,31 @@ void add_garbage(void *data)
+ 	if(!data)
+ 		{ return; }
+ 
+-	if(garbage_debug == 1)
++	if(!garbage_collector_active || garbage_debug == 1)
+ 	{
+ 		NULLFREE(data);
+ 		return;
+ 	}
+ 
+-	uint32_t bucket;
+-	if(!garbage_add_ref(&bucket))
++	SAFE_MUTEX_LOCK(&add_lock);
++
++	int32_t bucket = counter++;
++
++	if(counter >= HASH_BUCKETS)
+ 	{
+-		NULLFREE(data);
+-		return;
++		counter = 0;
+ 	}
+ 
++	SAFE_MUTEX_UNLOCK(&add_lock);
++
+ 	struct cs_garbage *garbage = (struct cs_garbage*)malloc(sizeof(struct cs_garbage));
+ 	if(garbage == NULL)
+ 	{
+ 		cs_log("*** MEMORY FULL -> FREEING DIRECT MAY LEAD TO INSTABILITY!!! ***");
+-		garbage_add_unref();
+ 		NULLFREE(data);
+ 		return;
+ 	}
++	garbage->time = time(NULL);
+ 	garbage->data = data;
+ 	garbage->next = NULL;
+ #ifdef WITH_DEBUG
+@@ -129,7 +83,6 @@ void add_garbage(void *data)
+ 				cs_log("Current garbage addition: %s, line %d.", file, line);
+ 				cs_log("Original garbage addition: %s, line %d.", garbagecheck->file, garbagecheck->line);
+ 				cs_writeunlock(__func__, &garbage_lock[bucket]);
+-				garbage_add_unref();
+ 				NULLFREE(garbage);
+ 				return;
+ 			}
+@@ -138,12 +91,10 @@ void add_garbage(void *data)
+ 	}
+ #endif
+ 
+-	garbage->time = garbage_time();
+ 	garbage->next = garbage_first[bucket];
+ 	garbage_first[bucket] = garbage;
+ 
+ 	cs_writeunlock(__func__, &garbage_lock[bucket]);
+-	garbage_add_unref();
+ }
+ 
+ static pthread_cond_t sleep_cond;
+@@ -151,51 +102,52 @@ static pthread_mutex_t sleep_cond_mutex;
+ 
+ static void garbage_collector(void)
+ {
+-	int32_t i;
+-	struct cs_garbage *garbage, *next;
++	int32_t i,j;
++	struct cs_garbage *garbage, *next, *prev, *first;
+ 	set_thread_name(__func__);
++	int32_t timeout_time = 2 * cfg.ctimeout / 1000 + 6;
+ 
+-	while(garbage_collector_is_active())
++	while(garbage_collector_active)
+ 	{
+-		time_t now = garbage_time();
+-		if(now == (time_t)-1)
+-		{
+-			sleepms_on_cond(__func__, &sleep_cond_mutex, &sleep_cond, 500);
+-			continue;
+-		}
+-		uint64_t retention = ((uint64_t)cfg.ctimeout * 2) / 1000 + 6;
+-		time_t deltime = now - (time_t)retention;
++		time_t deltime = time(NULL) - timeout_time;
+ 
+ 		for(i = 0; i < HASH_BUCKETS; ++i)
+ 		{
++			j = 0;
+ 			cs_writelock(__func__, &garbage_lock[i]);
+-			struct cs_garbage *expired = NULL;
+-			struct cs_garbage **link = &garbage_first[i];
++			first = garbage_first[i];
+ 
+-			while((garbage = *link))
++			for(garbage = first, prev = NULL; garbage; prev = garbage, garbage = garbage->next, j++)
+ 			{
+-				// Failed timestamp reads leave the entry for shutdown cleanup.
+-				if(garbage->time != (time_t)-1 && garbage->time < deltime)
++				if(j == 2)
+ 				{
+-					*link = garbage->next;
+-					garbage->next = expired;
+-					expired = garbage;
++					j++;
++					cs_writeunlock(__func__, &garbage_lock[i]);
+ 				}
+-				else
++
++				if(garbage->time < deltime) // all following elements are too new
+ 				{
+-					link = &garbage->next;
++					if(prev)
++					{
++						prev->next = NULL;
++					}
++					else
++					{
++						garbage_first[i] = NULL;
++					}
++					break;
+ 				}
+ 			}
+ 
+ 			cs_writeunlock(__func__, &garbage_lock[i]);
+ 
+-			// Entries have been detached, no lock needed for freeing.
+-			while(expired)
++			// list has been taken out before so we don't need a lock here anymore!
++			while(garbage)
+ 			{
+-				next = expired->next;
+-				free(expired->data);
+-				free(expired);
+-				expired = next;
++				next = garbage->next;
++				free(garbage->data);
++				free(garbage);
++				garbage = next;
+ 			}
+ 		}
+ 		sleepms_on_cond(__func__, &sleep_cond_mutex, &sleep_cond, 500);
+@@ -205,22 +157,23 @@ static void garbage_collector(void)
+ 
+ void start_garbage_collector(int32_t debug)
+ {
+-	int32_t i;
+ 	garbage_debug = debug;
+-	garbage_counter = 0;
+-	garbage_adders_inflight = 0;
++	int32_t i;
++
++	SAFE_MUTEX_INIT(&add_lock, NULL);
+ 
+ 	for(i = 0; i < HASH_BUCKETS; ++i)
+ 	{
+ 		cs_lock_create(__func__, &garbage_lock[i], "garbage_lock", 9000);
++
+ 		garbage_first[i] = NULL;
+ 	}
+-
+ 	cs_pthread_cond_init(__func__, &sleep_cond_mutex, &sleep_cond);
+ 
+-	garbage_collector_set_active(1);
++	garbage_collector_active = 1;
+ 
+-	if(start_thread("garbage", (void *)&garbage_collector, NULL, &garbage_thread, 0, 1))
++	int32_t ret = start_thread("garbage", (void *)&garbage_collector, NULL, &garbage_thread, 0, 1);
++	if(ret)
+ 	{
+ 		cs_exit(1);
+ 	}
+@@ -228,20 +181,11 @@ void start_garbage_collector(int32_t debug)
+ 
+ void stop_garbage_collector(void)
+ {
+-	if(garbage_collector_is_active())
++	if(garbage_collector_active)
+ 	{
+ 		int32_t i;
+ 
+-		/* Set inactive and wait under the same lock so no new adders can race
+-		 * in between the flag flip and the inflight-drain check. */
+-		SAFE_MUTEX_LOCK(&garbage_state_lock);
+ 		garbage_collector_active = 0;
+-		while(garbage_adders_inflight > 0)
+-		{
+-			SAFE_COND_WAIT(&garbage_state_cond, &garbage_state_lock);
+-		}
+-		SAFE_MUTEX_UNLOCK(&garbage_state_lock);
+-
+ 		SAFE_COND_SIGNAL(&sleep_cond);
+ 		cs_sleepms(300);
+ 		SAFE_COND_SIGNAL(&sleep_cond);
+@@ -267,6 +211,7 @@ void stop_garbage_collector(void)
+ 			cs_lock_destroy(__func__, &garbage_lock[i]);
+ 		}
+ 
++		pthread_mutex_destroy(&add_lock);
+ 		pthread_cond_destroy(&sleep_cond);
+ 		pthread_mutex_destroy(&sleep_cond_mutex);
+ 	}
 diff --git a/oscam-simples.c b/oscam-simples.c
 index 576804c9..6e1c7137 100644
 --- a/oscam-simples.c
