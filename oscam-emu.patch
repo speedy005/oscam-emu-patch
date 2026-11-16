@@ -1,27 +1,26 @@
-patch version: 2.26.11-11987-802 (e29367c1)
+patch version: 2.26.11-11987-802 (5becab06)
 patch date: 2026-11-16
 patch modified by speedy005 (16/11/2026)
-patch base commit: e29367c1f0db1504e14f2d19840f0a9f27bbc12d
-patch target commit: ebe4dcd76b087be13c726a827ee237d60138d344
-patch streamboard url: https://git.streamboard.tv/common/oscam.git
+patch base commit: 5becab06574d44a8c4834d1702c982f983c6295b
+patch target commit: cdb011ae60ba5b0d7bac0afb9f9983b597579eb4
+patch streamboard url: https://github.com/speedy005/oscam-git.git
 patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
 ---
 diff --git a/.gitattributes b/.gitattributes
-new file mode 100644
-index 00000000..4204424f
---- /dev/null
+index 1434798b..4204424f 100644
+--- a/.gitattributes
 +++ b/.gitattributes
-@@ -0,0 +1,9 @@
+@@ -1,4 +1,9 @@
 +# Shell-Skripte immer mit Unix-Zeilenumbrüchen
-+*.sh text eol=lf
+ *.sh text eol=lf
 +
 +# YAML und GitHub Actions
-+*.yml text eol=lf
-+*.yaml text eol=lf
+ *.yml text eol=lf
+ *.yaml text eol=lf
 +
 +# Git-Konfiguration
-+.gitattributes text eol=lf
+ .gitattributes text eol=lf
 diff --git a/.gitignore b/.gitignore
 index 3b0ae39b..bb368d86 100644
 --- a/.gitignore
