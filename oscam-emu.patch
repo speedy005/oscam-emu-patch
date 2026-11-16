@@ -2,20 +2,26 @@ patch version: 2.26.11-11987-802 (e29367c1)
 patch date: 2026-11-16
 patch modified by speedy005 (16/11/2026)
 patch base commit: e29367c1f0db1504e14f2d19840f0a9f27bbc12d
-patch target commit: ab55675819f8a5e600c219636f311edea194f82f
+patch target commit: 39cfd563f3b9bff8e96bdb2ea208a71b482fc03c
 patch streamboard url: https://git.streamboard.tv/common/oscam.git
 patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
 ---
 diff --git a/.gitattributes b/.gitattributes
 new file mode 100644
-index 00000000..e10fab90
+index 00000000..ac9cbdd0
 --- /dev/null
 +++ b/.gitattributes
-@@ -0,0 +1,3 @@
+@@ -0,0 +1,9 @@
++# Shell-Skripte immer mit Unix-Zeilenumbrüchen
 +*.sh text eol=lf
++
++# GitHub Actions und YAML-Dateien
 +*.yml text eol=lf
 +*.yaml text eol=lf
++
++# Git-Konfigurationsdateien
++.gitattributes text eol=lf
 diff --git a/.gitignore b/.gitignore
 index 3b0ae39b..bb368d86 100644
 --- a/.gitignore
