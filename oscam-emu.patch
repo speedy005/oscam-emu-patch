@@ -1,221 +1,15 @@
-patch version: 2.26.11-11989-802 (71c06010)
-patch date: 2026-11-16
-patch modified by speedy005 (17/11/2026)
-patch base commit: 71c060105ac48acd4b1f325f6c1b31c33ec552d5
-patch target commit: 5b7150a8149f87db2432b89febee7ab9c6cdc21d
+patch version: 2.26.11-11991-802
+ (efe064ec)
+patch date: 2026-11-19
+patch modified by speedy005 (19/11/2026)
+patch base commit: efe064ec62a7a7c87b2564a4de378ed46d4c69fa
+patch target commit: c8278ce89f844bf715078b119845334e131402dd
 patch streamboard url: https://github.com/speedy005/oscam-git.git
 patch emu repository url: https://github.com/speedy005/Oscam-emu.git
 patch emu branch: master
-
-diff --git a/.github/workflows/build-oscam.yml b/.github/workflows/build-oscam.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..fef78e2d4812a9e4d599938efbf7c97b9634fa88
---- /dev/null
-+++ b/.github/workflows/build-oscam.yml
-@@ -0,0 +1,36 @@
-+name: build oscam-emu
-+
-+on:
-+  push:
-+    branches:
-+      - master
-+    paths-ignore:
-+      - '.github/**'
-+  pull_request:
-+    branches:
-+      - master
-+    paths-ignore:
-+      - '.github/**'
-+  workflow_dispatch:
-+
-+jobs:
-+  build:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+    - name: checkout master
-+      uses: actions/checkout@v4
-+
-+    - name: build libdvbcsa
-+      run: |
-+        git clone https://github.com/oe-mirrors/libdvbcsa.git
-+        cd libdvbcsa
-+        ./bootstrap
-+        ./configure --enable-avx2
-+        make
-+        sudo make install
-+
-+    - name: build oscam-emu
-+      run: |
-+        ./config.sh --enable all --disable WITH_SOFTCAM
-+        make
-diff --git a/.github/workflows/create-patch.yml b/.github/workflows/create-patch.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..7e57425c202ca7cfc06c45d2f77a3e6c8ec23e91
---- /dev/null
-+++ b/.github/workflows/create-patch.yml
-@@ -0,0 +1,41 @@
-+name: create patch
-+
-+on:
-+  push:
-+    branches:
-+      - master
-+    paths-ignore:
-+      - '.github/**'
-+  workflow_dispatch:
-+
-+jobs:
-+  create-patch:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+    - name: checkout master
-+      uses: actions/checkout@v4
-+      with:
-+        fetch-depth: 0
-+
-+    - name: checkout oscam-emu-patch
-+      uses: actions/checkout@v4
-+      with:
-+        repository: oscam-mirror/oscam-emu-patch
-+        token: ${{ secrets.ACTIONS_TOKEN }}
-+        path: emu
-+
-+    - name: create patch
-+      run: |
-+        git diff origin/oscam-gitlab -- > emu/oscam-emu.patch :^.github :^.gitlab
-+        sed -i "1s/^/patch version: $(./config.sh --oscam-version) ($(./config.sh --oscam-commit))\npatch date: $(date "+%Y-%m-%d %H:%M:%S %Z (%:z)")\n---\n/" emu/oscam-emu.patch
-+
-+    - name: commit oscam-emu.patch
-+      run: |
-+        cd emu
-+        git config --global user.name "oscam-emu-bot"
-+        git config --global user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+        if ! git diff --quiet HEAD; then
-+          git commit -am "Sync patch with $(../config.sh --oscam-version)"
-+          git push
-+        fi
-diff --git a/.github/workflows/lockdown-repo.yml b/.github/workflows/lockdown-repo.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..366de7e9f2be5b42c1f0feb2ad12b37b6d4668a6
---- /dev/null
-+++ b/.github/workflows/lockdown-repo.yml
-@@ -0,0 +1,28 @@
-+name: 'lockdown repo'
-+
-+on:
-+  issues:
-+    types: opened
-+  pull_request_target:
-+    types: opened
-+  workflow_dispatch:
-+
-+permissions:
-+  issues: write
-+  pull-requests: write
-+
-+jobs:
-+  lockdown:
-+    runs-on: ubuntu-latest
-+    steps:
-+      - uses: dessant/repo-lockdown@v4
-+        with:
-+          close-issue: true
-+          issue-comment: >
-+            This repository does not accept bug reports.
-+          skip-closed-issue-comment: true
-+          close-pr: true
-+          pr-comment: >
-+            This repository does not accept pull requests
-+            because further development has stopped.
-+          skip-closed-pr-comment: true
-diff --git a/.github/workflows/merge-gitlab.yml b/.github/workflows/merge-gitlab.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..dabb8fe76723920c7337f223b4a279cec9b92c1c
---- /dev/null
-+++ b/.github/workflows/merge-gitlab.yml
-@@ -0,0 +1,29 @@
-+name: merge gitlab
-+
-+on:
-+  workflow_call:
-+  workflow_dispatch:
-+
-+jobs:
-+  merge:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+    - uses: actions/checkout@v4
-+      with:
-+        fetch-depth: 0
-+        token: ${{ secrets.ACTIONS_TOKEN }}
-+
-+    - name: git config
-+      run: |
-+        git config --global user.name "oscam-emu-bot"
-+        git config --global user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+
-+    - name: merge oscam-gitlab into master
-+      run: |
-+        if git merge --no-ff origin/oscam-gitlab -m "Auto-Merge branch 'oscam-gitlab'"; then
-+            git push --follow-tags origin
-+        else
-+            printf "\nfiles with merge conficts:\n"
-+            git diff --check
-+        fi
-diff --git a/.github/workflows/sync-gitlab.yml b/.github/workflows/sync-gitlab.yml
-new file mode 100644
-index 0000000000000000000000000000000000000000..5bfa93bde6aab3f3bbb50a310a9b2394e115457f
---- /dev/null
-+++ b/.github/workflows/sync-gitlab.yml
-@@ -0,0 +1,43 @@
-+name: sync gitlab
-+
-+on:
-+  workflow_call:
-+  workflow_dispatch:
-+  repository_dispatch:
-+    types: invoke-sync-gitlab
-+
-+jobs:
-+  sync:
-+    runs-on: ubuntu-latest
-+
-+    steps:
-+    - name: checkout oscam-gitlab
-+      uses: actions/checkout@v4
-+      with:
-+        ref: oscam-gitlab
-+        fetch-depth: 0
-+        token: ${{ secrets.ACTIONS_TOKEN }}
-+
-+    - name: git config
-+      run: |
-+        git config --global user.name "oscam-emu-bot"
-+        git config --global user.email "187860193+oscam-emu-bot@users.noreply.github.com"
-+
-+    - name: sync oscam-gitlab with upstream
-+      run: |
-+        git remote add --track master mirror https://github.com/oscam-mirror/oscam.git
-+        git fetch mirror
-+        ahead=$(git rev-list mirror/master..HEAD --count)
-+        if [ $ahead -gt 0 ]; then
-+            force='--force'
-+            printf "\n$ahead commit(s) ahead upstream -> reset branch and force push changes\n"
-+            git reset --hard HEAD~$ahead
-+        fi
-+        git merge mirror/master
-+        git push --follow-tags origin $force
-+
-+  reuse:
-+    uses: ./.github/workflows/merge-gitlab.yml
-+    secrets: inherit
-+    needs:
-+      - sync
+---
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 5c0efd4ec553c7def5854a555d013ea8a64ff992..9e4e959e0a1f42e106e1ef1b0e83778e2fc0b2fc 100644
+index 5c0efd4e..fe094c1e 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -637,6 +637,22 @@ endif (CONFIG_STREAMRELAY MATCHES "Y" AND NOT MODULE_STREAMRELAY EQUAL 1)
@@ -279,7 +73,7 @@ index 5c0efd4ec553c7def5854a555d013ea8a64ff992..9e4e959e0a1f42e106e1ef1b0e83778e
 +
  message (STATUS "")
 diff --git a/Distribution/doc/man/oscam.server.5 b/Distribution/doc/man/oscam.server.5
-index 56d1925ca9d66e94d39146cf73f38b8a9a650301..27fff61b2303023a248118f2af5e482d6c857258 100644
+index 56d1925c..4e7a4595 100644
 --- a/Distribution/doc/man/oscam.server.5
 +++ b/Distribution/doc/man/oscam.server.5
 @@ -649,6 +649,11 @@ set reader's CCcam reshare hop, default:0
@@ -295,7 +89,7 @@ index 56d1925ca9d66e94d39146cf73f38b8a9a650301..27fff61b2303023a248118f2af5e482d
  .RS 3n
  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
 diff --git a/Distribution/doc/txt/oscam.server.txt b/Distribution/doc/txt/oscam.server.txt
-index a43c9db6087784a29993192a4b4978489012d45b..4b5d2a76fb56c6c616c6647692f767fbdbf7da5e 100644
+index a43c9db6..d26f3a10 100644
 --- a/Distribution/doc/txt/oscam.server.txt
 +++ b/Distribution/doc/txt/oscam.server.txt
 @@ -509,6 +509,9 @@ DESCRIPTIONS
@@ -309,7 +103,7 @@ index a43c9db6087784a29993192a4b4978489012d45b..4b5d2a76fb56c6c616c6647692f767fb
  	  1 = send keepalive messages to keep connection to remote CCCam server up, default:0
  
 diff --git a/Makefile b/Makefile
-index 71546d1167de00184d5fbcabe2944a155ee1beb0..b43683fff9c31f66cc6f9471beb300f910f58f05 100644
+index 71546d11..374a2514 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -28,6 +28,9 @@ ifeq ($(uname_S),Darwin)
@@ -356,7 +150,7 @@ index 71546d1167de00184d5fbcabe2944a155ee1beb0..b43683fff9c31f66cc6f9471beb300f9
  SRC-$(CONFIG_CW_CYCLE_CHECK) += module-cw-cycle-check.c
  SRC-$(CONFIG_WITH_AZBOX) += module-dvbapi-azbox.c
 diff --git a/README.config b/README.config
-index 03c70f7dd3702ecd3879be0f30725ad48707a219..9b99c3c4e8ed0b0348edeeb5bbb93ba7026e6982 100644
+index 03c70f7d..af65bc5c 100644
 --- a/README.config
 +++ b/README.config
 @@ -81,7 +81,7 @@ Examples:
@@ -369,7 +163,7 @@ index 03c70f7dd3702ecd3879be0f30725ad48707a219..9b99c3c4e8ed0b0348edeeb5bbb93ba7
        readers: READER_NAGRA READER_NAGRA_MERLIN READER_IRDETO READER_CONAX READER_CRYPTOWORKS READER_SECA READER_VIACCESS READER_VIDEOGUARD READER_DRE READER_TONGFANG READER_BULCRYPT READER_GRIFFIN READER_DGCRYPT
   card_readers: CARDREADER_PHOENIX CARDREADER_INTERNAL CARDREADER_SC8IN1 CARDREADER_MP35 CARDREADER_SMARGO CARDREADER_DB2COM CARDREADER_STAPI CARDREADER_STAPI5 CARDREADER_STINGER CARDREADER_DRECAS
 diff --git a/README.md b/README.md
-index db5d4d0c32afe0bb576463e31494e63c181279e8..5d514452bf044e6d78c4681c6d5aa625eb2eaf34 100644
+index db5d4d0c..5d514452 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,79 +1,110 @@
@@ -540,7 +334,7 @@ index db5d4d0c32afe0bb576463e31494e63c181279e8..5d514452bf044e6d78c4681c6d5aa625
 +Configuration wiki:
 +   https://wiki.streamboard.tv/wiki/OSCam/de/Config/oscam.conf
 diff --git a/config.h b/config.h
-index 06b18eecde4cf2ace39c80b596d269099b258494..47afd6587a58fbcf1941d5146b85350e9af92912 100644
+index 06b18eec..c396fd8f 100644
 --- a/config.h
 +++ b/config.h
 @@ -1,6 +1,8 @@
@@ -562,7 +356,7 @@ index 06b18eecde4cf2ace39c80b596d269099b258494..47afd6587a58fbcf1941d5146b85350e
  //#define WITH_NEUTRINO 1
  #define READ_SDT_CHARSETS 1
 diff --git a/config.sh b/config.sh
-index f40e5c80916cf15ef6da50e5e2d54cd635572e5d..b59b7b2b4e27cd38855484037e3b4572091e5305 100755
+index f40e5c80..2126ec89 100755
 --- a/config.sh
 +++ b/config.sh
 @@ -1,6 +1,6 @@
@@ -654,7 +448,7 @@ index f40e5c80916cf15ef6da50e5e2d54cd635572e5d..b59b7b2b4e27cd38855484037e3b4572
  		break
  	;;
 diff --git a/csctapi/cardreaders.h b/csctapi/cardreaders.h
-index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecaebe4fd9a7 100644
+index 4cda2edd..74491272 100644
 --- a/csctapi/cardreaders.h
 +++ b/csctapi/cardreaders.h
 @@ -15,5 +15,6 @@ extern const struct s_cardreader cardreader_smartreader;
@@ -665,7 +459,7 @@ index 4cda2edd6bbc69299e02e7ea7d1d29f25007df1e..6cd27daeb71eacb4a0c7700cd048ecae
  
  #endif
 diff --git a/globals.h b/globals.h
-index 92c49be129eb8ac23466bb8afe1d00cdcefcb52c..2d1b419f6deb806e5ff3cc2cbe2e7ff105a9097c 100644
+index f6be06fa..cf177687 100644
 --- a/globals.h
 +++ b/globals.h
 @@ -368,9 +368,9 @@
@@ -678,7 +472,7 @@ index 92c49be129eb8ac23466bb8afe1d00cdcefcb52c..2d1b419f6deb806e5ff3cc2cbe2e7ff1
 -#define BOARD_URL				"https://board.streamboard.tv"
 +#define BOARD_URL				"https://github.com/speedy005/Oscam-emu/discussions"
  #ifndef CS_VERSION
- #define CS_VERSION				"2.26.11-11989"
+ #define CS_VERSION				"2.26.11-11991"
  #endif
 @@ -407,14 +407,18 @@
  #define CS_ECM_RINGBUFFER_MAX	0x10	// max size for ECM last responsetimes ringbuffer. Keep this set to power of 2 values!
@@ -782,7 +576,7 @@ index 92c49be129eb8ac23466bb8afe1d00cdcefcb52c..2d1b419f6deb806e5ff3cc2cbe2e7ff1
 +
  #endif
 diff --git a/module-cacheex.c b/module-cacheex.c
-index fe4835e7516e1db01d932b65aeb4731ab2f0654a..5623b727757c267ec409a62f2bccc9af3c989416 100644
+index fe4835e7..2d1226e8 100644
 --- a/module-cacheex.c
 +++ b/module-cacheex.c
 @@ -921,7 +921,9 @@ static int32_t cacheex_add_to_cache_int(struct s_client *cl, ECM_REQUEST *er, in
@@ -808,7 +602,7 @@ index fe4835e7516e1db01d932b65aeb4731ab2f0654a..5623b727757c267ec409a62f2bccc9af
  		cs_log_dbg(D_CACHEEX, "push received ecm with null odd/even byte from %s", csp ? "csp" : username(cl));
  		cl->cwcacheexerr++;
 diff --git a/module-cccam.c b/module-cccam.c
-index a68360b621bc8627410f2b3717818fa3c269bc1c..08249f7151cb42ed434cef9b45d2bb482b3aa2c2 100644
+index a68360b6..a470d83f 100644
 --- a/module-cccam.c
 +++ b/module-cccam.c
 @@ -1009,7 +1009,7 @@ int32_t cc_send_cli_data(struct s_client *cl)
@@ -840,7 +634,7 @@ index a68360b621bc8627410f2b3717818fa3c269bc1c..08249f7151cb42ed434cef9b45d2bb48
  				xcard = ncard; // remember card (D+ / 1810 fix) if request has no provider, but card has
  			}
 diff --git a/module-cw-cycle-check.c b/module-cw-cycle-check.c
-index 999b6bb8c93c5ee1e4d5a3993966fec858d0f7cb..9afb237c12f28ae2386d5ff7648f2f5beb237f76 100644
+index 999b6bb8..c849f447 100644
 --- a/module-cw-cycle-check.c
 +++ b/module-cw-cycle-check.c
 @@ -123,7 +123,9 @@ static uint8_t checkvalidCW(ECM_REQUEST *er)
@@ -855,7 +649,7 @@ index 999b6bb8c93c5ee1e4d5a3993966fec858d0f7cb..9afb237c12f28ae2386d5ff7648f2f5b
  
  	if(er->rc == E_NOTFOUND)
 diff --git a/module-dvbapi-azbox.c b/module-dvbapi-azbox.c
-index 7387f02d383a1b40360315f4f0a43641c8a1c1c9..321f19e8637a9fd938eff99205a9680310c2b35a 100644
+index 7387f02d..185524fa 100644
 --- a/module-dvbapi-azbox.c
 +++ b/module-dvbapi-azbox.c
 @@ -312,7 +312,9 @@ void azbox_send_dcw(struct s_client *client, ECM_REQUEST *er)
@@ -870,7 +664,7 @@ index 7387f02d383a1b40360315f4f0a43641c8a1c1c9..321f19e8637a9fd938eff99205a96803
  			memcpy(demux[0].last_cw[0][n], er->cw + (n * 8), 8);
  			memcpy(openxcas_cw + (n * 8), er->cw + (n * 8), 8);
 diff --git a/module-dvbapi-mca.c b/module-dvbapi-mca.c
-index 8b4d44d59c15ed8d86aba53b890783f4d25dee4e..cc399e406f347585e762b67da1de80ebf09e13a8 100644
+index 8b4d44d5..e72841f4 100644
 --- a/module-dvbapi-mca.c
 +++ b/module-dvbapi-mca.c
 @@ -601,8 +601,10 @@ void mca_send_dcw(struct s_client *client, ECM_REQUEST *er)
@@ -886,7 +680,7 @@ index 8b4d44d59c15ed8d86aba53b890783f4d25dee4e..cc399e406f347585e762b67da1de80eb
  			memcpy(demux[0].last_cw[0][n], er->cw + (n * 8), 8);
  			memcpy(openxcas_cw + (n * 8), er->cw + (n * 8), 8);
 diff --git a/module-dvbapi-stapi.c b/module-dvbapi-stapi.c
-index e136091d22847a489b6bb8f5b7e9052dcb512e80..2264bfc2333460d873acfc2e8d331fd521585e0f 100644
+index e136091d..e82e5187 100644
 --- a/module-dvbapi-stapi.c
 +++ b/module-dvbapi-stapi.c
 @@ -730,8 +730,10 @@ int32_t stapi_write_cw(int32_t demux_id, uint8_t *cw, uint16_t *STREAMpids, int3
@@ -902,7 +696,7 @@ index e136091d22847a489b6bb8f5b7e9052dcb512e80..2264bfc2333460d873acfc2e8d331fd5
  			for(n = 0; n < PTINUM; n++)
  			{
 diff --git a/module-dvbapi-stapi5.c b/module-dvbapi-stapi5.c
-index 2adf45189af3ebc93e28041b300f09b4a142231e..76f0a6ffd8528a2b48d1cc02e961a3e52d606bfe 100644
+index 2adf4518..17ad3d00 100644
 --- a/module-dvbapi-stapi5.c
 +++ b/module-dvbapi-stapi5.c
 @@ -731,8 +731,10 @@ int32_t stapi_write_cw(int32_t demux_id, uint8_t *cw, uint16_t *STREAMpids, int3
@@ -918,7 +712,7 @@ index 2adf45189af3ebc93e28041b300f09b4a142231e..76f0a6ffd8528a2b48d1cc02e961a3e5
  			ErrorCode = oscam_sttkd_KeyWrite(tkd_desc_info[demux[demux_id].dev_index].key_hndl, l, cw + (l * 8));
  
 diff --git a/module-dvbapi.c b/module-dvbapi.c
-index f40f582524631a0fe401810b6c03f596c24ec4fb..2eed8d86cb4cdf247e76b15a3da56543164ffda1 100644
+index f40f5825..27cc50b2 100644
 --- a/module-dvbapi.c
 +++ b/module-dvbapi.c
 @@ -1893,7 +1893,14 @@ void dvbapi_start_emm_filter(int32_t demux_id)
@@ -1178,7 +972,7 @@ index f40f582524631a0fe401810b6c03f596c24ec4fb..2eed8d86cb4cdf247e76b15a3da56543
  		return 5;
  	}
 diff --git a/module-dvbapi.h b/module-dvbapi.h
-index df2f20a4d0d99b5745617317d87c863efc4988a7..bbcc192ff1d49017a3f01ea43781e6ce9f471fa7 100644
+index df2f20a4..f6253575 100644
 --- a/module-dvbapi.h
 +++ b/module-dvbapi.h
 @@ -336,6 +336,9 @@ typedef struct filter_s
@@ -1203,7 +997,7 @@ index df2f20a4d0d99b5745617317d87c863efc4988a7..bbcc192ff1d49017a3f01ea43781e6ce
  typedef struct s_emmpid
 diff --git a/module-emulator-biss.c b/module-emulator-biss.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a6b0c9e6d9c54dc09607af3f8a7e03b681149d53
+index 00000000..c2a2de6c
 --- /dev/null
 +++ b/module-emulator-biss.c
 @@ -0,0 +1,883 @@
@@ -2092,7 +1886,7 @@ index 0000000000000000000000000000000000000000..a6b0c9e6d9c54dc09607af3f8a7e03b6
 +#endif // WITH_EMU
 diff --git a/module-emulator-biss.h b/module-emulator-biss.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..0f5900cc14fcc62b027fa7e55dc3806af6923643
+index 00000000..c686c1d4
 --- /dev/null
 +++ b/module-emulator-biss.h
 @@ -0,0 +1,22 @@
@@ -2120,7 +1914,7 @@ index 0000000000000000000000000000000000000000..0f5900cc14fcc62b027fa7e55dc3806a
 +#endif // MODULE_EMULATOR_BISS_H
 diff --git a/module-emulator-cryptoworks.c b/module-emulator-cryptoworks.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..df6509ac9eb2864aec2ed9c8ec400b7c451d94e5
+index 00000000..c11f3254
 --- /dev/null
 +++ b/module-emulator-cryptoworks.c
 @@ -0,0 +1,688 @@
@@ -2814,7 +2608,7 @@ index 0000000000000000000000000000000000000000..df6509ac9eb2864aec2ed9c8ec400b7c
 +#endif // WITH_EMU
 diff --git a/module-emulator-cryptoworks.h b/module-emulator-cryptoworks.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..c2424e24cb48c05cfa0867da8695dc3fea6e9228
+index 00000000..a7c999ab
 --- /dev/null
 +++ b/module-emulator-cryptoworks.h
 @@ -0,0 +1,10 @@
@@ -2830,7 +2624,7 @@ index 0000000000000000000000000000000000000000..c2424e24cb48c05cfa0867da8695dc3f
 +#endif // MODULE_EMULATOR_CRYPTOWORKS_H
 diff --git a/module-emulator-director.c b/module-emulator-director.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..c8c28b9cf1ed7699cff018bac0ab112797cefcf5
+index 00000000..dece67a0
 --- /dev/null
 +++ b/module-emulator-director.c
 @@ -0,0 +1,644 @@
@@ -3480,7 +3274,7 @@ index 0000000000000000000000000000000000000000..c8c28b9cf1ed7699cff018bac0ab1127
 +#endif // WITH_EMU
 diff --git a/module-emulator-director.h b/module-emulator-director.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..de430cf29f2201020543a20dfa624a953c07001c
+index 00000000..cfd39657
 --- /dev/null
 +++ b/module-emulator-director.h
 @@ -0,0 +1,11 @@
@@ -3497,7 +3291,7 @@ index 0000000000000000000000000000000000000000..de430cf29f2201020543a20dfa624a95
 +#endif // MODULE_EMULATOR_DIRECTOR_H
 diff --git a/module-emulator-irdeto.c b/module-emulator-irdeto.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..c9df9708ce87553bdf8d3524cff37f1720c9c70c
+index 00000000..e7536d57
 --- /dev/null
 +++ b/module-emulator-irdeto.c
 @@ -0,0 +1,602 @@
@@ -4105,7 +3899,7 @@ index 0000000000000000000000000000000000000000..c9df9708ce87553bdf8d3524cff37f17
 +#endif // WITH_EMU
 diff --git a/module-emulator-irdeto.h b/module-emulator-irdeto.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..e13af0a0b600f0b94e6fe0f79a0639626b5b2a55
+index 00000000..079d6f7c
 --- /dev/null
 +++ b/module-emulator-irdeto.h
 @@ -0,0 +1,15 @@
@@ -4126,7 +3920,7 @@ index 0000000000000000000000000000000000000000..e13af0a0b600f0b94e6fe0f79a063962
 +#endif // MODULE_EMULATOR_IRDETO_H
 diff --git a/module-emulator-nagravision.c b/module-emulator-nagravision.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a097871305658a9141d956ed4c6fd1fa194e8186
+index 00000000..7c3fa6c8
 --- /dev/null
 +++ b/module-emulator-nagravision.c
 @@ -0,0 +1,376 @@
@@ -4508,7 +4302,7 @@ index 0000000000000000000000000000000000000000..a097871305658a9141d956ed4c6fd1fa
 +#endif // WITH_EMU
 diff --git a/module-emulator-nagravision.h b/module-emulator-nagravision.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..31810eb05481d3ca9cd2a0ad908d871efa1b51ed
+index 00000000..080b894a
 --- /dev/null
 +++ b/module-emulator-nagravision.h
 @@ -0,0 +1,10 @@
@@ -4524,7 +4318,7 @@ index 0000000000000000000000000000000000000000..31810eb05481d3ca9cd2a0ad908d871e
 +#endif // MODULE_EMULATOR_NAGRAVISION_H
 diff --git a/module-emulator-omnicrypt.c b/module-emulator-omnicrypt.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..805926db8dbfc8b9f1a9b96cb474a9b620d9391a
+index 00000000..3da1bcc9
 --- /dev/null
 +++ b/module-emulator-omnicrypt.c
 @@ -0,0 +1,72 @@
@@ -4602,7 +4396,7 @@ index 0000000000000000000000000000000000000000..805926db8dbfc8b9f1a9b96cb474a9b6
 +#endif // WITH_EMU
 diff --git a/module-emulator-omnicrypt.h b/module-emulator-omnicrypt.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..3af8915c40a21dfc6158b84bdf8f7fe976504d6b
+index 00000000..1ff64d6e
 --- /dev/null
 +++ b/module-emulator-omnicrypt.h
 @@ -0,0 +1,10 @@
@@ -4618,7 +4412,7 @@ index 0000000000000000000000000000000000000000..3af8915c40a21dfc6158b84bdf8f7fe9
 +#endif // MODULE_EMULATOR_OMNICRYPT_H
 diff --git a/module-emulator-osemu.c b/module-emulator-osemu.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a3f8db3fb233937fb4d0fae242228f7f5ca0315b
+index 00000000..4b9649fd
 --- /dev/null
 +++ b/module-emulator-osemu.c
 @@ -0,0 +1,986 @@
@@ -5610,7 +5404,7 @@ index 0000000000000000000000000000000000000000..a3f8db3fb233937fb4d0fae242228f7f
 +#endif // WITH_EMU
 diff --git a/module-emulator-osemu.h b/module-emulator-osemu.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..a83dc64a44222727856d06edbddfcea2a75e457e
+index 00000000..10cd6acc
 --- /dev/null
 +++ b/module-emulator-osemu.h
 @@ -0,0 +1,96 @@
@@ -5712,7 +5506,7 @@ index 0000000000000000000000000000000000000000..a83dc64a44222727856d06edbddfcea2
 +#endif // MODULE_EMULATOR_H_
 diff --git a/module-emulator-powervu.c b/module-emulator-powervu.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..810fcecfdd95279ae265b9f6e1cfd379b542bde6
+index 00000000..503e2026
 --- /dev/null
 +++ b/module-emulator-powervu.c
 @@ -0,0 +1,2795 @@
@@ -8513,7 +8307,7 @@ index 0000000000000000000000000000000000000000..810fcecfdd95279ae265b9f6e1cfd379
 +#endif // WITH_EMU
 diff --git a/module-emulator-powervu.h b/module-emulator-powervu.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..b50d2088765fbd3fa9fd85f3cec6fbe76a8e0353
+index 00000000..7dd9dc56
 --- /dev/null
 +++ b/module-emulator-powervu.h
 @@ -0,0 +1,63 @@
@@ -8582,7 +8376,7 @@ index 0000000000000000000000000000000000000000..b50d2088765fbd3fa9fd85f3cec6fbe7
 +#endif // MODULE_EMULATOR_POWERVU_H
 diff --git a/module-emulator-viaccess.c b/module-emulator-viaccess.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..b5fea6519f3b8bc8480188c945f0da5beaf6b4d2
+index 00000000..07b8c0c7
 --- /dev/null
 +++ b/module-emulator-viaccess.c
 @@ -0,0 +1,1183 @@
@@ -9771,7 +9565,7 @@ index 0000000000000000000000000000000000000000..b5fea6519f3b8bc8480188c945f0da5b
 +#endif // WITH_EMU
 diff --git a/module-emulator-viaccess.h b/module-emulator-viaccess.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..6f4afcab9309bf05bb59fa1b4ff4b001dc311cb2
+index 00000000..a7239715
 --- /dev/null
 +++ b/module-emulator-viaccess.h
 @@ -0,0 +1,11 @@
@@ -9788,7 +9582,7 @@ index 0000000000000000000000000000000000000000..6f4afcab9309bf05bb59fa1b4ff4b001
 +#endif // MODULE_EMULATOR_VIACCESS_H
 diff --git a/module-emulator.c b/module-emulator.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..865e66870239ecc9720996d251c5398923104a69
+index 00000000..b6ffb467
 --- /dev/null
 +++ b/module-emulator.c
 @@ -0,0 +1,894 @@
@@ -10687,7 +10481,7 @@ index 0000000000000000000000000000000000000000..865e66870239ecc9720996d251c53989
 +
 +#endif // WITH_EMU
 diff --git a/module-newcamd-des.h b/module-newcamd-des.h
-index 7b0481408e03a5e77f6502edc8c586d8bc566738..29f96e4ee978216644454d574ab8cdc21a28c0ce 100644
+index 7b048140..624cc193 100644
 --- a/module-newcamd-des.h
 +++ b/module-newcamd-des.h
 @@ -6,6 +6,9 @@
@@ -10701,7 +10495,7 @@ index 7b0481408e03a5e77f6502edc8c586d8bc566738..29f96e4ee978216644454d574ab8cdc2
  int nc_des_encrypt(uint8_t *buffer, int len, uint8_t *deskey);
  int nc_des_decrypt(uint8_t *buffer, int len, uint8_t *deskey);
 diff --git a/module-newcamd.c b/module-newcamd.c
-index 0c3fd9e920d379f5366abb1e734b13109ab08461..a92471b58aed800f64a6c3e157efad0f7fb0edc6 100644
+index 0c3fd9e9..996a5b91 100644
 --- a/module-newcamd.c
 +++ b/module-newcamd.c
 @@ -1118,6 +1118,13 @@ static int8_t newcamd_auth_client(IN_ADDR_T ip, uint8_t *deskey)
@@ -10728,7 +10522,7 @@ index 0c3fd9e920d379f5366abb1e734b13109ab08461..a92471b58aed800f64a6c3e157efad0f
  						for(k = 0; k < aureader->nprov; k++)
  						{
 diff --git a/module-stat.c b/module-stat.c
-index 324c43bc92c95f1eb1769cad270e9b5a69837f53..284f47e0b218b2fb673f4e4a90691104b03f9e19 100644
+index 324c43bc..bd6054f1 100644
 --- a/module-stat.c
 +++ b/module-stat.c
 @@ -901,7 +901,7 @@ void check_lb_auto_betatunnel_mode(ECM_REQUEST *er)
@@ -10750,7 +10544,7 @@ index 324c43bc92c95f1eb1769cad270e9b5a69837f53..284f47e0b218b2fb673f4e4a90691104
  				prv = ea;
  				continue; // proxy can convert or reject
 diff --git a/module-streamrelay.c b/module-streamrelay.c
-index b313a914e55caaff09dec2f1e1e07ffa8908c485..17fb28f26cba8fe994c90cb50261765b47505476 100644
+index b313a914..c7b9bb69 100644
 --- a/module-streamrelay.c
 +++ b/module-streamrelay.c
 @@ -15,6 +15,12 @@
@@ -11886,7 +11680,7 @@ index b313a914e55caaff09dec2f1e1e07ffa8908c485..17fb28f26cba8fe994c90cb50261765b
  {
  	int32_t i;
 diff --git a/module-streamrelay.h b/module-streamrelay.h
-index f43ff5579f3bfd2fc00506f6e1cf42af5d1c8bf7..2f0e1b164291502d04732bb8d5666421ba92a431 100644
+index f43ff557..d76daceb 100644
 --- a/module-streamrelay.h
 +++ b/module-streamrelay.h
 @@ -10,26 +10,47 @@
@@ -11999,7 +11793,7 @@ index f43ff5579f3bfd2fc00506f6e1cf42af5d1c8bf7..2f0e1b164291502d04732bb8d5666421
  
  #endif // MODULE_STREAMRELAY_H_
 diff --git a/module-webif-tpl.c b/module-webif-tpl.c
-index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d5d50de81 100644
+index 7bdc6da3..21063266 100644
 --- a/module-webif-tpl.c
 +++ b/module-webif-tpl.c
 @@ -456,6 +456,7 @@ char *tpl_getUnparsedTpl(const char *name, int8_t removeHeader, const char *subd
@@ -12011,7 +11805,7 @@ index 7bdc6da3624bd8e8c9970aad5503f74d1116d343..bd13862c7bff8288b3a2044cfdeaf13d
  										if(ok == 0)
  										{
 diff --git a/module-webif.c b/module-webif.c
-index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..51f3639b1eea57ce4e55b71d95fab1b1af434a13 100644
+index b8f1939e..c25b179e 100644
 --- a/module-webif.c
 +++ b/module-webif.c
 @@ -203,8 +203,9 @@ static void tpl_add_group_limit_vars(struct templatevars *vars)
@@ -12170,7 +11964,7 @@ index b8f1939e46b6a8f0c8c060b6e8d99e8ee0f91e35..51f3639b1eea57ce4e55b71d95fab1b1
  #ifdef WITH_SSL
  	int8_t is_ssl = 0;
 diff --git a/oscam-chk.c b/oscam-chk.c
-index 78d031ea3c409e6ef6076a69ec091617d80ef20c..0396bf71b43f2582d805bff050d3310f59c185bb 100644
+index 78d031ea..8096a32b 100644
 --- a/oscam-chk.c
 +++ b/oscam-chk.c
 @@ -898,7 +898,7 @@ int32_t matching_reader(ECM_REQUEST *er, struct s_reader *rdr)
@@ -12210,7 +12004,7 @@ index 78d031ea3c409e6ef6076a69ec091617d80ef20c..0396bf71b43f2582d805bff050d3310f
  		return 1; // reader caid is not real caid
  	}
 diff --git a/oscam-config-global.c b/oscam-config-global.c
-index 1d6fd8db6471749568ca26fcbd49df5c6ca87d8c..1126e236138fc05491dca009a42c8a201a7573f4 100644
+index 1d6fd8db..72762ff6 100644
 --- a/oscam-config-global.c
 +++ b/oscam-config-global.c
 @@ -967,6 +967,10 @@ static const struct config_list streamrelay_opts[] =
@@ -12225,7 +12019,7 @@ index 1d6fd8db6471749568ca26fcbd49df5c6ca87d8c..1126e236138fc05491dca009a42c8a20
  	DEF_OPT_INT8("stream_reuse_client"           , OFS(stream_reuse_client),          0),
  #ifdef WEBIF
 diff --git a/oscam-config-reader.c b/oscam-config-reader.c
-index 02880e1395326e73c0044292a32de7ac08708105..ef8a60b40eadee0c0d55be1fa2f282cf85ebdee6 100644
+index a128ce1c..ea37727c 100644
 --- a/oscam-config-reader.c
 +++ b/oscam-config-reader.c
 @@ -114,6 +114,7 @@ static void protocol_fn(const char *token, char *value, void *setting, FILE *f)
@@ -12275,7 +12069,7 @@ index 02880e1395326e73c0044292a32de7ac08708105..ef8a60b40eadee0c0d55be1fa2f282cf
  		0
  	};
 diff --git a/oscam-config.h b/oscam-config.h
-index b0179dd8481a173880a17d86c358749f381398b5..e66a1aa1c60c0fef6de078e9fa0738430589ddcc 100644
+index b0179dd8..5d0cb840 100644
 --- a/oscam-config.h
 +++ b/oscam-config.h
 @@ -64,6 +64,7 @@ enum ftab_fn
@@ -12287,7 +12081,7 @@ index b0179dd8481a173880a17d86c358749f381398b5..e66a1aa1c60c0fef6de078e9fa073843
  };
  
 diff --git a/oscam-ecm.c b/oscam-ecm.c
-index 6b9c6c527f6ad8e6a0a68da0ae29d73474f3dbb3..d49033484a0b6e96dd32248c0ea00f533f7a87b4 100644
+index 6b9c6c52..04cdaa15 100644
 --- a/oscam-ecm.c
 +++ b/oscam-ecm.c
 @@ -2418,6 +2418,10 @@ int32_t write_ecm_answer(struct s_reader *reader, ECM_REQUEST *er, int8_t rc, ui
@@ -12333,7 +12127,7 @@ index 6b9c6c527f6ad8e6a0a68da0ae29d73474f3dbb3..d49033484a0b6e96dd32248c0ea00f53
  		cs_log_dbg(D_TRACE, "warning: ecm with null odd/even byte from %s", (check_client(er->client) ? er->client->account->usr : "-"));
  		er->rc = E_INVALID;
 diff --git a/oscam-emm.c b/oscam-emm.c
-index 486d62c370b8b0b8e0306b7aa94335ac36e07c00..1bf94e5203d3c401724e3097ae434c86ec42b395 100644
+index 486d62c3..fecc5f46 100644
 --- a/oscam-emm.c
 +++ b/oscam-emm.c
 @@ -40,6 +40,7 @@ static int8_t cs_emmlen_is_blocked(struct s_reader *rdr, int16_t len)
@@ -12370,7 +12164,7 @@ index 486d62c370b8b0b8e0306b7aa94335ac36e07c00..1bf94e5203d3c401724e3097ae434c86
  	{
  		rdr_log_dbg(reader, D_EMM, "reader auprovid = %06X matching with emm provid = %06X -> SEND!", prid, provid);
 diff --git a/oscam-simples.c b/oscam-simples.c
-index 576804c9c23db29752256eaa40ec28a2084e271d..6e1c71370ddc72268cbd2e50c7a06359b748d767 100644
+index 576804c9..157531b4 100644
 --- a/oscam-simples.c
 +++ b/oscam-simples.c
 @@ -468,6 +468,8 @@ const char *get_cardsystem_desc_by_caid(uint16_t caid)
@@ -12391,7 +12185,7 @@ index 576804c9c23db29752256eaa40ec28a2084e271d..6e1c71370ddc72268cbd2e50c7a06359
  	return "unknown";
  }
 diff --git a/oscam.c b/oscam.c
-index 4dc38edb8fc3fecca1a89932ff7dadece0118a2b..799ac2641104c67ea58c512a74545c10d5477923 100644
+index 4dc38edb..14fc66b3 100644
 --- a/oscam.c
 +++ b/oscam.c
 @@ -44,6 +44,10 @@
@@ -12435,7 +12229,7 @@ index 4dc38edb8fc3fecca1a89932ff7dadece0118a2b..799ac2641104c67ea58c512a74545c10
  	init_signal();
  	init_provid();
 diff --git a/reader-common.c b/reader-common.c
-index bc036210ef15d5785527e73be997ff7455e97b39..8bc328391c85e7de8dac2724ec71414615be94d2 100644
+index bc036210..52602e17 100644
 --- a/reader-common.c
 +++ b/reader-common.c
 @@ -15,6 +15,7 @@
@@ -12466,7 +12260,7 @@ index bc036210ef15d5785527e73be997ff7455e97b39..8bc328391c85e7de8dac2724ec714146
  	{
  		NULLFREE(reader->csystem_data);
 diff --git a/readers.h b/readers.h
-index eec350e9daec7516d86ba75af5749bb3bf0a6813..316c2bea3371b0305dd12367303901d2d2ab3ff5 100644
+index eec350e9..e2030604 100644
 --- a/readers.h
 +++ b/readers.h
 @@ -17,5 +17,6 @@ extern const struct s_cardsystem reader_tongfang;
@@ -12477,7 +12271,7 @@ index eec350e9daec7516d86ba75af5749bb3bf0a6813..316c2bea3371b0305dd12367303901d2
  
  #endif
 diff --git a/webif/config/streamrelay.html b/webif/config/streamrelay.html
-index f79d5a1c6cb2a0592f79eafb6dc5c16a7419b642..3804d00f5f18e8c5fa522cca09629318fec02afe 100644
+index f79d5a1c..74b20b00 100644
 --- a/webif/config/streamrelay.html
 +++ b/webif/config/streamrelay.html
 @@ -27,6 +27,7 @@
@@ -12490,7 +12284,7 @@ index f79d5a1c6cb2a0592f79eafb6dc5c16a7419b642..3804d00f5f18e8c5fa522cca09629318
  					<TABLE>
 diff --git a/webif/config/streamrelay_emusettings.html b/webif/config/streamrelay_emusettings.html
 new file mode 100644
-index 0000000000000000000000000000000000000000..dcb0618b4afc1e96a025e3bbc585b87b96f58be2
+index 00000000..08b4647b
 --- /dev/null
 +++ b/webif/config/streamrelay_emusettings.html
 @@ -0,0 +1,9 @@
@@ -12504,7 +12298,7 @@ index 0000000000000000000000000000000000000000..dcb0618b4afc1e96a025e3bbc585b87b
 +			</TR>
 +			<TR><TD><A>ECM fix delay (emu):</A></TD><TD><input name="stream_ecm_delay" class="short" type="text" maxlength="5" value="##STREAM_ECM_DELAY##"><label> ms (delay for PowerVU processing)</label></TD></TR>
 diff --git a/webif/files/menu.html b/webif/files/menu.html
-index 4dc6f02e73f5fbb9ac0fd26d68d1d34f4474ea26..2e4e6b62d114f2636649d9b86c284c0c4274a321 100644
+index 4dc6f02e..acc8488e 100644
 --- a/webif/files/menu.html
 +++ b/webif/files/menu.html
 @@ -10,7 +10,7 @@
@@ -12526,13 +12320,13 @@ index 4dc6f02e73f5fbb9ac0fd26d68d1d34f4474ea26..2e4e6b62d114f2636649d9b86c284c0c
  	</UL>
 diff --git a/webif/files/menu_softcamkey.html b/webif/files/menu_softcamkey.html
 new file mode 100644
-index 0000000000000000000000000000000000000000..cf718779f520b28570ce587e5bf091f35f43a26b
+index 00000000..5898ce2d
 --- /dev/null
 +++ b/webif/files/menu_softcamkey.html
 @@ -0,0 +1 @@
 +			<LI CLASS="##CMENUACTIVE30##"><A HREF="files.html?file=SoftCam.Key">SoftCam.Key</A></LI>
 diff --git a/webif/pages_index.txt b/webif/pages_index.txt
-index 46434100caf38ddd6c9df9ed2ca4eb7106d86f25..8460bf2c47ebd574f1a1ee09bafd276b2573c5f7 100644
+index 46434100..39134ccf 100644
 --- a/webif/pages_index.txt
 +++ b/webif/pages_index.txt
 @@ -1,10 +1,10 @@
@@ -12582,7 +12376,7 @@ index 46434100caf38ddd6c9df9ed2ca4eb7106d86f25..8460bf2c47ebd574f1a1ee09bafd276b
  READERCONFIGGBOXBIT           readerconfig/readerconfig_gboxbit.html                      MODULE_GBOX
  READERINFOGBOXREMM            readerconfig/readerinfo_gbox_remm.html                      MODULE_GBOX
 diff --git a/webif/readerconfig/readerconfig_cccambit.html b/webif/readerconfig/readerconfig_cccambit.html
-index 9b4678aabe7e7df48a469359dceb53a1aba72038..63d9e7bd59cc1e1302317e19dd5bf58e48e3ceed 100644
+index 9b4678aa..3a560025 100644
 --- a/webif/readerconfig/readerconfig_cccambit.html
 +++ b/webif/readerconfig/readerconfig_cccambit.html
 @@ -22,4 +22,5 @@
@@ -12593,7 +12387,7 @@ index 9b4678aabe7e7df48a469359dceb53a1aba72038..63d9e7bd59cc1e1302317e19dd5bf58e
  			<TR><TD><A>Keep alive:</A></TD><TD><input name="ccckeepalive" type="hidden" value="0"><input name="ccckeepalive" type="checkbox" value="1" ##KEEPALIVECHECKED##><label></label></TD></TR>
 diff --git a/webif/readerconfig/readerconfig_emubit.html b/webif/readerconfig/readerconfig_emubit.html
 new file mode 100644
-index 0000000000000000000000000000000000000000..8c130b7c8663db21926b078da575bf42f4329ab3
+index 00000000..156b34f8
 --- /dev/null
 +++ b/webif/readerconfig/readerconfig_emubit.html
 @@ -0,0 +1,2 @@
